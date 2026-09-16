@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Chassis Preview</title>
+<style>html,body{margin:0;height:100%;background:#0a0a0a}</style>
+</head>
+<body>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0a);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.01, 100);
+camera.position.set(3, 2, 3);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+dir.position.set(3, 5, 2);
+scene.add(dir);
+const grid = new THREE.GridHelper(4, 20, 0x334455, 0x223344);
+scene.add(grid);
+const axes = new THREE.AxesHelper(1);
+scene.add(axes);
+
+const loader = new GLTFLoader();
+loader.load("./voltaris-chassis.glb", (gltf) => {
+  scene.add(gltf.scene);
+  const box = new THREE.Box3().setFromObject(gltf.scene);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  document.title = `Chassis Preview - size ${size.x.toFixed(2)}x${size.y.toFixed(2)}x${size.z.toFixed(2)}m`;
+  window.__loadResult = { size: size.toArray(), center: center.toArray(), ok: true };
+  controls.target.copy(center);
+  camera.position.set(center.x + 3, center.y + 2, center.z + 3);
+  controls.update();
+}, undefined, (err) => {
+  window.__loadResult = { ok: false, error: String(err) };
+  console.error(err);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>

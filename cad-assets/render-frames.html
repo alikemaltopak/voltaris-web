@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Frame Renderer</title>
+<style>html,body{margin:0;background:#0a0a0a}</style>
+</head>
+<body>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const WIDTH = 1400, HEIGHT = 900;
+
+const scene = new THREE.Scene();
+scene.background = null;
+
+const camera = new THREE.PerspectiveCamera(38, WIDTH / HEIGHT, 0.05, 100);
+camera.position.set(3.4, 1.6, 3.6);
+camera.lookAt(0, 0.35, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setSize(WIDTH, HEIGHT);
+renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.body.appendChild(renderer.domElement);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const key = new THREE.DirectionalLight(0xffffff, 2.0);
+key.position.set(4, 6, 3);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+scene.add(key);
+const fill = new THREE.DirectionalLight(0x88ccff, 0.7);
+fill.position.set(-4, 2, -3);
+scene.add(fill);
+const rim = new THREE.DirectionalLight(0x22d3ee, 0.8);
+rim.position.set(-2, 3, 4);
+scene.add(rim);
+
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(20, 20),
+  new THREE.ShadowMaterial({ opacity: 0.28 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.02;
+floor.receiveShadow = true;
+scene.add(floor);
+
+let rollbarObj = null;
+let sasiObj = null;
+
+const loader = new GLTFLoader();
+await new Promise((resolve, reject) => {
+  loader.load("./voltaris-chassis.glb", (gltf) => {
+    const root = gltf.scene;
+    root.traverse((child) => {
+      if (!child.isMesh) return;
+      const isRollbar = child.name === "Rollbar";
+      child.material = new THREE.MeshStandardMaterial({
+        color: isRollbar ? new THREE.Color("#22d3ee") : new THREE.Color("#c3c9cf"),
+        metalness: isRollbar ? 0.2 : 0.15,
+        roughness: isRollbar ? 0.35 : 0.45,
+      });
+      child.castShadow = true;
+      child.receiveShadow = true;
+      if (isRollbar) rollbarObj = child;
+      if (child.name === "Sasi") sasiObj = child;
+    });
+    scene.add(root);
+    resolve();
+  }, undefined, reject);
+});
+
+// Exploded start pose for the rollbar (lifted, rotated, pulled back)
+const explodedPos = new THREE.Vector3(0.55, 1.35, -0.9);
+const explodedRot = new THREE.Euler(-0.55, 0.35, 0.25);
+const finalPos = new THREE.Vector3(0, 0, 0);
+const finalRot = new THREE.Euler(0, 0, 0);
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function setProgress(t) {
+  const e = easeInOutCubic(Math.min(1, Math.max(0, t)));
+  rollbarObj.position.lerpVectors(explodedPos, finalPos, e);
+  rollbarObj.rotation.set(
+    THREE.MathUtils.lerp(explodedRot.x, finalRot.x, e),
+    THREE.MathUtils.lerp(explodedRot.y, finalRot.y, e),
+    THREE.MathUtils.lerp(explodedRot.z, finalRot.z, e)
+  );
+  // subtle camera settle for extra life
+  const camStartY = 2.6, camEndY = 1.6;
+  camera.position.y = THREE.MathUtils.lerp(camStartY, camEndY, e);
+  const angleStart = 0.55, angleEnd = 0.0;
+  const angle = THREE.MathUtils.lerp(angleStart, angleEnd, e);
+  const radius = 4.9;
+  camera.position.x = Math.sin(angle) * radius * 0.72;
+  camera.position.z = Math.cos(angle) * radius * 0.72;
+  camera.lookAt(0, 0.32, 0);
+  renderer.render(scene, camera);
+}
+
+window.__renderFrame = function (t) {
+  setProgress(t);
+  return renderer.domElement.toDataURL("image/jpeg", 0.86);
+};
+
+window.__ready = true;
+</script>
+</body>
+</html>
