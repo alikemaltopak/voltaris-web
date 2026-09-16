@@ -52,8 +52,8 @@ export function Home() {
 
       <AssemblyReveal
         ariaLabel={t.home.chassisTitle}
-        framesFolder="ev-assembly"
-        frameCount={240}
+        framesFolder="ev-assembly-v2"
+        frameCount={188}
       />
 
       <section className="section about">
