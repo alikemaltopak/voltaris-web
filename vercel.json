@@ -1,0 +1,6 @@
+{
+  "rewrites": [{ "source": "/((?!frames/|models/|assets/).*)", "destination": "/index.html" }],
+  "headers": [
+    { "source": "/frames/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] }
+  ]
+}

@@ -31,3 +31,4 @@ cad-assets/*.stl
 cad-assets/*.glb
 cad-assets/frames/
 __pycache__/
+.vercel
