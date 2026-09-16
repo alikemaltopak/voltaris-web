@@ -58,6 +58,7 @@ Kullanıcının paylaştığı referans HTML dosyasından uyarlandı:
 
 ## Diğer notlar
 
-- Proje bir **git deposu değil** henüz — GitHub'a bağlamak için önce `git init` + uzak repo gerekiyor (bu konuşulmaya başlandı, henüz yapılmadı)
+- **GitHub:** gizli repo — https://github.com/alikemaltopak/voltaris-web (`main` dalı, `origin` uzak). Venv, STEP/STL ve ara kareler `.gitignore` ile dışarıda.
+- **Yön:** Sitenin tasarım karakteri korunacak; ana görsel teknik scroll-driven kare dizisi (3D animasyon). Yeni frame zip'leri gelince aynı hatta (`public/frames/`) işlenecek.
 - `cad-assets/` klasöründe CAD dönüştürme scriptleri (STEP→GLB, arka plan kaldırma) ve bir Python venv duruyor (~1.5GB, siteyle ilgisi yok, sadece araç kutusu)
 - `THIRD_PARTY_NOTICES.md` — ThreeUI'dan (MIT lisans) uyarlanan `EnergyOrb` bileşeni için atıf
