@@ -1,0 +1,217 @@
+{
+  "_aciklama": "Voltaris takımı web sitesi (Başvurular sayfası) için 3 ayrı komite başvuru formu. Her form 'ortak_sorular' (tüm formlarda aynı) ve 'ozel_sorular' (komiteye özgü) olarak ikiye ayrılmıştır. Öncelik merak ve heves olduğu için deneyim soruları elemeden çok yönlendirme amaçlıdır; formlarda bunu belirten bir not (aciklama alanı) bulunur.",
+  "ortak_sorular": [
+    {
+      "id": "ad_soyad",
+      "tip": "kisa_metin",
+      "soru": "Ad Soyad",
+      "zorunlu": true
+    },
+    {
+      "id": "eposta",
+      "tip": "eposta",
+      "soru": "E-posta adresin",
+      "zorunlu": true
+    },
+    {
+      "id": "telefon",
+      "tip": "telefon",
+      "soru": "Telefon numaran",
+      "zorunlu": true
+    },
+    {
+      "id": "universite_bolum",
+      "tip": "kisa_metin",
+      "soru": "Üniversite ve bölüm",
+      "yardimci_metin": "Örn: İYTE, Makine Mühendisliği",
+      "zorunlu": true
+    },
+    {
+      "id": "sinif",
+      "tip": "tekli_secim",
+      "soru": "Kaçıncı sınıftasın?",
+      "secenekler": ["Hazırlık", "1. Sınıf", "2. Sınıf", "3. Sınıf", "4. Sınıf", "Yüksek Lisans/Doktora"],
+      "zorunlu": true
+    },
+    {
+      "id": "nasil_duydun",
+      "tip": "tekli_secim",
+      "soru": "Voltaris'i nereden duydun?",
+      "secenekler": ["Kampüsteki afiş/stant", "Arkadaş tavsiyesi", "Sosyal medya", "Ders/hoca", "Diğer"],
+      "zorunlu": false
+    },
+    {
+      "id": "haftalik_zaman",
+      "tip": "tekli_secim",
+      "soru": "Haftada ortalama kaç saat ayırabilirsin?",
+      "secenekler": ["1-3 saat", "4-6 saat", "7-10 saat", "10 saatten fazla"],
+      "zorunlu": true
+    },
+    {
+      "id": "neden_katilmak_istiyorsun",
+      "tip": "uzun_metin",
+      "soru": "Voltaris'e neden katılmak istiyorsun? Bizi en çok bu cevap ilgilendiriyor, uzun ve mükemmel olmak zorunda değil.",
+      "zorunlu": true
+    },
+    {
+      "id": "daha_once_ne_yaptin",
+      "tip": "uzun_metin",
+      "soru": "Daha önce elinle/kodla/tasarımla bir şeyler denediğin oldu mu? Ders projesi, hobi, bir şeyi söküp bir şey yapmaya çalışmak da sayılır — deneyim şart değil, merakını gösteren her şey olur.",
+      "zorunlu": false
+    },
+    {
+      "id": "ekleyecek_bir_seyin_var_mi",
+      "tip": "uzun_metin",
+      "soru": "Eklemek istediğin bir şey var mı? (Portfolyo, GitHub, çizim, video linki vb. de buraya bırakabilirsin)",
+      "zorunlu": false
+    }
+  ],
+  "formlar": {
+    "mekanik": {
+      "baslik": "Voltaris Mekanik Komitesi Başvuru Formu",
+      "aciklama": "Mekanik komitesi aracın fiziksel iskeletinden dış kabuğuna kadar her şeyi tasarlayıp üretiyor. Şu an aracımız şase üzerinde, kabuğu henüz takılmadı — bu yüzden özellikle kabuk tasarım ve üretimine ihtiyacımız var. Deneyimin olmasa da CAD öğrenmeye veya atölyede elini taşın altına koymaya açıksan başvurabilirsin; öncelik meraktır, tecrübe bonus'tur.",
+      "ozel_sorular": [
+        {
+          "id": "alt_takim_tercihi",
+          "tip": "coklu_secim_siralamali",
+          "soru": "Aşağıdaki alt çalışma alanlarından hangilerine ilgi duyuyorsun? (Birden fazla seçebilirsin, ilk seçtiğin en çok istediğin olsun)",
+          "secenekler": [
+            "Kabuk Tasarımı (aerodinamik, yüzey modelleme, kompozit parça planlama)",
+            "Kabuk Üretimi (kalıp çıkarma, kompozit/fiberglas-karbon işçiliği)",
+            "Fren - Direksiyon - Süspansiyon (CAD tasarım ve üretim/montaj)",
+            "Şasi ve Roll Cage (kaynak, metal işleme, üretim)",
+            "Batarya Paketleme (hücre yerleşimi, termal tasarım)"
+          ],
+          "zorunlu": true
+        },
+        {
+          "id": "cad_deneyimi",
+          "tip": "tekli_secim",
+          "soru": "Bir CAD programı (SolidWorks, Fusion 360, AutoCAD vb.) kullandın mı?",
+          "secenekler": [
+            "Evet, aktif kullanıyorum",
+            "Ders kapsamında biraz gördüm",
+            "Hiç kullanmadım ama öğrenmeye çok istekliyim",
+            "Hiç kullanmadım, ilgimi çekmiyor"
+          ],
+          "yardimci_metin": "Bu soru eleme için değil, hangi göreve daha uygun olduğunu anlamamız için.",
+          "zorunlu": true
+        },
+        {
+          "id": "atolye_deneyimi",
+          "tip": "tekli_secim",
+          "soru": "Kaynak, kesim, kompozit/kalıp işi gibi atölye tipi işlere yatkın mısın ya da denemek ister misin?",
+          "secenekler": [
+            "Evet, daha önce yaptım",
+            "Yapmadım ama denemek isterim",
+            "Bu benim tarzım değil, daha çok tasarım/CAD tarafında olmak isterim"
+          ],
+          "zorunlu": true
+        },
+        {
+          "id": "detay_ve_sabir",
+          "tip": "uzun_metin",
+          "soru": "Süspansiyon ve fren tasarımı çok sayıda revizyon ve ince detay gerektiriyor. Tekrar tekrar düzeltme yapman gereken bir işte sabrını nasıl korursun, kısaca anlatır mısın?",
+          "zorunlu": false
+        }
+      ]
+    },
+    "elektronik": {
+      "baslik": "Voltaris Elektronik Komitesi Başvuru Formu",
+      "aciklama": "Elektronik komitesi aracın 'beynini' oluşturuyor: batarya yönetim sistemi, motor sürücü, araç kontrol sistemi ve sürüş destek yazılımları. Şu an en büyük ihtiyacımız Batarya Yönetim Sistemi (BYS) ve Motor Sürücü tarafında — bu alanlarda henüz gerçek bir devre kartımız yok. Temel bir devre/programlama dersi görmüş olmak avantaj ama şart değil; öğrenmeye açık olmak en önemlisi.",
+      "ozel_sorular": [
+        {
+          "id": "alt_takim_tercihi",
+          "tip": "coklu_secim_siralamali",
+          "soru": "Aşağıdaki alt çalışma alanlarından hangilerine ilgi duyuyorsun? (Birden fazla seçebilirsin, ilk seçtiğin en çok istediğin olsun)",
+          "secenekler": [
+            "Batarya Yönetim Sistemi / BYS (devre tasarımı, hücre dengeleme, SOC algoritması)",
+            "Motor Sürücü / Güç Elektroniği (MOSFET, gate driver, PCB)",
+            "AKS - Araç Kontrol Sistemi (STM32/ESP32, telemetri, gerçek sensör entegrasyonu)",
+            "ADAS / Gömülü Yazılım (görüntü işleme, Python, yapay zeka)",
+            "Araç Elektrik Şeması (aracın komple kablo/devre şemasını çıkarma)"
+          ],
+          "zorunlu": true
+        },
+        {
+          "id": "programlama_deneyimi",
+          "tip": "tekli_secim",
+          "soru": "Programlama deneyimin var mı? (C/C++, Python, MATLAB fark etmez)",
+          "secenekler": [
+            "Evet, aktif kod yazıyorum",
+            "Ders kapsamında temel seviye gördüm",
+            "Hiç yazmadım ama öğrenmeye çok istekliyim",
+            "Hiç yazmadım, elektronik/devre tarafında olmak isterim"
+          ],
+          "yardimci_metin": "Bu soru eleme için değil, hangi göreve daha uygun olduğunu anlamamız için.",
+          "zorunlu": true
+        },
+        {
+          "id": "devre_bilgisi",
+          "tip": "tekli_secim",
+          "soru": "Temel devre bilgin var mı? (devre okuma, lehim yapma, Arduino/ESP32 ile küçük bir proje vb.)",
+          "secenekler": [
+            "Evet, kendim bir şeyler denedim (Arduino, ESP32, breadboard vb.)",
+            "Sadece ders kapsamında gördüm",
+            "Hiç yok ama öğrenmeye açığım"
+          ],
+          "zorunlu": true
+        },
+        {
+          "id": "ilgili_dersler",
+          "tip": "coklu_secim",
+          "soru": "Aldığın veya almayı planladığın derslerden hangileri var? (varsa)",
+          "secenekler": [
+            "Devre Teorisi / Güç Elektroniği",
+            "Kontrol Sistemleri",
+            "Gömülü Sistemler / Mikroişlemciler",
+            "Sinyal İşleme / Görüntü İşleme",
+            "Hiçbiri, henüz almadım"
+          ],
+          "zorunlu": false
+        }
+      ]
+    },
+    "diger": {
+      "baslik": "Voltaris Diğer Komiteler Başvuru Formu (Ar-Ge & Doküman / Sponsorluk / Sosyal Medya)",
+      "aciklama": "Bu komiteler teknik olmasa da takımı ayakta tutan işleri yürütüyor: rapor yazımı ve rakip takım araştırması, sponsor ilişkileri ve bütçe takibi, sosyal medya ve içerik üretimi. Şu an elimizde derlenmiş bir teknik rapor yok, bu yüzden Ar-Ge & Doküman tarafına özellikle ihtiyacımız var.",
+      "ozel_sorular": [
+        {
+          "id": "alt_takim_tercihi",
+          "tip": "coklu_secim_siralamali",
+          "soru": "Aşağıdaki alt çalışma alanlarından hangilerine ilgi duyuyorsun? (Birden fazla seçebilirsin, ilk seçtiğin en çok istediğin olsun)",
+          "secenekler": [
+            "Ar-Ge ve Doküman (teknik rapor yazımı, rakip takım/literatür araştırması, yarışma şartname takibi)",
+            "Sponsorluk (sponsor iletişimi, sunum hazırlama, bütçe/malzeme takibi)",
+            "Sosyal Medya (video kurgu, fotoğraf, çerik üretimi)"
+          ],
+          "zorunlu": true
+        },
+        {
+          "id": "yazma_deneyimi",
+          "tip": "tekli_secim",
+          "soru": "Rapor/metin yazma ve düzenli çalışma konusunda kendini nasıl tanımlarsın?",
+          "secenekler": [
+            "Yazmaxı severim, uzun metinleri toparlamakta iyiyimdir",
+            "Fena değilim ama pratik yaparak gelişmek isterim",
+            "Bu benim güçlü yanım değil, daha çok görsel/iletişim tarafında olmak isterim"
+          ],
+          "zorunlu": true
+        },
+        {
+          "id": "ingilizce_seviyesi",
+          "tip": "tekli_secim",
+          "soru": "Teknik İngilizce metin okuma seviyeni nasıl değerlendirirsin? (Uluslararası şartname ve referans makaleler için gerekiyor)",
+          "secenekler": ["İyi", "Orta", "Geliştiremem gerekiyor"],
+          "zorunlu": false
+        },
+        {
+          "id": "iletisim_sunum_deneyimi",
+          "tip": "uzun_metin",
+          "soru": "Sponsorluk veya sosyal medya tercih ettiysen: daha önce bir sunum hazırladın mı, bir kuruma yazışma yaptın mı, video/fotoğraf içeriği ürettin mi? Kısaca anlat (deneyimin yoksa boş bırakabilirsin).",
+          "zorunlu": false
+        }
+      ]
+    }
+  }
+}

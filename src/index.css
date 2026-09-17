@@ -517,8 +517,7 @@ ul {
 .members__grid,
 .timeline,
 .tiers__grid,
-.teaser__grid,
-.komite-grid {
+.teaser__grid {
   display: grid;
   gap: 20px;
 }
@@ -540,10 +539,6 @@ ul {
 
 .teaser__grid {
   grid-template-columns: 1fr 1fr;
-}
-
-.komite-grid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .stat-card,
@@ -599,8 +594,7 @@ ul {
 .department-card__index,
 .timeline__index,
 .tier-card__index,
-.teaser__card .card-num,
-.komite-card__num {
+.teaser__card .card-num {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--accent);
@@ -659,10 +653,6 @@ ul {
   cursor: pointer;
 }
 
-.komite-card__num {
-  font-size: 12px;
-}
-
 .komite-card h3 {
   font-size: 27px;
   font-weight: 600;
@@ -677,7 +667,6 @@ ul {
   margin-bottom: 0;
 }
 
-.komite-card__go,
 .teaser__card .link-arrow {
   margin-top: 30px;
   font-size: 13px;
@@ -688,16 +677,7 @@ ul {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.komite-card__go span,
-.teaser__card .link-arrow {
   transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.25, 1);
-  display: inline-block;
-}
-
-.komite-card:hover .komite-card__go span {
-  transform: translateX(7px);
 }
 
 /* About */
@@ -1091,6 +1071,147 @@ ul {
   font-size: 0.9rem;
 }
 
+/* Dynamic application form fields */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.form-field__label {
+  display: flex;
+  gap: 4px;
+  font-size: 1.05rem;
+  color: var(--text);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.form-field__required {
+  color: var(--accent);
+}
+
+.form-field__hint {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.form-field__error {
+  font-size: 0.78rem;
+  color: #f87171;
+}
+
+.form-field__control {
+  background: var(--bg-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.form-field__control:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-field__control--invalid {
+  border-color: #f87171;
+}
+
+.option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.option-pill:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.option-pill--active {
+  border-color: var(--accent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-alt));
+}
+
+.scale-group {
+  display: flex;
+  gap: 10px;
+}
+
+.scale-pill {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.scale-pill:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.scale-pill--active {
+  border-color: var(--accent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-alt));
+}
+
+.option-group--ranked {
+  flex-direction: column;
+}
+
+.option-pill--ranked {
+  justify-content: flex-start;
+}
+
+.option-pill__rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+.option-pill--ranked.option-pill--active .option-pill__rank {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .contact-info {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1137,70 +1258,122 @@ ul {
   color: var(--text-muted);
 }
 
-/* Application modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(4, 5, 7, 0.75);
-  backdrop-filter: blur(6px);
+/* Application form page */
+.container--narrow {
+  max-width: 760px;
+}
+
+.question-form-page {
+  display: flex;
+  flex-direction: column;
+  margin-top: 40px;
+}
+
+.question-block {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 20px;
+  padding: 44px 0;
+  border-top: 1px solid var(--border);
+}
+
+.question-block__num {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  padding-top: 3px;
+}
+
+.question-block__body {
+  min-width: 0;
+}
+
+.question-form-page .form-field {
+  gap: 16px;
+}
+
+.question-form-page__submit {
+  padding-top: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.form-success-page {
+  text-align: center;
+  padding: 72px 0 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.form-success-page__mark {
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  color: var(--accent);
+  font-size: 1.5rem;
 }
 
-.modal-panel {
+.form-success-page h2 {
+  font-size: 1.4rem;
+  max-width: 460px;
+  color: var(--text);
+}
+
+.komite-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.komite-card--choice {
   position: relative;
-  width: 100%;
-  max-width: 560px;
-  max-height: 88vh;
-  overflow-y: auto;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  padding: 44px 40px 40px;
+  padding: 22px 52px 22px 24px;
 }
 
-.modal-close {
+.komite-card--choice h3 {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+
+.komite-card--choice p {
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.komite-card__check {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 36px;
-  height: 36px;
+  top: 20px;
+  right: 20px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: 1px solid var(--border-strong);
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
+  font-size: 12px;
+  color: transparent;
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 
-.modal-close:hover {
+.komite-card--selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.komite-card--selected .komite-card__check {
   border-color: var(--accent);
   color: var(--accent);
-}
-
-.modal-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 12px;
-}
-
-.modal-panel h2 {
-  font-size: 1.5rem;
-  margin-bottom: 8px;
-}
-
-.modal-desc {
-  font-size: 0.92rem;
-  margin-bottom: 28px;
 }
 
 /* Footer */
@@ -1293,8 +1466,10 @@ ul {
     grid-template-columns: 1fr 1fr;
   }
 
-  .modal-panel {
-    padding: 36px 22px 28px;
+  .question-block {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 32px 0;
   }
 }
 
@@ -1303,4 +1478,32 @@ ul {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Scroll-scrubbed cable-assembly strands in the empty space beside the
+   narrow application form. Fixed, non-interactive and behind every section
+   (sections are z-index 2), so the form stays readable and clickable. */
+.cable-gutters {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cable-gutters__strand {
+  position: absolute;
+  bottom: 0;
+  width: clamp(120px, calc((100vw - 820px) / 2 - 32px), 280px);
+  height: 82vh;
+  opacity: 0.85;
+}
+
+.cable-gutters__strand--left {
+  right: calc(50% + 398px);
+}
+
+.cable-gutters__strand--right {
+  left: calc(50% + 398px);
+  transform: scaleX(-1);
 }

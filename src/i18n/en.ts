@@ -118,10 +118,8 @@ const en: Dictionary = {
   },
   applications: {
     heroTitle: "Applications",
-    heroSubtitle: "Pick one of our three core tracks, open its application window, and fill out the form.",
-    sectionLabelLeft: "02 — COMMITTEES",
-    sectionLabelRight: "THREE TRACKS",
-    applyLabel: "APPLY",
+    heroSubtitle:
+      "Fill out the form below — partway through, pick which committee you want to join and its specific questions will appear.",
     committees: [
       {
         id: "mekanik",
@@ -143,13 +141,9 @@ const en: Dictionary = {
     ],
     form: {
       eyebrow: "APPLICATION FORM",
-      fullName: "Full Name",
-      email: "Email",
-      phone: "Phone",
-      department: "Department & Year",
-      motivation: "Why did you choose this committee?",
-      portfolio: "Portfolio / CV link (optional)",
+      committeeQuestion: "Which committee do you want to apply to?",
       submit: "Submit Application",
+      required: "This field is required.",
       note: "* This form is currently a demo — submitted data is not sent to a server. Let us know when you want to connect a real submission flow.",
       success: "Your application was received (demo). Connect this form to a real service to go live.",
     },

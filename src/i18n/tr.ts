@@ -116,10 +116,8 @@ const tr = {
   },
   applications: {
     heroTitle: "Başvurular",
-    heroSubtitle: "Takıma katılmak için üç ana daldan birini seç, başvuru penceresini aç ve formu doldur.",
-    sectionLabelLeft: "02 — KOMİTELER",
-    sectionLabelRight: "ÜÇ DAL",
-    applyLabel: "BAŞVUR",
+    heroSubtitle:
+      "Aşağıdaki formu doldur — ortasında hangi komiteye katılmak istediğini seç, o komitenin soruları otomatik olarak gelsin.",
     committees: [
       {
         id: "mekanik",
@@ -141,13 +139,9 @@ const tr = {
     ],
     form: {
       eyebrow: "BAŞVURU FORMU",
-      fullName: "Ad Soyad",
-      email: "E-posta",
-      phone: "Telefon",
-      department: "Bölüm & Sınıf",
-      motivation: "Neden bu komiteyi seçtin?",
-      portfolio: "Portfolyo / CV linki (opsiyonel)",
+      committeeQuestion: "Hangi komiteye başvurmak istiyorsun?",
       submit: "Başvuruyu Gönder",
+      required: "Bu alan zorunlu.",
       note: "* Bu form şu an demo amaçlıdır; gönderilen veriler bir sunucuya iletilmez. Gerçek başvuru akışını bağlamak istediğinizde bize haber verin.",
       success: "Başvurun alındı (demo). Gerçek gönderim için forma bir servis bağlanmalı.",
     },

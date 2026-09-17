@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import Lenis from "lenis";
 import { gsap, ScrollTrigger } from "../lib/gsapSetup";
+import { refreshScrollLimits, setLenisInstance } from "../lib/lenisInstance";
 
 export function SmoothScroll() {
   const lenisRef = useRef<Lenis | null>(null);
@@ -13,6 +14,7 @@ export function SmoothScroll() {
 
     const lenis = new Lenis({ duration: 1.15, smoothWheel: true, lerp: 0.09 });
     lenisRef.current = lenis;
+    setLenisInstance(lenis);
     lenis.on("scroll", ScrollTrigger.update);
 
     function raf(time: number) {
@@ -25,6 +27,7 @@ export function SmoothScroll() {
       gsap.ticker.remove(raf);
       lenis.destroy();
       lenisRef.current = null;
+      setLenisInstance(null);
     };
   }, []);
 
@@ -40,10 +43,7 @@ export function SmoothScroll() {
       window.scrollTo(0, 0);
     }
 
-    const id = window.setTimeout(() => {
-      lenis?.resize();
-      ScrollTrigger.refresh();
-    }, 60);
+    const id = window.setTimeout(refreshScrollLimits, 60);
 
     return () => window.clearTimeout(id);
   }, [location.pathname]);
