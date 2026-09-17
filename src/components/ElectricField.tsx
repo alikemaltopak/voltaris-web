@@ -46,7 +46,9 @@ export function ElectricField() {
 
     function resizeCanvas() {
       if (!canvas) return;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // Floor at 1: zoomed-out browsers report a fractional ratio, which would
+      // both blur the arcs and shrink the backing store below the CSS size.
+      dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -104,7 +106,9 @@ export function ElectricField() {
     function tick() {
       if (!ctx || !canvas) return;
       t += 0.016;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // The context is scaled by dpr, so the clear has to be in CSS pixels —
+      // passing the backing-store size leaves stale arcs on screen.
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
       const scrollY = window.scrollY;
       const viewportH = window.innerHeight;
 

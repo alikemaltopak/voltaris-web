@@ -243,6 +243,8 @@ ul {
 }
 
 .navbar__inner {
+  position: relative;
+  z-index: 1;
   width: 100%;
   padding: 22px 32px;
   display: flex;
@@ -251,6 +253,8 @@ ul {
 }
 
 .navbar__brand {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -294,6 +298,8 @@ ul {
 }
 
 .navbar__actions {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -362,23 +368,31 @@ ul {
 
 /* Mobile nav dropdown needs its own opaque surface (no hamburger in the reference site) */
 @media (max-width: 960px) {
+  /* Closed, the panel still measures its 78px top padding, which used to
+     cover the brand and swallow taps meant for the hamburger. Keep it out
+     of the way until it opens. */
   .navbar__links {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    padding-top: 78px;
+    padding-top: 0;
     flex-direction: column;
     gap: 0;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+    transition: max-height 0.25s ease, opacity 0.2s ease, padding-top 0.25s ease;
   }
 
   .navbar__links--open {
-    max-height: 420px;
+    padding-top: 78px;
+    max-height: 520px;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .navbar__link {
