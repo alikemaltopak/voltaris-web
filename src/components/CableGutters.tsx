@@ -7,8 +7,9 @@ const PRELOAD_CHUNK = 10;
 const MIN_WIDTH = 1180;
 
 type CableGuttersProps = {
-  /** Folder under /public/frames holding frame_0001.webp ... frame_{frameCount}.webp */
-  framesFolder: string;
+  /** Folders under /public/frames holding frame_0001.webp ... frame_{frameCount}.webp */
+  leftFolder: string;
+  rightFolder: string;
   frameCount: number;
   /** Scrubbed while this element scrolls past; defaults to the whole page. */
   triggerRef?: React.RefObject<HTMLElement | null>;
@@ -19,26 +20,31 @@ type CableGuttersProps = {
  * either side of a narrow text column. Purely decorative: the wrapper never
  * takes pointer events, so the form underneath stays clickable.
  */
-export function CableGutters({ framesFolder, frameCount, triggerRef }: CableGuttersProps) {
+export function CableGutters({ leftFolder, rightFolder, frameCount, triggerRef }: CableGuttersProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLCanvasElement>(null);
   const rightRef = useRef<HTMLCanvasElement>(null);
-  const imagesRef = useRef<HTMLImageElement[]>([]);
+  const leftImagesRef = useRef<HTMLImageElement[]>([]);
+  const rightImagesRef = useRef<HTMLImageElement[]>([]);
   const frameRef = useRef(0);
   const [ready, setReady] = useState(false);
   const [wideEnough, setWideEnough] = useState(
     () => typeof window === "undefined" || window.innerWidth >= MIN_WIDTH,
   );
 
-  const framePath = (i: number) => `/frames/${framesFolder}/frame_${String(i + 1).padStart(4, "0")}.webp`;
+  const framePath = (folder: string, i: number) =>
+    `/frames/${folder}/frame_${String(i + 1).padStart(4, "0")}.webp`;
 
   function draw(index: number) {
-    const img = imagesRef.current[index];
-    if (!img || !img.complete) return;
+    const pairs = [
+      [leftRef, leftImagesRef] as const,
+      [rightRef, rightImagesRef] as const,
+    ];
 
-    for (const ref of [leftRef, rightRef]) {
+    for (const [ref, imagesRef] of pairs) {
       const canvas = ref.current;
-      if (!canvas) continue;
+      const img = imagesRef.current[index];
+      if (!canvas || !img || !img.complete) continue;
       const ctx = canvas.getContext("2d");
       if (!ctx) continue;
 
@@ -72,22 +78,27 @@ export function CableGutters({ framesFolder, frameCount, triggerRef }: CableGutt
   useLayoutEffect(() => {
     if (!wideEnough) return undefined;
     let cancelled = false;
-    const images: HTMLImageElement[] = new Array(frameCount);
+    const left: HTMLImageElement[] = new Array(frameCount);
+    const right: HTMLImageElement[] = new Array(frameCount);
 
-    function loadImage(index: number): Promise<void> {
+    function loadImage(folder: string, into: HTMLImageElement[], index: number): Promise<void> {
       return new Promise((resolve) => {
         const img = new Image();
         img.decoding = "async";
         img.onload = () => resolve();
         img.onerror = () => resolve();
-        img.src = framePath(index);
-        images[index] = img;
+        img.src = framePath(folder, index);
+        into[index] = img;
       });
     }
 
+    const loadPair = (index: number) =>
+      Promise.all([loadImage(leftFolder, left, index), loadImage(rightFolder, right, index)]);
+
     async function loadAll() {
-      await loadImage(0);
-      imagesRef.current = images;
+      await loadPair(0);
+      leftImagesRef.current = left;
+      rightImagesRef.current = right;
       if (cancelled) return;
       setReady(true);
       draw(0);
@@ -95,7 +106,7 @@ export function CableGutters({ framesFolder, frameCount, triggerRef }: CableGutt
       for (let start = 1; start < frameCount; start += PRELOAD_CHUNK) {
         if (cancelled) return;
         const end = Math.min(start + PRELOAD_CHUNK, frameCount);
-        await Promise.all(Array.from({ length: end - start }, (_, k) => loadImage(start + k)));
+        await Promise.all(Array.from({ length: end - start }, (_, k) => loadPair(start + k)));
       }
     }
 
@@ -103,7 +114,7 @@ export function CableGutters({ framesFolder, frameCount, triggerRef }: CableGutt
     return () => {
       cancelled = true;
     };
-  }, [wideEnough, framesFolder, frameCount]);
+  }, [wideEnough, leftFolder, rightFolder, frameCount]);
 
   useLayoutEffect(() => {
     const wrap = wrapRef.current;

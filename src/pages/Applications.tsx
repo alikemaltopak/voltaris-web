@@ -254,7 +254,7 @@ export function Applications() {
     <>
       <PageHero title={t.applications.heroTitle} subtitle={t.applications.heroSubtitle} />
 
-      <CableGutters framesFolder="cable-strand" frameCount={141} triggerRef={formSectionRef} />
+      <CableGutters leftFolder="cable-left" rightFolder="cable-right" frameCount={141} triggerRef={formSectionRef} />
 
       <section className="section application-form-page" ref={formSectionRef}>
         <div className="container container--narrow">
