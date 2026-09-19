@@ -208,11 +208,17 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
         .to({}, { duration: holdPx() / totalPx() });
     }, hero);
 
+    // The first draw can land before the layout has settled (dynamic viewport
+    // units, fonts), which would leave a stretched frame on screen until the
+    // next scroll. Redraw whenever the canvas box actually changes.
     const onResize = () => draw(frameRef.current);
     window.addEventListener("resize", onResize);
+    const observer = new ResizeObserver(onResize);
+    if (canvasRef.current) observer.observe(canvasRef.current);
 
     return () => {
       ctx.revert();
+      observer.disconnect();
       window.removeEventListener("resize", onResize);
     };
   }, [ready, frameCount]);
