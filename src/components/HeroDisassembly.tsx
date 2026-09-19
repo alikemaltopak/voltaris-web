@@ -5,7 +5,7 @@ const PRELOAD_CHUNK = 10;
 
 /** Pinned scroll distances (px): the finished car holds still, the car comes
  *  apart, then the revealed elements settle in. */
-const OPEN_HOLD_PX = { desktop: 800, mobile: 620 };
+const OPEN_HOLD_PX = { desktop: 0, mobile: 0 };
 /** The bodywork comes off over BODY_PX, the chassis over CHASSIS_PX: the
  *  panels need room to be read, the chassis parts are quicker to follow. */
 const BODY_FRAMES = 32;

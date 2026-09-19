@@ -37,7 +37,7 @@ export function Home() {
       <section className="hero" ref={heroRef}>
         <HeroDisassembly
           framesFolder="ev-assembly-v3"
-          frameCount={130}
+          frameCount={135}
           triggerRef={heroRef}
           revealRef={heroActionsRef}
         />
@@ -56,7 +56,7 @@ export function Home() {
       </section>
 
       <section className="section about">
-        <div className="container about__grid">
+        <div className="container about__grid about__grid--solo">
           <Reveal>
             <SectionHeading kicker="Voltaris" title={t.home.aboutTitle} />
             <p className="about__text">{t.home.aboutText}</p>
@@ -66,17 +66,6 @@ export function Home() {
               ))}
             </ul>
           </Reveal>
-          <figure className="about__figure">
-            <img
-              className="about__photo"
-              src="/images/takim-atolye.webp"
-              alt={t.home.aboutPhotoAlt}
-              width={1000}
-              height={1250}
-              loading="lazy"
-            />
-            <figcaption>{t.home.aboutPhotoCaption}</figcaption>
-          </figure>
         </div>
       </section>
 
@@ -93,20 +82,6 @@ export function Home() {
             <p>{t.home.missionText}</p>
           </article>
         </Reveal>
-      </section>
-
-      <section className="section gallery">
-        <div className="container">
-          <SectionHeading kicker={t.home.galleryKicker} title={t.home.galleryTitle} align="center" />
-          <Reveal className="gallery__grid" stagger=".gallery__item">
-            {t.home.gallery.map((shot) => (
-              <figure className="gallery__item" key={shot.src}>
-                <img src={shot.src} alt={shot.alt} width={1200} height={900} loading="lazy" />
-                <figcaption>{shot.caption}</figcaption>
-              </figure>
-            ))}
-          </Reveal>
-        </div>
       </section>
 
       <section className="section teaser">
