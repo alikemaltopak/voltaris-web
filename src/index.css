@@ -769,6 +769,90 @@ ul {
   background: var(--accent);
 }
 
+.about__figure {
+  margin: 0;
+  position: sticky;
+  top: 120px;
+}
+
+.about__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 1px solid var(--border-strong);
+  filter: saturate(0.85) contrast(1.05);
+}
+
+.about__figure figcaption,
+.gallery__item figcaption {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-top: 12px;
+}
+
+/* Vision & mission */
+.purpose__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.purpose__card {
+  background: var(--bg-alt);
+  padding: 44px 40px;
+}
+
+.purpose__kicker {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.purpose__card h2 {
+  font-size: clamp(1.5rem, 2.8vw, 2rem);
+  margin-bottom: 16px;
+}
+
+.purpose__card p {
+  color: var(--text-muted);
+  font-size: 1.02rem;
+}
+
+/* Workshop gallery */
+.gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.gallery__item {
+  margin: 0;
+}
+
+.gallery__item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--border-strong);
+  filter: saturate(0.85) contrast(1.05);
+  transition: filter 0.3s ease, border-color 0.3s ease;
+}
+
+.gallery__item:hover img {
+  filter: none;
+  border-color: var(--accent-dim);
+}
+
 /* Join */
 .join__inner {
   text-align: center;
@@ -1508,6 +1592,18 @@ ul {
 
   .teaser__grid,
   .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about__figure {
+    position: static;
+  }
+
+  .purpose__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gallery__grid {
     grid-template-columns: 1fr;
   }
 }

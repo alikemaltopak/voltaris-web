@@ -3,8 +3,9 @@ import { gsap } from "../lib/gsapSetup";
 
 const PRELOAD_CHUNK = 10;
 
-/** Scroll distance (px) the disassembly takes, and the pinned hold after it
- *  during which the revealed elements settle in. */
+/** Pinned scroll distances (px): the finished car holds still, the car comes
+ *  apart, then the revealed elements settle in. */
+const OPEN_HOLD_PX = { desktop: 420, mobile: 300 };
 const FRAMES_PX = { desktop: 1950, mobile: 1250 };
 const HOLD_PX = { desktop: 220, mobile: 170 };
 
@@ -118,10 +119,12 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
 
     const ctx = gsap.context(() => {
       const mobile = () => window.innerWidth < 760;
+      const openPx = () => (mobile() ? OPEN_HOLD_PX.mobile : OPEN_HOLD_PX.desktop);
       const framesPx = () => (mobile() ? FRAMES_PX.mobile : FRAMES_PX.desktop);
       const holdPx = () => (mobile() ? HOLD_PX.mobile : HOLD_PX.desktop);
-      // Share of the pinned scroll spent on the frames; the rest is the hold.
-      const framesShare = () => framesPx() / (framesPx() + holdPx());
+      const totalPx = () => openPx() + framesPx() + holdPx();
+      /** Share of the pinned scroll at which the last frame is reached. */
+      const framesDoneShare = () => (openPx() + framesPx()) / totalPx();
 
       const revealEls = revealRef?.current ? Array.from(revealRef.current.children) : [];
       const rise = revealEls.length
@@ -138,7 +141,7 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
         scrollTrigger: {
           trigger: hero,
           start: "top top",
-          end: () => "+=" + (framesPx() + holdPx()),
+          end: () => "+=" + totalPx(),
           pin: true,
           scrub: 0.5,
           anticipatePin: 1,
@@ -146,7 +149,7 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
           onUpdate: (self) => {
             // Played on its own clock rather than scrubbed, so the buttons
             // always get a full rise however fast the page is scrolled.
-            const done = self.progress >= framesShare() - 0.01;
+            const done = self.progress >= framesDoneShare() - 0.01;
             if (!rise || done === revealed) return;
             revealed = done;
             if (done) rise.play();
@@ -155,10 +158,11 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
         },
       });
 
-      tl.to(state, {
+      // Hold on the finished car first, so it is read before it comes apart.
+      tl.to({}, { duration: openPx() / totalPx() }).to(state, {
         step: frameCount - 1,
         ease: "none",
-        duration: framesShare(),
+        duration: framesPx() / totalPx(),
         onUpdate: () => {
           const index = Math.round(state.step);
           if (index !== frameRef.current) {
@@ -166,7 +170,7 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
             draw(index);
           }
         },
-      }).to({}, { duration: 1 - framesShare() });
+      }).to({}, { duration: holdPx() / totalPx() });
     }, hero);
 
     const onResize = () => draw(frameRef.current);

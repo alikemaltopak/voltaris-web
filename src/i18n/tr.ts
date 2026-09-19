@@ -23,15 +23,42 @@ const tr = {
     scrollHint: "KAYDIR",
     aboutTitle: "Biz Kimiz?",
     aboutText:
-      "Voltaris, İzmir Yüksek Teknoloji Enstitüsü bünyesinde farklı mühendislik disiplinlerinden öğrencilerin bir araya gelerek kurduğu elektrikli araç yarış takımıdır. Amacımız; enerji verimliliği yüksek, güvenli ve rekabetçi bir elektromobil geliştirerek ulusal ve uluslararası yarışmalarda üniversitemizi temsil etmek.",
+      "Voltaris, İzmir Yüksek Teknoloji Enstitüsü'nde iki yıl önce kurulan bir elektrikli araç takımı. Bu iki yılda sıfırdan bir elektromobil tasarladık, kendi atölyemizde ürettik ve TEKNOFEST pistine çıkardık. Bu yıl takım yeni bir kadroya devredildi; devraldığımız şey yalnızca bir araç değil, iki yıllık tasarım arşivi, üretim tecrübesi ve kurulmuş bir atölye düzeni. Şimdi aynı yerden devam ediyor, 2027 TEKNOFEST Efficiency Challenge için çalışıyoruz.",
     aboutPoints: [
-      "Aerodinamik ve şasi tasarımı",
-      "Batarya yönetim sistemleri",
-      "Motor kontrol ve güç elektroniği",
-      "Yazılım, telemetri ve veri analitiği",
+      "6061-T6 alüminyum şasi ve FIA standartlarına uygun roll cage",
+      "Kendi tasarlayıp ürettiğimiz batarya yönetim sistemi kartı",
+      "Motor sürücü ve araç kontrol sistemi geliştirme",
+      "Atölyemizdeki lazer PCB tezgâhında kendi devre üretimimiz",
     ],
-    teamPhotoTitle: "Takım Fotoğrafı",
-    teamPhotoText: "Takım fotoğrafınızı paylaştığınızda bu alana yerleştireceğiz.",
+    aboutPhotoAlt: "Voltaris ekibinden bir üye, tamamlanmış şasi ve roll cage üzerinde çalışırken.",
+    aboutPhotoCaption: "Atölyede şasi ve roll cage montajı",
+    visionKicker: "Nereye gidiyoruz",
+    visionTitle: "Vizyonumuz",
+    visionText:
+      "Elektrikli araç mühendisliğini İYTE'de dönemlik bir proje olmaktan çıkarıp sürekli işleyen bir üretim hattına dönüştürmek. Kadro değiştiğinde sıfırdan başlamayan, her yıl bir öncekinin bıraktığı yerden devam eden bir takım olmak. Ve İYTE'nin adını TEKNOFEST pistinde üst sıralarda görmek.",
+    missionKicker: "Nasıl çalışıyoruz",
+    missionTitle: "Misyonumuz",
+    missionText:
+      "Tamamen öğrencilerin tasarladığı, ürettiği ve test ettiği; güvenli ve enerji verimli bir elektromobili her yıl pistte çalışır halde tutmak. Bunu yaparken bilgiyi kişiye değil arşive bağlamak — her çizim, her kart ve her rapor bir sonraki kadroya kalsın diye.",
+    galleryKicker: "Atölyeden",
+    galleryTitle: "İki Yılda Ne Yaptık?",
+    gallery: [
+      {
+        src: "/images/arac-cad.webp",
+        caption: "Şasi, roll cage ve süspansiyonun SolidWorks tasarımı",
+        alt: "Voltaris elektromobilinin şasi, roll cage, koltuk ve süspansiyonunu gösteren SolidWorks modeli.",
+      },
+      {
+        src: "/images/kabuk-kalibi.webp",
+        caption: "Sanayi iş birliğiyle kabuk kalıbı üretimi",
+        alt: "Bir üretim atölyesinde, kompozit kabuk kalıbının yanında duran takım üyesi ve atölye çalışanları.",
+      },
+      {
+        src: "/images/bms-karti.webp",
+        caption: "Kendi tasarladığımız batarya yönetim sistemi kartı",
+        alt: "Voltaris için tasarlanıp üretilmiş batarya yönetim sistemi baskı devre kartı.",
+      },
+    ],
     chassisTitle: "Voltaris elektromobil montaj animasyonu",
     vehicleTeaserTitle: "Yarış Aracımız",
     vehicleTeaserText:

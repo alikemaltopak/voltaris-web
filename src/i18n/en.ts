@@ -26,15 +26,42 @@ const en: Dictionary = {
     scrollHint: "SCROLL",
     aboutTitle: "Who We Are",
     aboutText:
-      "Voltaris is the electric vehicle racing team of Izmir Institute of High Technology, bringing together students from different engineering disciplines. Our goal is to design an energy-efficient, safe, and competitive electromobile to represent our university at national and international competitions.",
+      "Voltaris is an electric vehicle team founded two years ago at Izmir Institute of Technology. In those two years we designed an electromobile from scratch, built it in our own workshop and took it to the TEKNOFEST track. This year the team passed to a new crew; what we inherited is not just a car, but two years of design archives, manufacturing experience and a workshop that already runs. We are picking up from there, working towards the 2027 TEKNOFEST Efficiency Challenge.",
     aboutPoints: [
-      "Aerodynamics and chassis design",
-      "Battery management systems",
-      "Motor control and power electronics",
-      "Software, telemetry, and data analytics",
+      "6061-T6 aluminium chassis and an FIA-compliant roll cage",
+      "A battery management board we design and build ourselves",
+      "Motor driver and vehicle control system development",
+      "In-house circuit production on our laser PCB machine",
     ],
-    teamPhotoTitle: "Team Photo",
-    teamPhotoText: "We'll place your team photo here once you share it.",
+    aboutPhotoAlt: "A Voltaris member working on the completed chassis and roll cage.",
+    aboutPhotoCaption: "Chassis and roll cage assembly in the workshop",
+    visionKicker: "Where we are going",
+    visionTitle: "Our Vision",
+    visionText:
+      "To turn electric vehicle engineering at IZTECH from a one-semester project into a production line that keeps running. To be a team that does not start over when the crew changes, but continues each year from where the previous one left off. And to see IZTECH near the top of the TEKNOFEST standings.",
+    missionKicker: "How we work",
+    missionTitle: "Our Mission",
+    missionText:
+      "To keep a safe, energy-efficient electromobile — designed, built and tested entirely by students — running on the track every year. And to tie what we learn to the archive rather than to individuals, so every drawing, every board and every report is still there for the next crew.",
+    galleryKicker: "From the workshop",
+    galleryTitle: "What We Built in Two Years",
+    gallery: [
+      {
+        src: "/images/arac-cad.webp",
+        caption: "SolidWorks design of the chassis, roll cage and suspension",
+        alt: "SolidWorks model showing the Voltaris electromobile's chassis, roll cage, seats and suspension.",
+      },
+      {
+        src: "/images/kabuk-kalibi.webp",
+        caption: "Body shell mould production with an industry partner",
+        alt: "A team member and workshop staff standing beside the composite body shell mould in a production shop.",
+      },
+      {
+        src: "/images/bms-karti.webp",
+        caption: "The battery management board we designed ourselves",
+        alt: "The printed circuit board designed and manufactured for the Voltaris battery management system.",
+      },
+    ],
     chassisTitle: "Voltaris electromobile assembly animation",
     vehicleTeaserTitle: "Our Race Vehicle",
     vehicleTeaserText:

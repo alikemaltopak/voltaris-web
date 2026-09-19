@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { SectionHeading } from "../components/SectionHeading";
-import { PlaceholderBox } from "../components/PlaceholderBox";
 import { HeroTitle } from "../components/HeroTitle";
 import { Reveal } from "../components/Reveal";
 import { HeroDisassembly } from "../components/HeroDisassembly";
@@ -67,7 +66,46 @@ export function Home() {
               ))}
             </ul>
           </Reveal>
-          <PlaceholderBox icon="image" title={t.home.teamPhotoTitle} text={t.home.teamPhotoText} />
+          <figure className="about__figure">
+            <img
+              className="about__photo"
+              src="/images/takim-atolye.webp"
+              alt={t.home.aboutPhotoAlt}
+              width={1000}
+              height={1250}
+              loading="lazy"
+            />
+            <figcaption>{t.home.aboutPhotoCaption}</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section className="section section--alt purpose">
+        <Reveal className="container purpose__grid" stagger=".purpose__card">
+          <article className="purpose__card">
+            <span className="purpose__kicker">{t.home.visionKicker}</span>
+            <h2>{t.home.visionTitle}</h2>
+            <p>{t.home.visionText}</p>
+          </article>
+          <article className="purpose__card">
+            <span className="purpose__kicker">{t.home.missionKicker}</span>
+            <h2>{t.home.missionTitle}</h2>
+            <p>{t.home.missionText}</p>
+          </article>
+        </Reveal>
+      </section>
+
+      <section className="section gallery">
+        <div className="container">
+          <SectionHeading kicker={t.home.galleryKicker} title={t.home.galleryTitle} align="center" />
+          <Reveal className="gallery__grid" stagger=".gallery__item">
+            {t.home.gallery.map((shot) => (
+              <figure className="gallery__item" key={shot.src}>
+                <img src={shot.src} alt={shot.alt} width={1200} height={900} loading="lazy" />
+                <figcaption>{shot.caption}</figcaption>
+              </figure>
+            ))}
+          </Reveal>
         </div>
       </section>
 
