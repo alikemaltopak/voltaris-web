@@ -2,3 +2,4 @@ node_modules
 dist
 cad-assets
 public/frames/ev-assembly
+public/frames/ev-assembly-v2
