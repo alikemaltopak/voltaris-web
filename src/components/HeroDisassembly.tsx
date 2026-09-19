@@ -219,7 +219,14 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
 
   return (
     <div className="hero-disassembly" aria-hidden="true">
-      <canvas ref={canvasRef} />
+      {/* Until the frames can paint, the finished car shows as the canvas's
+          own background: same element, so the box and the contain fit match
+          exactly. It goes once the sequence takes over, or it would show
+          through the gaps in the disassembled car. */}
+      <canvas
+        ref={canvasRef}
+        style={ready ? undefined : { backgroundImage: `url(${framePath(frameCount - 1)})` }}
+      />
     </div>
   );
 }

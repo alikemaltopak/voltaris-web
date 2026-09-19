@@ -433,18 +433,22 @@ ul {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 6vh;
 }
 
 .hero-disassembly canvas {
   display: block;
+  position: absolute;
+  bottom: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
   width: min(100%, 1360px);
   height: 58%;
   opacity: 0.92;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
+
 
 /* Hero buttons wait off-stage until the car has come apart; HeroDisassembly
    then raises them into place. */
@@ -769,28 +773,9 @@ ul {
   background: var(--accent);
 }
 
-.about__figure {
-  margin: 0;
-  position: sticky;
-  top: 120px;
-}
-
-.about__photo {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  border: 1px solid var(--border-strong);
-  filter: saturate(0.85) contrast(1.05);
-}
-
-.about__figure figcaption,
-.gallery__item figcaption {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
-  margin-top: 12px;
+/* No photo alongside the intro yet — keep the text at a readable measure. */
+.about__grid--solo {
+  grid-template-columns: minmax(0, 760px);
 }
 
 /* Vision & mission */
@@ -825,32 +810,6 @@ ul {
 .purpose__card p {
   color: var(--text-muted);
   font-size: 1.02rem;
-}
-
-/* Workshop gallery */
-.gallery__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
-}
-
-.gallery__item {
-  margin: 0;
-}
-
-.gallery__item img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border: 1px solid var(--border-strong);
-  filter: saturate(0.85) contrast(1.05);
-  transition: filter 0.3s ease, border-color 0.3s ease;
-}
-
-.gallery__item:hover img {
-  filter: none;
-  border-color: var(--accent-dim);
 }
 
 /* Join */
@@ -1248,6 +1207,85 @@ ul {
   color: #f87171;
 }
 
+/* Hidden bot trap — never shown, never focusable, never read aloud. */
+.honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* File upload field */
+.file-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.file-field__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.file-field__pick {
+  cursor: pointer;
+}
+
+.file-field__input:focus-visible + .btn {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.file-field__hint {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.file-field__chosen {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.file-field__remove {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-decoration: underline;
+}
+
+.file-field__remove:hover {
+  color: var(--accent);
+}
+
+.file-field--invalid .btn {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
 .form-field__control {
   background: var(--bg-alt);
   border: 1px solid var(--border-strong);
@@ -1595,15 +1633,7 @@ ul {
     grid-template-columns: 1fr;
   }
 
-  .about__figure {
-    position: static;
-  }
-
   .purpose__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .gallery__grid {
     grid-template-columns: 1fr;
   }
 }
