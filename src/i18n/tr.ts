@@ -16,9 +16,8 @@ const tr = {
   home: {
     heroKicker: "İzmir Yüksek Teknoloji Enstitüsü",
     heroTitle: "VOLTARIS",
-    heroSubtitle: "Elektromobil Takımı",
-    heroTagline:
-      "Sürdürülebilir mobilite için tasarlıyor, mühendislikle sınırları zorluyor, pistte enerjimizi konuşturuyoruz.",
+    heroSubtitle: "2027 Teknofest Elektromobil Takımı",
+    heroTagline: "",
     ctaVehicle: "Aracımızı Keşfet",
     ctaSponsor: "Sponsor Ol",
     scrollHint: "KAYDIR",

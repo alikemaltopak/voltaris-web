@@ -427,15 +427,60 @@ ul {
   padding: 120px 24px 60px;
 }
 
+/* Finished car behind the hero copy; it comes apart as the hero scrolls. */
+.hero-disassembly {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6vh;
+}
+
+.hero-disassembly canvas {
+  display: block;
+  width: min(100%, 1360px);
+  height: 58%;
+  opacity: 0.92;
+}
+
+/* Hero buttons wait off-stage until the car has come apart; HeroDisassembly
+   then raises them into place. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero__actions--await > * {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(70px);
+  }
+}
+
+/* The ghost button lands on the white bodywork, where cyan-on-white would
+   wash out. */
+.hero .btn--ghost {
+  background: rgba(6, 8, 10, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+/* The tagline and scroll hint can land on the car body, so they get a dark
+   halo for contrast — dark theme only, where it blends into the page; on the
+   light theme it reads as a smudge. */
+:root:not([data-theme="light"]) .hero__tagline,
+:root:not([data-theme="light"]) .hero__scroll-hint {
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7), 0 0 34px rgba(0, 0, 0, 0.5);
+}
+
 .hero__kicker {
   position: relative;
   display: inline-block;
-  color: var(--text-muted);
+  color: var(--text);
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.28em;
+  font-size: clamp(13px, 1.25vw, 17px);
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   margin-bottom: 34px;
+  font-weight: 700;
 }
 
 .hero__title {
@@ -453,11 +498,12 @@ ul {
 
 .hero__subtitle {
   position: relative;
-  font-size: clamp(1.2rem, 2.6vw, 1.6rem);
+  font-size: clamp(0.95rem, 1.7vw, 1.2rem);
   font-family: var(--font-display);
   color: var(--text-muted);
-  margin: 14px 0 0;
-  font-weight: 600;
+  margin: 18px 0 0;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 .hero__tagline {
@@ -1467,6 +1513,11 @@ ul {
 }
 
 @media (max-width: 560px) {
+  .hero__kicker {
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+  }
+
   .section {
     padding: 64px 0;
   }

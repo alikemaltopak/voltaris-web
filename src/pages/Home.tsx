@@ -5,12 +5,13 @@ import { SectionHeading } from "../components/SectionHeading";
 import { PlaceholderBox } from "../components/PlaceholderBox";
 import { HeroTitle } from "../components/HeroTitle";
 import { Reveal } from "../components/Reveal";
-import { AssemblyReveal } from "../components/AssemblyReveal";
+import { HeroDisassembly } from "../components/HeroDisassembly";
 import { gsap } from "../lib/gsapSetup";
 
 export function Home() {
   const { t } = useLanguage();
   const heroRef = useRef<HTMLElement>(null);
+  const heroActionsRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const el = heroRef.current;
@@ -19,7 +20,7 @@ export function Home() {
     if (reduceMotion) return undefined;
 
     const ctx = gsap.context(() => {
-      gsap.from(".hero__kicker, .hero__subtitle, .hero__tagline, .hero__actions, .hero__scroll-hint", {
+      gsap.from(".hero__kicker, .hero__subtitle, .hero__tagline, .hero__scroll-hint", {
         y: 22,
         opacity: 0,
         duration: 0.9,
@@ -35,11 +36,16 @@ export function Home() {
   return (
     <>
       <section className="hero" ref={heroRef}>
+        <HeroDisassembly
+          framesFolder="ev-assembly-v3"
+          frameCount={158}
+          triggerRef={heroRef}
+          revealRef={heroActionsRef}
+        />
         <span className="hero__kicker">{t.home.heroKicker}</span>
         <HeroTitle text={t.home.heroTitle} className="hero__title" />
         <p className="hero__subtitle">{t.home.heroSubtitle}</p>
-        <p className="hero__tagline">{t.home.heroTagline}</p>
-        <div className="hero__actions">
+        <div className="hero__actions hero__actions--await" ref={heroActionsRef}>
           <Link to="/arac" className="btn btn--primary">
             {t.home.ctaVehicle}
           </Link>
@@ -49,12 +55,6 @@ export function Home() {
         </div>
         <span className="hero__scroll-hint">{t.home.scrollHint}</span>
       </section>
-
-      <AssemblyReveal
-        ariaLabel={t.home.chassisTitle}
-        framesFolder="ev-assembly-v2"
-        frameCount={188}
-      />
 
       <section className="section about">
         <div className="container about__grid">
