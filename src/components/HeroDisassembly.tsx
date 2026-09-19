@@ -5,8 +5,8 @@ const PRELOAD_CHUNK = 10;
 
 /** Scroll distance (px) the disassembly takes, and the pinned hold after it
  *  during which the revealed elements settle in. */
-const FRAMES_PX = { desktop: 2200, mobile: 1400 };
-const HOLD_PX = { desktop: 600, mobile: 450 };
+const FRAMES_PX = { desktop: 1950, mobile: 1250 };
+const HOLD_PX = { desktop: 220, mobile: 170 };
 
 type HeroDisassemblyProps = {
   /** Folder under /public/frames holding frame_0001.webp ... frame_{frameCount}.webp */
