@@ -444,9 +444,6 @@ ul {
   width: min(100%, 1360px);
   height: 58%;
   opacity: 0.92;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
 }
 
 
