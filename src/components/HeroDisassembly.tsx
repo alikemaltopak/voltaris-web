@@ -37,10 +37,23 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
   const sourceIndex = (step: number) => frameCount - 1 - step;
   const framePath = (i: number) => `/frames/${framesFolder}/frame_${String(i + 1).padStart(4, "0")}.webp`;
 
+  /** Nearest step that actually has a decoded frame, so a stale bundle asking
+   *  for frames that no longer exist still paints something sensible. */
+  function nearestLoaded(step: number): HTMLImageElement | null {
+    const images = imagesRef.current;
+    for (let d = 0; d < images.length; d++) {
+      const before = images[step - d];
+      if (before?.complete && before.naturalWidth > 0) return before;
+      const after = images[step + d];
+      if (after?.complete && after.naturalWidth > 0) return after;
+    }
+    return null;
+  }
+
   function draw(step: number) {
     const canvas = canvasRef.current;
-    const img = imagesRef.current[step];
-    if (!canvas || !img || !img.complete) return;
+    const img = nearestLoaded(step);
+    if (!canvas || !img) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -88,11 +101,16 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
     }
 
     async function loadAll() {
-      await loadStep(0);
+      let first = 0;
+      await loadStep(first);
+      while (first < frameCount - 1 && !(images[first]?.naturalWidth > 0)) {
+        first += 1;
+        await loadStep(first);
+      }
       imagesRef.current = images;
       if (cancelled) return;
       setReady(true);
-      draw(0);
+      draw(first);
 
       for (let start = 1; start < frameCount; start += PRELOAD_CHUNK) {
         if (cancelled) return;
