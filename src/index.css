@@ -616,16 +616,20 @@ ul {
     background 0.45s ease;
 }
 
-.stat-card:hover,
-.department-card:hover,
-.member-card:hover,
-.timeline__step:hover,
-.tier-card:hover,
-.teaser__card:hover,
-.komite-card:hover {
-  transform: translateY(-8px);
-  border-color: var(--accent-dim);
-  background: var(--surface-2);
+/* Touch devices keep :hover latched after a tap, which leaves cards floating
+   8px above the page until you tap something else. Pointer devices only. */
+@media (hover: hover) {
+  .stat-card:hover,
+  .department-card:hover,
+  .member-card:hover,
+  .timeline__step:hover,
+  .tier-card:hover,
+  .teaser__card:hover,
+  .komite-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-dim);
+    background: var(--surface-2);
+  }
 }
 
 .stat-card {
@@ -1321,12 +1325,30 @@ ul {
   font-size: 0.85rem;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  /* `manipulation` drops the browser's double-tap-zoom wait so taps register
+     immediately; the tap highlight would otherwise flash over our own state. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease,
+    transform 0.12s ease;
 }
 
-.option-pill:hover {
-  border-color: var(--accent);
-  color: var(--text);
+@media (hover: hover) {
+  .option-pill:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+}
+
+.option-pill:active {
+  transform: scale(0.97);
+}
+
+.option-pill:focus-visible,
+.scale-pill:focus-visible,
+.komite-card--choice:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .option-pill--active {
@@ -1351,12 +1373,21 @@ ul {
   font-family: var(--font-mono);
   font-size: 0.95rem;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease,
+    transform 0.12s ease;
 }
 
-.scale-pill:hover {
-  border-color: var(--accent);
-  color: var(--text);
+@media (hover: hover) {
+  .scale-pill:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+}
+
+.scale-pill:active {
+  transform: scale(0.93);
 }
 
 .scale-pill--active {
@@ -1384,6 +1415,7 @@ ul {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   flex-shrink: 0;
+  transition: border-color 0.16s ease, color 0.16s ease;
 }
 
 .option-pill--ranked.option-pill--active .option-pill__rank {
@@ -1517,6 +1549,25 @@ ul {
 .komite-card--choice {
   position: relative;
   padding: 22px 52px 22px 24px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  /* A picker, not a teaser: answer the tap quickly instead of riding the
+     cards' slow 0.45s easing. */
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.12s ease;
+}
+
+/* No 8px float here — it makes choosing a committee feel mushy and shifts the
+   questions that mount underneath. */
+@media (hover: hover) {
+  .komite-card--choice:hover {
+    transform: none;
+    border-color: var(--accent-dim);
+    background: var(--surface-2);
+  }
+}
+
+.komite-card--choice:active {
+  transform: scale(0.995);
 }
 
 .komite-card--choice h3 {
@@ -1665,6 +1716,14 @@ ul {
   * {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* Without a transition the press scale would snap rather than ease, which
+     is exactly the motion this preference asks us to drop. */
+  .option-pill:active,
+  .scale-pill:active,
+  .komite-card--choice:active {
+    transform: none;
   }
 }
 

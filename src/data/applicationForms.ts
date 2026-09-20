@@ -6,7 +6,8 @@ export type QuestionType =
   | "coklu_secim"
   | "coklu_secim_siralamali"
   | "olcek_1_5"
-  | "uzun_metin";
+  | "uzun_metin"
+  | "dosya";
 
 export type Question = {
   id: string;
@@ -80,10 +81,9 @@ export const applicationFormsTr: ApplicationFormsData = {
     },
     {
       id: "cv_on_yazi",
-      tip: "kisa_metin",
-      soru: "Ön yazının veya özgeçmişinin bağlantısı",
-      yardimciMetin:
-        "Google Drive, LinkedIn veya PDF linki — dosya yükleme yok, sadece bağlantı yapıştır. Yoksa boş bırakabilirsin.",
+      tip: "dosya",
+      soru: "Ön yazın veya özgeçmişin",
+      yardimciMetin: "Hazır bir CV'n yoksa boş bırakabilirsin, bu alan zorunlu değil.",
       zorunlu: false,
     },
     {
@@ -305,10 +305,9 @@ export const applicationFormsEn: ApplicationFormsData = {
     },
     {
       id: "cv_on_yazi",
-      tip: "kisa_metin",
-      soru: "Link to your cover letter or resume",
-      yardimciMetin:
-        "Google Drive, LinkedIn, or a PDF link — no file upload, just paste a link. Leave blank if you don't have one.",
+      tip: "dosya",
+      soru: "Your cover letter or resume",
+      yardimciMetin: "If you don't have one ready, leave it blank; this field is optional.",
       zorunlu: false,
     },
     {

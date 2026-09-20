@@ -1,4 +1,12 @@
-import { useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { PageHero } from "../components/PageHero";
 import { CableGutters } from "../components/CableGutters";
@@ -6,26 +14,30 @@ import { SectionHeading } from "../components/SectionHeading";
 import { Reveal } from "../components/Reveal";
 import { getApplicationForms, type CommitteeId, type Question } from "../data/applicationForms";
 import { refreshScrollLimits, scrollToTop } from "../lib/lenisInstance";
+import {
+  isEmptyAnswer,
+  isUploadedFile,
+  MAX_FILE_BYTES,
+  readFileAsBase64,
+  submitApplication,
+  type AnswerValue,
+  type Answers,
+} from "../lib/submitApplication";
 
-type AnswerValue = string | string[];
-type Answers = Record<string, AnswerValue>;
-
-function isEmpty(value: AnswerValue | undefined): boolean {
-  if (value === undefined) return true;
-  if (Array.isArray(value)) return value.length === 0;
-  return value.trim().length === 0;
-}
+type FormStrings = ReturnType<typeof useLanguage>["t"]["applications"]["form"];
 
 function QuestionField({
   question,
   value,
   invalid,
   onChange,
+  strings,
 }: {
   question: Question;
   value: AnswerValue | undefined;
   invalid: boolean;
   onChange: (value: AnswerValue) => void;
+  strings: FormStrings;
 }) {
   const inputClass = invalid ? "form-field__control form-field__control--invalid" : "form-field__control";
 
@@ -152,9 +164,74 @@ function QuestionField({
         </div>
       );
     }
+    case "dosya":
+      return <FileField value={value} invalid={invalid} onChange={onChange} strings={strings} />;
     default:
       return null;
   }
+}
+
+function FileField({
+  value,
+  invalid,
+  onChange,
+  strings,
+}: {
+  value: AnswerValue | undefined;
+  invalid: boolean;
+  onChange: (value: AnswerValue) => void;
+  strings: FormStrings;
+}) {
+  const [tooLarge, setTooLarge] = useState(false);
+  const file = isUploadedFile(value) ? value : undefined;
+
+  async function handlePick(event: ChangeEvent<HTMLInputElement>) {
+    const picked = event.target.files?.[0];
+    // Aynı dosya tekrar seçilebilsin diye input'u her seferinde sıfırla.
+    event.target.value = "";
+    if (!picked) return;
+
+    if (picked.size > MAX_FILE_BYTES) {
+      setTooLarge(true);
+      return;
+    }
+    setTooLarge(false);
+    onChange(await readFileAsBase64(picked));
+  }
+
+  return (
+    <div className={"file-field" + (invalid ? " file-field--invalid" : "")}>
+      <label className="file-field__pick">
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx,.odt,.png,.jpg,.jpeg"
+          className="file-field__input"
+          onChange={handlePick}
+        />
+        <span className="btn btn--ghost btn--sm">{file ? strings.fileReplace : strings.fileChoose}</span>
+      </label>
+
+      {file ? (
+        <span className="file-field__chosen">
+          {file.adi}
+          <button
+            type="button"
+            className="file-field__remove"
+            onClick={() => {
+              setTooLarge(false);
+              onChange("");
+            }}
+          >
+            {strings.fileRemove}
+          </button>
+        </span>
+      ) : (
+        <span className="file-field__hint">{strings.fileHint}</span>
+      )}
+
+      {tooLarge && <span className="form-field__error">{strings.fileTooLarge}</span>}
+    </div>
+  );
 }
 
 function QuestionBlock({ number, children }: { number: number; children: ReactNode }) {
@@ -174,7 +251,11 @@ export function Applications() {
   const [invalidIds, setInvalidIds] = useState<Set<string>>(new Set());
   const [selectedCommittee, setSelectedCommittee] = useState<CommitteeId | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(false);
   const formSectionRef = useRef<HTMLElement>(null);
+  // Bal küpü: ekranda görünmez, yalnızca formu körlemesine dolduran botlar yazar.
+  const honeypotRef = useRef<HTMLInputElement>(null);
 
   const formsData = useMemo(() => getApplicationForms(lang), [lang]);
   const selectedForm = selectedCommittee ? formsData.formlar[selectedCommittee] : undefined;
@@ -210,12 +291,14 @@ export function Applications() {
     });
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (sending) return;
+
     const questions = [...formsData.ortakSorular, ...(selectedForm?.ozelSorular ?? [])];
     const nextInvalid = new Set<string>();
     for (const question of questions) {
-      if (question.zorunlu && isEmpty(answers[question.id])) {
+      if (question.zorunlu && isEmptyAnswer(answers[question.id])) {
         nextInvalid.add(question.id);
       }
     }
@@ -225,8 +308,25 @@ export function Applications() {
       firstInvalidEl?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    setSubmitted(true);
-    scrollToTop({ immediate: true });
+
+    setSending(true);
+    setSendError(false);
+    try {
+      const committee = t.applications.committees.find((item) => item.id === selectedCommittee);
+      await submitApplication({
+        committeeName: committee?.name ?? String(selectedCommittee),
+        questions,
+        answers,
+        honeypot: honeypotRef.current?.value ?? "",
+      });
+      setSubmitted(true);
+      scrollToTop({ immediate: true });
+    } catch {
+      // Ayrıntıyı başvurana göstermiyoruz; yapabileceği tek şey tekrar denemek.
+      setSendError(true);
+    } finally {
+      setSending(false);
+    }
   }
 
   function renderQuestion(question: Question) {
@@ -242,6 +342,7 @@ export function Applications() {
           value={answers[question.id]}
           invalid={invalidIds.has(question.id)}
           onChange={(value) => setAnswer(question.id, value)}
+          strings={t.applications.form}
         />
         {invalidIds.has(question.id) && (
           <span className="form-field__error">{t.applications.form.required}</span>
@@ -273,6 +374,15 @@ export function Applications() {
               <p className="note">{t.applications.closingNote}</p>
 
               <form className="question-form-page" onSubmit={handleSubmit} noValidate>
+                <input
+                  ref={honeypotRef}
+                  type="text"
+                  name="website"
+                  className="honeypot"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                />
                 {formsData.ortakSorular.map((question, index) => (
                   <QuestionBlock number={index + 1} key={question.id}>
                     {renderQuestion(question)}
@@ -317,9 +427,14 @@ export function Applications() {
 
                     <Reveal>
                       <div className="question-form-page__submit">
-                        <button type="submit" className="btn btn--primary">
-                          {t.applications.form.submit}
+                        <button type="submit" className="btn btn--primary" disabled={sending}>
+                          {sending ? t.applications.form.submitting : t.applications.form.submit}
                         </button>
+                        {sendError && (
+                          <p className="form-field__error" role="alert">
+                            {t.applications.form.error}
+                          </p>
+                        )}
                         <p className="note">{t.applications.form.note}</p>
                       </div>
                     </Reveal>

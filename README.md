@@ -60,10 +60,17 @@ devre dışı kalır / doğrudan son haliyle görünür).
 
 ## Başvurular sayfası
 
-`/basvurular` sayfasında üç komite kartı (Mekanik, Elektrik, Destek) yer alır. Bir
-karta tıklamak, o komiteye özel bir başvuru penceresi (modal form) açar. Form şu an
-**demo amaçlıdır** — gönderilen veriler hiçbir sunucuya iletilmez. Gerçek bir başvuru
-akışına bağlamak isterseniz (Formspree, Google Forms, kendi API'niz vb.) haber verin.
+`/basvurular` sayfasında tek bir form var: ortak sorular, ortada komite seçimi
+(Mekanik / Elektrik / Destek) ve seçilen komitenin kendi soruları.
+
+Gönderilen başvurular bir **Google Apps Script** uç noktasına gidiyor; script
+başvuruyu komitesine ait e-tablo sayfasına satır olarak ekliyor, yüklenen CV'yi
+Drive'a kaydedip satıra bağlantısını koyuyor. Kurulum ve işleyiş:
+[`apps-script/KURULUM.md`](apps-script/KURULUM.md).
+
+Çalışması için iki ortam değişkeni gerekir (`.env.example`'a bak):
+`VITE_BASVURU_ENDPOINT` ve `VITE_BASVURU_ANAHTARI`. Tanımlı değilse form doğrulama
+yapar ama gönderimde hata mesajı gösterir.
 
 ## İçeriği güncelleme
 
@@ -72,7 +79,6 @@ için iki dosyada da ilgili anahtarı güncellemeniz yeterli.
 
 Şu an **placeholder** olan ve gerçek verilerle değiştirilmesi gereken yerler:
 
-- **Takım fotoğrafı** — Ana Sayfa "Biz Kimiz" bölümü (`src/pages/Home.tsx`)
 - **Üye fotoğrafları / isimleri** — Takım sayfası (`src/pages/Team.tsx`)
 - **Araç fotoğrafları** — Araç sayfası galeri bölümü (`src/pages/Vehicle.tsx`)
 - **3D araç modeli** — Araç sayfası, `PlaceholderBox icon="model"` — `.glb`/`.gltf`
@@ -81,7 +87,8 @@ için iki dosyada da ilgili anahtarı güncellemeniz yeterli.
 - **Teknik özellikler** — Araç sayfası özellik tablosu (menzil, güç, ağırlık vb.)
 - **Sponsor logoları** — Sponsorlar sayfası logo alanı
 - **İletişim formu** — Şu an demo amaçlıdır, hiçbir sunucuya veri göndermez; gerçek
-  gönderim için bir form servisine (Formspree, e-posta API'si vb.) bağlanması gerekir
+  gönderim için bir form servisine bağlanması gerekir (başvuru formu bağlandı,
+  iletişim formu bağlanmadı)
 
 ## Renk paleti ve tasarım
 
