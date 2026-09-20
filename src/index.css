@@ -428,14 +428,14 @@ ul {
 }
 
 /* Finished car behind the hero copy; it comes apart as the hero scrolls. */
-.hero-disassembly {
+.hero-assembly {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
 }
 
-.hero-disassembly canvas {
+.hero-assembly canvas {
   display: block;
   position: absolute;
   bottom: 6vh;
@@ -447,8 +447,8 @@ ul {
 }
 
 
-/* Hero buttons wait off-stage until the car has come apart; HeroDisassembly
-   then raises them into place. */
+/* Hero buttons wait off-stage until the car is whole; HeroAssembly then
+   raises them into place. */
 @media (prefers-reduced-motion: no-preference) {
   .hero__actions--await > * {
     opacity: 0;

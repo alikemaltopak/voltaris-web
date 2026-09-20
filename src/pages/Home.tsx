@@ -5,7 +5,7 @@ import { useTheme } from "../context/ThemeContext";
 import { SectionHeading } from "../components/SectionHeading";
 import { HeroTitle } from "../components/HeroTitle";
 import { Reveal } from "../components/Reveal";
-import { HeroDisassembly } from "../components/HeroDisassembly";
+import { HeroAssembly } from "../components/HeroAssembly";
 import { gsap } from "../lib/gsapSetup";
 
 /** The car is rendered light-bodied on a dark stage and black-bodied on a
@@ -43,7 +43,7 @@ export function Home() {
   return (
     <>
       <section className="hero" ref={heroRef}>
-        <HeroDisassembly
+        <HeroAssembly
           framesFolder={theme === "light" ? HERO_FRAMES_LIGHT : HERO_FRAMES_DARK}
           frameCount={175}
           triggerRef={heroRef}

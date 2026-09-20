@@ -3,45 +3,48 @@ import { gsap } from "../lib/gsapSetup";
 
 const PRELOAD_CHUNK = 10;
 
-/** Pinned scroll distances (px): the finished car holds still, the car comes
- *  apart, then the revealed elements settle in. */
+/** Pinned scroll distances (px): the bare chassis holds still, the car builds
+ *  up, then the revealed elements settle in. */
 const OPEN_HOLD_PX = { desktop: 0, mobile: 0 };
 /** The sequence is scrubbed in three stretches, each with its own scroll
- *  distance: the robot arm lifting away, the bodywork coming off, then the
- *  chassis. Frame counts are measured from the start of the hero. */
-const ROBOT_FRAMES = 63;
+ *  distance: the chassis coming together, the bodywork going on, then the
+ *  robot arm. Frame counts are measured from the start of the hero, and match
+ *  where the source clips are joined — both themes are cut on the same
+ *  boundaries, so these hold for either folder. */
+const CHASSIS_FRAMES = 79;
 const BODY_FRAMES = 32;
-const ROBOT_PX = { desktop: 700, mobile: 500 };
-const BODY_PX = { desktop: 800, mobile: 550 };
 const CHASSIS_PX = { desktop: 1000, mobile: 650 };
+const BODY_PX = { desktop: 800, mobile: 550 };
+const ROBOT_PX = { desktop: 700, mobile: 500 };
 const HOLD_PX = { desktop: 200, mobile: 160 };
 
-type HeroDisassemblyProps = {
+type HeroAssemblyProps = {
   /** Folder under /public/frames holding frame_0001.webp ... frame_{frameCount}.webp */
   framesFolder: string;
   frameCount: number;
   /** The hero section: it stays pinned while the sequence plays. */
   triggerRef: React.RefObject<HTMLElement | null>;
-  /** Hidden until the car has come apart, then its children rise into place.
+  /** Hidden until the car is whole, then its children rise into place.
    *  Give it the `hero__actions--await` class so it starts hidden from CSS —
    *  this component's effects run before a later sibling's ref is attached. */
   revealRef?: React.RefObject<HTMLElement | null>;
 };
 
 /**
- * The assembly sequence played backwards behind the hero title: the finished
- * car is on screen from the start and comes apart as the page is scrolled.
- * Decorative only — it sits behind the hero text and takes no pointer events.
+ * The assembly sequence behind the hero title: the page opens on the bare
+ * chassis and the car builds itself up as the page is scrolled, landing on the
+ * badged car. Decorative only — it sits behind the hero text and takes no
+ * pointer events.
  */
-export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRef }: HeroDisassemblyProps) {
+export function HeroAssembly({ framesFolder, frameCount, triggerRef, revealRef }: HeroAssemblyProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const frameRef = useRef(0);
   const [ready, setReady] = useState(false);
 
-  // Scroll position 0 is the last source frame (the finished car), the end of
-  // the scroll is frame 1 (loose parts).
-  const sourceIndex = (step: number) => frameCount - 1 - step;
+  // Scroll position 0 is the first source frame (the bare chassis), the end of
+  // the scroll is the last (the finished, badged car).
+  const sourceIndex = (step: number) => step;
   const framePath = (i: number) => `/frames/${framesFolder}/frame_${String(i + 1).padStart(4, "0")}.webp`;
 
   /** Nearest step that actually has a decoded frame, so a stale bundle asking
@@ -155,12 +158,12 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
       const pick = (v: { desktop: number; mobile: number }) => (mobile() ? v.mobile : v.desktop);
       const openPx = () => pick(OPEN_HOLD_PX);
       const holdPx = () => pick(HOLD_PX);
-      const robotSteps = Math.min(ROBOT_FRAMES, frameCount - 1);
-      const bodySteps = Math.min(robotSteps + BODY_FRAMES, frameCount - 1);
+      const chassisSteps = Math.min(CHASSIS_FRAMES, frameCount - 1);
+      const bodySteps = Math.min(chassisSteps + BODY_FRAMES, frameCount - 1);
       const stages = () => [
-        { step: robotSteps, px: pick(ROBOT_PX) },
+        { step: chassisSteps, px: pick(CHASSIS_PX) },
         { step: bodySteps, px: pick(BODY_PX) },
-        { step: frameCount - 1, px: pick(CHASSIS_PX) },
+        { step: frameCount - 1, px: pick(ROBOT_PX) },
       ];
       const totalPx = () => openPx() + stages().reduce((sum, st) => sum + st.px, 0) + holdPx();
       /** Share of the pinned scroll at which the last frame is reached. */
@@ -229,7 +232,7 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
   }, [ready, frameCount]);
 
   return (
-    <div className="hero-disassembly" aria-hidden="true">
+    <div className="hero-assembly" aria-hidden="true">
       <canvas ref={canvasRef} />
     </div>
   );

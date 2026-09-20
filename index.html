@@ -22,7 +22,12 @@
         }
       })();
     </script>
-    <link rel="preload" as="image" href="/frames/ev-assembly-v9/frame_0175.webp" fetchpriority="high" />
+    <!-- The hero opens on frame one, the bare chassis. Which sequence that is
+         depends on the theme, and the inline script above has not run yet, so
+         scope each hint to the OS preference: a stored override only misses
+         the hint, and by then the frame is usually cached anyway. -->
+    <link rel="preload" as="image" href="/frames/ev-assembly-v9/frame_0001.webp" fetchpriority="high" media="(prefers-color-scheme: dark)" />
+    <link rel="preload" as="image" href="/frames/ev-assembly-light-v1/frame_0001.webp" fetchpriority="high" media="(prefers-color-scheme: light)" />
   </head>
   <body>
     <div id="root"></div>
