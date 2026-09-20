@@ -457,19 +457,35 @@ ul {
   }
 }
 
-/* The ghost button lands on the white bodywork, where cyan-on-white would
-   wash out. */
+/* The ghost button lands on the bodywork, where the accent alone would wash
+   out. Each theme's car is the opposite of its page, so the plate that rescues
+   it is too: a dark plate under the white car, a light one under the black. */
 .hero .btn--ghost {
-  background: rgba(6, 8, 10, 0.45);
   backdrop-filter: blur(2px);
 }
 
-/* The tagline and scroll hint can land on the car body, so they get a dark
-   halo for contrast — dark theme only, where it blends into the page; on the
-   light theme it reads as a smudge. */
+:root:not([data-theme="light"]) .hero .btn--ghost {
+  background: rgba(6, 8, 10, 0.45);
+}
+
+:root[data-theme="light"] .hero .btn--ghost {
+  background: rgba(247, 248, 250, 0.62);
+}
+
+/* The tagline and scroll hint can land on the car body, and in both themes the
+   copy and the bodywork are the same value — white on white, near-black on
+   black — so each gets a halo in its own page colour. */
 :root:not([data-theme="light"]) .hero__tagline,
 :root:not([data-theme="light"]) .hero__scroll-hint {
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7), 0 0 34px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="light"] .hero__kicker,
+:root[data-theme="light"] .hero__title,
+:root[data-theme="light"] .hero__subtitle,
+:root[data-theme="light"] .hero__tagline,
+:root[data-theme="light"] .hero__scroll-hint {
+  text-shadow: 0 2px 14px rgba(242, 243, 245, 0.92), 0 0 30px rgba(242, 243, 245, 0.75);
 }
 
 .hero__kicker {

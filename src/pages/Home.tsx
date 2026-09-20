@@ -1,14 +1,22 @@
 import { useLayoutEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { useTheme } from "../context/ThemeContext";
 import { SectionHeading } from "../components/SectionHeading";
 import { HeroTitle } from "../components/HeroTitle";
 import { Reveal } from "../components/Reveal";
 import { HeroDisassembly } from "../components/HeroDisassembly";
 import { gsap } from "../lib/gsapSetup";
 
+/** The car is rendered light-bodied on a dark stage and black-bodied on a
+ *  light one, so each theme gets its own sequence. Both are cut to the same
+ *  175 frames on the same stage boundaries, so only the folder changes. */
+const HERO_FRAMES_DARK = "ev-assembly-v9";
+const HERO_FRAMES_LIGHT = "ev-assembly-light-v1";
+
 export function Home() {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const heroRef = useRef<HTMLElement>(null);
   const heroActionsRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +44,7 @@ export function Home() {
     <>
       <section className="hero" ref={heroRef}>
         <HeroDisassembly
-          framesFolder="ev-assembly-v9"
+          framesFolder={theme === "light" ? HERO_FRAMES_LIGHT : HERO_FRAMES_DARK}
           frameCount={175}
           triggerRef={heroRef}
           revealRef={heroActionsRef}

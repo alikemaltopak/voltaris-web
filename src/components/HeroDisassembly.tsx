@@ -108,7 +108,11 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
     }
 
     async function loadAll() {
-      let first = 0;
+      // Decode the step that is actually on screen before anything else. On a
+      // theme swap the hero can be scrolled well into the sequence, and the
+      // outgoing set stays up until this one can replace it in the same pose.
+      const at = frameRef.current;
+      let first = at;
       await loadStep(first);
       while (first < frameCount - 1 && !(images[first]?.naturalWidth > 0)) {
         first += 1;
@@ -117,12 +121,16 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
       imagesRef.current = images;
       if (cancelled) return;
       setReady(true);
-      draw(first);
+      draw(at);
 
-      for (let start = 1; start < frameCount; start += PRELOAD_CHUNK) {
+      for (let start = 0; start < frameCount; start += PRELOAD_CHUNK) {
         if (cancelled) return;
         const end = Math.min(start + PRELOAD_CHUNK, frameCount);
-        await Promise.all(Array.from({ length: end - start }, (_, k) => loadStep(start + k)));
+        await Promise.all(
+          Array.from({ length: end - start }, (_, k) => start + k)
+            .filter((step) => !images[step])
+            .map(loadStep),
+        );
       }
     }
 
