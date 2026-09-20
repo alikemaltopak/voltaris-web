@@ -36,7 +36,7 @@ export function Home() {
     <>
       <section className="hero" ref={heroRef}>
         <HeroDisassembly
-          framesFolder="ev-assembly-v7"
+          framesFolder="ev-assembly-v8"
           frameCount={198}
           triggerRef={heroRef}
           revealRef={heroActionsRef}
