@@ -6,12 +6,15 @@ const PRELOAD_CHUNK = 10;
 /** Pinned scroll distances (px): the finished car holds still, the car comes
  *  apart, then the revealed elements settle in. */
 const OPEN_HOLD_PX = { desktop: 0, mobile: 0 };
-/** The bodywork comes off over BODY_PX, the chassis over CHASSIS_PX: the
- *  panels need room to be read, the chassis parts are quicker to follow. */
+/** The sequence is scrubbed in three stretches, each with its own scroll
+ *  distance: the robot arm lifting away, the bodywork coming off, then the
+ *  chassis. Frame counts are measured from the start of the hero. */
+const ROBOT_FRAMES = 63;
 const BODY_FRAMES = 32;
-const BODY_PX = { desktop: 950, mobile: 650 };
-const CHASSIS_PX = { desktop: 1250, mobile: 800 };
-const HOLD_PX = { desktop: 220, mobile: 170 };
+const ROBOT_PX = { desktop: 700, mobile: 500 };
+const BODY_PX = { desktop: 800, mobile: 550 };
+const CHASSIS_PX = { desktop: 1000, mobile: 650 };
+const HOLD_PX = { desktop: 200, mobile: 160 };
 
 type HeroDisassemblyProps = {
   /** Folder under /public/frames holding frame_0001.webp ... frame_{frameCount}.webp */
@@ -143,13 +146,17 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
       const mobile = () => window.innerWidth < 760;
       const pick = (v: { desktop: number; mobile: number }) => (mobile() ? v.mobile : v.desktop);
       const openPx = () => pick(OPEN_HOLD_PX);
-      const bodyPx = () => pick(BODY_PX);
-      const chassisPx = () => pick(CHASSIS_PX);
       const holdPx = () => pick(HOLD_PX);
-      const totalPx = () => openPx() + bodyPx() + chassisPx() + holdPx();
+      const robotSteps = Math.min(ROBOT_FRAMES, frameCount - 1);
+      const bodySteps = Math.min(robotSteps + BODY_FRAMES, frameCount - 1);
+      const stages = () => [
+        { step: robotSteps, px: pick(ROBOT_PX) },
+        { step: bodySteps, px: pick(BODY_PX) },
+        { step: frameCount - 1, px: pick(CHASSIS_PX) },
+      ];
+      const totalPx = () => openPx() + stages().reduce((sum, st) => sum + st.px, 0) + holdPx();
       /** Share of the pinned scroll at which the last frame is reached. */
-      const framesDoneShare = () => (openPx() + bodyPx() + chassisPx()) / totalPx();
-      const bodySteps = Math.min(BODY_FRAMES, frameCount - 1);
+      const framesDoneShare = () => (totalPx() - holdPx()) / totalPx();
 
       const revealEls = revealRef?.current ? Array.from(revealRef.current.children) : [];
       const rise = revealEls.length
@@ -183,7 +190,6 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
         },
       });
 
-      // Hold on the finished car first, so it is read before it comes apart.
       const onUpdate = () => {
         const index = Math.round(state.step);
         if (index !== frameRef.current) {
@@ -192,20 +198,11 @@ export function HeroDisassembly({ framesFolder, frameCount, triggerRef, revealRe
         }
       };
 
-      tl.to({}, { duration: openPx() / totalPx() })
-        .to(state, {
-          step: bodySteps,
-          ease: "none",
-          duration: bodyPx() / totalPx(),
-          onUpdate,
-        })
-        .to(state, {
-          step: frameCount - 1,
-          ease: "none",
-          duration: chassisPx() / totalPx(),
-          onUpdate,
-        })
-        .to({}, { duration: holdPx() / totalPx() });
+      if (openPx() > 0) tl.to({}, { duration: openPx() / totalPx() });
+      for (const stage of stages()) {
+        tl.to(state, { step: stage.step, ease: "none", duration: stage.px / totalPx(), onUpdate });
+      }
+      tl.to({}, { duration: holdPx() / totalPx() });
     }, hero);
 
     // The first draw can land before the layout has settled (dynamic viewport
