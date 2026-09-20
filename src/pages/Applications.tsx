@@ -18,7 +18,7 @@ import {
   isEmptyAnswer,
   isUploadedFile,
   MAX_FILE_BYTES,
-  readFileAsBase64,
+  prepareFile,
   submitApplication,
   type AnswerValue,
   type Answers,
@@ -183,6 +183,7 @@ function FileField({
   strings: FormStrings;
 }) {
   const [tooLarge, setTooLarge] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const file = isUploadedFile(value) ? value : undefined;
 
   async function handlePick(event: ChangeEvent<HTMLInputElement>) {
@@ -196,7 +197,14 @@ function FileField({
       return;
     }
     setTooLarge(false);
-    onChange(await readFileAsBase64(picked));
+    // Büyük bir fotoğrafın küçültülmesi bir saniye sürebilir; o an kullanıcı
+    // hâlâ formda olduğu için bekleme gönderime yansımıyor.
+    setPreparing(true);
+    try {
+      onChange(await prepareFile(picked));
+    } finally {
+      setPreparing(false);
+    }
   }
 
   return (
@@ -208,7 +216,9 @@ function FileField({
           className="file-field__input"
           onChange={handlePick}
         />
-        <span className="btn btn--ghost btn--sm">{file ? strings.fileReplace : strings.fileChoose}</span>
+        <span className="btn btn--ghost btn--sm">
+          {preparing ? strings.filePreparing : file ? strings.fileReplace : strings.fileChoose}
+        </span>
       </label>
 
       {file ? (
@@ -252,6 +262,7 @@ export function Applications() {
   const [selectedCommittee, setSelectedCommittee] = useState<CommitteeId | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [sendError, setSendError] = useState(false);
   const formSectionRef = useRef<HTMLElement>(null);
   // Bal küpü: ekranda görünmez, yalnızca formu körlemesine dolduran botlar yazar.
@@ -310,6 +321,7 @@ export function Applications() {
     }
 
     setSending(true);
+    setProgress(0);
     setSendError(false);
     try {
       const committee = t.applications.committees.find((item) => item.id === selectedCommittee);
@@ -318,6 +330,7 @@ export function Applications() {
         questions,
         answers,
         honeypot: honeypotRef.current?.value ?? "",
+        onProgress: setProgress,
       });
       setSubmitted(true);
       scrollToTop({ immediate: true });
@@ -428,7 +441,11 @@ export function Applications() {
                     <Reveal>
                       <div className="question-form-page__submit">
                         <button type="submit" className="btn btn--primary" disabled={sending}>
-                          {sending ? t.applications.form.submitting : t.applications.form.submit}
+                          {!sending
+                            ? t.applications.form.submit
+                            : progress < 100
+                              ? `${t.applications.form.submitting} %${progress}`
+                              : t.applications.form.saving}
                         </button>
                         {sendError && (
                           <p className="form-field__error" role="alert">
