@@ -23,7 +23,7 @@ const tr = {
     scrollHint: "KAYDIR",
     aboutTitle: "Biz Kimiz?",
     aboutText:
-      "Voltaris, İzmir Yüksek Teknoloji Enstitüsü'nde iki yıl önce kurulan bir elektrikli araç takımı. Bu iki yılda sıfırdan bir elektromobil tasarladık, kendi atölyemizde ürettik ve TEKNOFEST pistine çıkardık. Bu yıl takım yeni bir kadroya devredildi; devraldığımız şey yalnızca bir araç değil, iki yıllık tasarım arşivi, üretim tecrübesi ve kurulmuş bir atölye düzeni. Şimdi aynı yerden devam ediyor, 2027 TEKNOFEST Efficiency Challenge için çalışıyoruz.",
+      "Voltaris, İzmir Yüksek Teknoloji Enstitüsü'nde iki yıl önce kurulan bir elektrikli araç takımı. Bu iki yılda sıfırdan bir elektromobil tasarladık ve kendi atölyemizde ürettik; okulumuza kalıcı bir elektrikli araç kültürü kazandırma çabasındayız. Bu yıl takım yeni bir kadroya devredildi; devraldığımız şey yalnızca bir araç değil, iki yıllık tasarım arşivi, üretim tecrübesi ve kurulmuş bir atölye düzeni. Şimdi aynı yerden devam ediyor, 2027 TEKNOFEST Efficiency Challenge için çalışıyoruz.",
     aboutPoints: [
       "6061-T6 alüminyum şasi ve FIA standartlarına uygun roll cage",
       "Kendi tasarlayıp ürettiğimiz batarya yönetim sistemi kartı",
@@ -39,17 +39,9 @@ const tr = {
     missionText:
       "Tamamen öğrencilerin tasarladığı, ürettiği ve test ettiği; güvenli ve enerji verimli bir elektromobili her yıl pistte çalışır halde tutmak. Edindiğimiz bilgi ve tecrübeyi bir sonraki jenerasyona miras bırakmak.",
     chassisTitle: "Voltaris elektromobil montaj animasyonu",
-    vehicleTeaserTitle: "Yarış Aracımız",
-    vehicleTeaserText:
-      "Sıfırdan tasarladığımız elektromobilimiz, düşük ağırlık ve yüksek enerji verimliliği hedefiyle geliştiriliyor.",
-    vehicleTeaserCta: "Teknik Detaylar",
-    sponsorsTeaserTitle: "Bizi Destekleyen Kurumlar",
-    sponsorsTeaserText:
-      "Voltaris'in yolculuğu, vizyonumuza inanan sponsorlarımızın desteğiyle mümkün oluyor.",
-    sponsorsTeaserCta: "Sponsorluk Fırsatları",
     joinTitle: "Takıma Katılmak İster misin?",
     joinText:
-      "Mühendislik, tasarım, yazılım veya organizasyon alanlarında yeteneklerini takıma katmak istiyorsan seni aramızda görmek isteriz.",
+      "Mühendislik, tasarım, teknik yazılım ve organizasyon alanlarında yeteneklerini takıma katmak istiyorsan seni aramızda görmek isteriz.",
     joinCta: "Bizimle İletişime Geç",
   },
   team: {
@@ -214,7 +206,6 @@ const tr = {
   footer: {
     tagline: "İzmir Yüksek Teknoloji Enstitüsü Elektromobil Takımı",
     rights: "Tüm hakları saklıdır.",
-    builtWith: "3D deneyim ThreeUI Community bileşenleriyle güçlendirilmiştir.",
   },
 };
 

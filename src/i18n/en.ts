@@ -26,7 +26,7 @@ const en: Dictionary = {
     scrollHint: "SCROLL",
     aboutTitle: "Who We Are",
     aboutText:
-      "Voltaris is an electric vehicle team founded two years ago at Izmir Institute of Technology. In those two years we designed an electromobile from scratch, built it in our own workshop and took it to the TEKNOFEST track. This year the team passed to a new crew; what we inherited is not just a car, but two years of design archives, manufacturing experience and a workshop that already runs. We are picking up from there, working towards the 2027 TEKNOFEST Efficiency Challenge.",
+      "Voltaris is an electric vehicle team founded two years ago at Izmir Institute of Technology. In those two years we designed an electromobile from scratch and built it in our own workshop, working to give our university a lasting electric vehicle culture. This year the team passed to a new crew; what we inherited is not just a car, but two years of design archives, manufacturing experience and a workshop that already runs. We are picking up from there, working towards the 2027 TEKNOFEST Efficiency Challenge.",
     aboutPoints: [
       "6061-T6 aluminium chassis and an FIA-compliant roll cage",
       "A battery management board we design and build ourselves",
@@ -42,17 +42,9 @@ const en: Dictionary = {
     missionText:
       "To keep a safe, energy-efficient electromobile — designed, built and tested entirely by students — running on the track every year. And to pass the knowledge and experience we gain on to the next generation.",
     chassisTitle: "Voltaris electromobile assembly animation",
-    vehicleTeaserTitle: "Our Race Vehicle",
-    vehicleTeaserText:
-      "Designed from the ground up, our electromobile is built for low weight and high energy efficiency.",
-    vehicleTeaserCta: "Technical Details",
-    sponsorsTeaserTitle: "Organizations Backing Us",
-    sponsorsTeaserText:
-      "Voltaris' journey is made possible by sponsors who believe in our vision.",
-    sponsorsTeaserCta: "Sponsorship Opportunities",
     joinTitle: "Want to Join the Team?",
     joinText:
-      "If you'd like to bring your skills in engineering, design, software, or organization to the team, we'd love to hear from you.",
+      "If you'd like to bring your skills in engineering, design, technical software, or organization to the team, we'd love to hear from you.",
     joinCta: "Get in Touch",
   },
   team: {
@@ -217,7 +209,6 @@ const en: Dictionary = {
   footer: {
     tagline: "Electromobile Team of Izmir Institute of High Technology",
     rights: "All rights reserved.",
-    builtWith: "3D experience powered by ThreeUI Community components.",
   },
 };
 

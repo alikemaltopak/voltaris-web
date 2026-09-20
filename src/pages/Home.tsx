@@ -92,27 +92,6 @@ export function Home() {
         </Reveal>
       </section>
 
-      <section className="section teaser">
-        <Reveal className="container teaser__grid" stagger=".teaser__card">
-          <div className="teaser__card">
-            <span className="card-num">/ 01</span>
-            <h3>{t.home.vehicleTeaserTitle}</h3>
-            <p>{t.home.vehicleTeaserText}</p>
-            <Link to="/arac" className="link-arrow">
-              {t.home.vehicleTeaserCta} →
-            </Link>
-          </div>
-          <div className="teaser__card">
-            <span className="card-num">/ 02</span>
-            <h3>{t.home.sponsorsTeaserTitle}</h3>
-            <p>{t.home.sponsorsTeaserText}</p>
-            <Link to="/sponsorlar" className="link-arrow">
-              {t.home.sponsorsTeaserCta} →
-            </Link>
-          </div>
-        </Reveal>
-      </section>
-
       <section className="section join">
         <Reveal className="container join__inner">
           <h2>{t.home.joinTitle}</h2>

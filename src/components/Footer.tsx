@@ -15,7 +15,6 @@ export function Footer() {
           <p>
             © {year} Voltaris. {t.footer.rights}
           </p>
-          <p className="footer__built-with">{t.footer.builtWith}</p>
         </div>
       </div>
     </footer>
