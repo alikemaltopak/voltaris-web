@@ -52,12 +52,14 @@ type ContactMessage = {
   email: string;
   subject: string;
   message: string;
+  /** Package id when the visitor came from a sponsorship package (/iletisim?paket=gold). */
+  packageId?: string;
   /** Hidden bot-trap field; a human leaves it empty. */
   honeypot: string;
 };
 
 /** Contact form → Apps Script, which mails it to the team with Reply-To set to the sender. */
-export function sendContactMessage({ name, email, subject, message, honeypot }: ContactMessage) {
+export function sendContactMessage({ name, email, subject, message, packageId, honeypot }: ContactMessage) {
   return postToFormEndpoint({
     tur: "iletisim",
     botTuzagi: honeypot,
@@ -65,5 +67,7 @@ export function sendContactMessage({ name, email, subject, message, honeypot }: 
     eposta: email,
     konu: subject,
     mesaj: message,
+    // Routes the row to the "Sponsorluk" tab of the separate requests sheet.
+    paket: packageId ?? "",
   });
 }

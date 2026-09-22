@@ -9,7 +9,6 @@ import {
 } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { PageHero } from "../components/PageHero";
-import { CableGutters } from "../components/CableGutters";
 import { SectionHeading } from "../components/SectionHeading";
 import { Reveal } from "../components/Reveal";
 import { getApplicationForms, type CommitteeId, type Question } from "../data/applicationForms";
@@ -264,7 +263,6 @@ export function Applications() {
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sendError, setSendError] = useState(false);
-  const formSectionRef = useRef<HTMLElement>(null);
   // Bal küpü: ekranda görünmez, yalnızca formu körlemesine dolduran botlar yazar.
   const honeypotRef = useRef<HTMLInputElement>(null);
 
@@ -368,9 +366,7 @@ export function Applications() {
     <>
       <PageHero title={t.applications.heroTitle} subtitle={t.applications.heroSubtitle} />
 
-      <CableGutters leftFolder="cable-left" rightFolder="cable-right" frameCount={141} triggerRef={formSectionRef} />
-
-      <section className="section application-form-page" ref={formSectionRef}>
+      <section className="section application-form-page">
         <div className="container container--narrow">
           {submitted ? (
             <Reveal className="form-success-page">

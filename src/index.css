@@ -2348,30 +2348,3 @@ a.social-links__slot:hover {
     transform: none;
   }
 }
-
-/* Scroll-scrubbed cable-assembly strands in the empty space beside the
-   narrow application form. Fixed, non-interactive and behind every section
-   (sections are z-index 2), so the form stays readable and clickable. */
-.cable-gutters {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.cable-gutters__strand {
-  position: absolute;
-  bottom: 0;
-  width: clamp(72px, calc((100vw - 860px) / 2 - 48px), 150px);
-  height: 62vh;
-  opacity: 0.8;
-}
-
-.cable-gutters__strand--left {
-  right: calc(50% + 398px);
-}
-
-.cable-gutters__strand--right {
-  left: calc(50% + 398px);
-}

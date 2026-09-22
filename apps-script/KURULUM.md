@@ -5,7 +5,8 @@ Aynı script iki formu karşılıyor:
 - **Başvuru formu** → komite sayfalarına satır, CV'ler Drive'a.
 - **İletişim formu** (sponsorluk paketlerinden gelenler dahil) → mesaj
   `ILETISIM_EPOSTA` adresine e-posta olarak gider (Yanıtla doğrudan gönderene
-  gider) ve "İletişim" sayfasına da kaydedilir.
+  gider) ve ayrı **"Voltaris Sponsorluk Talepleri"** tablosuna kaydedilir:
+  bir paketten gelenler "Sponsorluk", diğerleri "Genel İletişim" sayfasına.
 
 Site tarafı hazır. Geriye Apps Script'i yayınlayıp iki ortam değişkenini
 doldurmak kalıyor. Tamamı yaklaşık 15 dakika.
@@ -34,6 +35,7 @@ ayrıca bir şey istemez; adres ve anahtar aynı kalır.
 | Ne | Bağlantı |
 |---|---|
 | Ana klasör | https://drive.google.com/drive/folders/1nHrXBxgjjyirAM_bWMHuxW3a5eAtJRcp |
+| Sponsorluk talepleri tablosu | https://docs.google.com/spreadsheets/d/1dodzYkDE_q_6WJWPFC-lMTfKlWk92_9L7ZtB-EVFeR4/edit |
 | E-tablo | https://docs.google.com/spreadsheets/d/1ggOSZtYQ2B1A0RBAwxteyZsfziGdg6NQGPwiHAXNyBE/edit |
 | CV klasörü | https://drive.google.com/drive/folders/1XXTrj3kGo5mnWKw7xHb9jtGnoSkELoWb |
 
@@ -100,10 +102,8 @@ sütunundaki bağlantı Drive'daki dosyaya gitmeli.
 1. E-tabloyu aç → **Uzantılar → Apps Script**.
 2. Editörde ⌘A (Windows'ta Ctrl+A) ile her şeyi seç, sil.
 3. Projedeki `apps-script/Kod.gs` dosyasının tamamını kopyalayıp yapıştır.
-4. Yapıştırınca en üstteki ayarlar örnek değerlere döner. İkisini geri yaz:
-   - `GIZLI_ANAHTAR` → `.env` dosyasındaki `VITE_BASVURU_ANAHTARI` ile aynı değer
-   - `BILDIRIM_EPOSTA` → başvuru bildirimi istiyorsan `'voltaris.official@gmail.com'`
-   (`ILETISIM_EPOSTA` ve `CV_KLASOR_ID` zaten doğru; dokunma.)
+4. Ayarlara dokunma — anahtar, e-posta adresleri, klasör ve tablo kimlikleri
+   dosyada zaten doğru dolu.
 5. Kaydet (⌘S).
 6. **Dağıt → Dağıtımları yönet** → listedeki dağıtımın yanındaki **kalem** →
    **Sürüm** açılır menüsünden **Yeni sürüm** → **Dağıt**.
@@ -118,9 +118,9 @@ sütunundaki bağlantı Drive'daki dosyaya gitmeli.
 **Dağıt → Dağıtımları yönet → kalem simgesi → Sürüm: Yeni sürüm → Dağıt**.
 Bunu atlarsan eski kod çalışmaya devam eder. URL değişmez.
 
-**Script'i güncellerken ayarlar sıfırlanır.** Yeni `Kod.gs`'i yapıştırınca
-`GIZLI_ANAHTAR` ve `BILDIRIM_EPOSTA` satırlarını önceki değerleriyle tekrar
-doldurmayı unutma; yoksa site "Yetkisiz istek" alır.
+**Ayarlar dosyada hazır.** `GIZLI_ANAHTAR` ve `BILDIRIM_EPOSTA` repodaki
+`Kod.gs`'te dolu duruyor; güncellemede dosyayı olduğu gibi yapıştırmak yeter.
+Anahtarı değiştirirsen hem burada hem `.env`/Vercel'de değiştir.
 
 **Siteye yeni soru eklemek script'i bozmaz.** Script gelen soruların
 metnini başlık olarak kullanıyor; tanımadığı bir soru görürse sona yeni sütun

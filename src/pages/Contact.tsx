@@ -16,7 +16,8 @@ export function Contact() {
   // The sponsors page links here as /iletisim?paket=<tier>, so a company asking
   // about a package lands on a form that already says which one.
   const paket = searchParams.get("paket") as PackageKey | null;
-  const presetSubject = paket && PACKAGE_KEYS.includes(paket) ? t.contact.sponsorSubjects[paket] : "";
+  const validPackage = paket && PACKAGE_KEYS.includes(paket) ? paket : null;
+  const presetSubject = validPackage ? t.contact.sponsorSubjects[validPackage] : "";
 
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const formRef = useRef<HTMLFormElement>(null);
@@ -33,6 +34,7 @@ export function Contact() {
         email: String(data.get("email") ?? ""),
         subject: String(data.get("subject") ?? ""),
         message: String(data.get("message") ?? ""),
+        packageId: validPackage ?? undefined,
         honeypot: String(data.get("website") ?? ""),
       });
       setStatus("sent");

@@ -6,24 +6,43 @@
  *  - Başvuru (varsayılan): komitesine ait sayfaya bir satır ekler, varsa CV'yi
  *    Drive'a kaydedip satıra bağlantısını koyar.
  *  - İletişim (tur: "iletisim"): mesajı takım adresine e-posta olarak iletir
- *    (Yanıtla doğrudan gönderene gider) ve "İletişim" sayfasına kaydeder.
+ *    (Yanıtla doğrudan gönderene gider) ve AYRI bir tabloya — "Voltaris
+ *    Sponsorluk Talepleri" — kaydeder: paket seçilerek gelenler "Sponsorluk",
+ *    diğerleri "Genel İletişim" sayfasına. Başvuru tablosu yalnız başvuru tutar.
  *
  * Kurulum adımları için KURULUM.md dosyasına bak.
  */
 
 // ---------------------------------------------------------------- AYARLAR --
 
-/** Sitedeki VITE_BASVURU_ANAHTARI ile birebir aynı olmalı. */
-const GIZLI_ANAHTAR = 'BURAYA-UZUN-BIR-ANAHTAR-YAZ';
+/**
+ * Sitedeki VITE_BASVURU_ANAHTARI ile birebir aynı olmalı. Gerçek bir sır değil
+ * (sitenin JS paketinde de yazılı); burada dolu durur ki script her
+ * güncellendiğinde elle yeniden girilmesi gerekmesin.
+ */
+const GIZLI_ANAHTAR = '6f01d8a459c5e0f811ac6081c2560dd4551d89e5c22bd8be';
 
 /** "CV ve Ön Yazılar" klasörünün kimliği. */
 const CV_KLASOR_ID = '1XXTrj3kGo5mnWKw7xHb9jtGnoSkELoWb';
 
 /** Her başvuruda haber verilecek adres. Boş bırakılırsa e-posta gönderilmez. */
-const BILDIRIM_EPOSTA = '';
+const BILDIRIM_EPOSTA = 'voltaris.official@gmail.com';
 
 /** İletişim formundan gelen mesajların gideceği adres. */
 const ILETISIM_EPOSTA = 'voltaris.official@gmail.com';
+
+/** Sponsorluk talepleri ve iletişim mesajlarının yazıldığı ayrı tablo. */
+const TALEP_TABLO_ID = '1dodzYkDE_q_6WJWPFC-lMTfKlWk92_9L7ZtB-EVFeR4';
+
+/** Sitedeki paket kimliği → tabloda ve e-postada görünecek ad. */
+const PAKET_ADLARI = {
+  platinum: 'Platin',
+  gold: 'Altın',
+  silver: 'Gümüş',
+  bronze: 'Bronz',
+  supporter: 'Destekçi',
+  general: 'Genel sponsorluk',
+};
 
 /** Kabul edilen en büyük CV boyutu. */
 const MAKS_DOSYA_MB = 8;
@@ -100,18 +119,30 @@ function iletisimMesaji(gelen) {
   const mesaj = kisalt(gelen.mesaj, 5000);
   if (!ad || !eposta || !mesaj) return cevap('hata', 'Eksik alan.');
 
-  const sayfa = sayfayiGetir('İletişim');
-  basliklariEsitle(sayfa, [ZAMAN_BASLIGI, 'Ad Soyad', 'E-posta', 'Konu', 'Mesaj']);
-  sayfa.appendRow([new Date(), ad, eposta, konu, mesaj]);
+  // Sponsorluk sayfasındaki bir paketten gelen mesajlar "?paket=" taşır.
+  const paket = PAKET_ADLARI[gelen.paket] || '';
+  const kitap = SpreadsheetApp.openById(TALEP_TABLO_ID);
+
+  if (paket) {
+    const sayfa = sayfayiGetir('Sponsorluk', kitap);
+    basliklariEsitle(sayfa, [ZAMAN_BASLIGI, 'Paket', 'Ad Soyad', 'E-posta', 'Konu', 'Mesaj']);
+    sayfa.appendRow([new Date(), paket, ad, eposta, konu, mesaj]);
+  } else {
+    const sayfa = sayfayiGetir('Genel İletişim', kitap);
+    basliklariEsitle(sayfa, [ZAMAN_BASLIGI, 'Ad Soyad', 'E-posta', 'Konu', 'Mesaj']);
+    sayfa.appendRow([new Date(), ad, eposta, konu, mesaj]);
+  }
 
   try {
     MailApp.sendEmail({
       to: ILETISIM_EPOSTA,
       replyTo: eposta,
       name: 'Voltaris Web Sitesi',
-      subject: '[Site] ' + konu + ' — ' + ad,
-      body: ad + ' <' + eposta + '> web sitesinden yazdı:\n\n' + mesaj +
-            '\n\n— \nBu e-postayı yanıtladığında cevap doğrudan ' + eposta + ' adresine gider.',
+      subject: (paket ? '[Sponsorluk · ' + paket + '] ' : '[Site] ') + konu + ' — ' + ad,
+      body: ad + ' <' + eposta + '> web sitesinden yazdı' + (paket ? ' (' + paket + ' paketi)' : '') + ':\n\n' +
+            mesaj +
+            '\n\n— \nBu e-postayı yanıtladığında cevap doğrudan ' + eposta + ' adresine gider.' +
+            '\nTüm talepler: ' + kitap.getUrl(),
     });
   } catch (hata) {
     console.error(hata);
@@ -143,10 +174,10 @@ function cevapBul(cevaplar, id) {
   return '';
 }
 
-/** Komite sayfasını döndürür, yoksa oluşturur. */
-function sayfayiGetir(ad) {
+/** Adı verilen sayfayı döndürür, yoksa oluşturur. Tablo verilmezse başvuru tablosu. */
+function sayfayiGetir(ad, tablo) {
   const temizAd = String(ad).substring(0, 60);
-  const kitap = SpreadsheetApp.getActiveSpreadsheet();
+  const kitap = tablo || SpreadsheetApp.getActiveSpreadsheet();
   var sayfa = kitap.getSheetByName(temizAd);
   if (!sayfa) {
     sayfa = kitap.insertSheet(temizAd);
