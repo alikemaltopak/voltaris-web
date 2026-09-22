@@ -991,6 +991,57 @@ ul {
   justify-content: center;
 }
 
+/* Interactive 3D car viewer */
+.car-viewer {
+  position: relative;
+  width: 100%;
+  height: 560px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.car-viewer canvas {
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+
+.car-viewer canvas:active {
+  cursor: grabbing;
+}
+
+.car-viewer__hint {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.car-viewer--fallback {
+  display: flex;
+  align-items: center;
+  padding: 32px;
+  height: auto;
+  min-height: 260px;
+}
+
+.car-viewer--fallback p {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .car-viewer {
+    height: 380px;
+  }
+}
+
 /* Interactive 3D chassis viewer */
 .chassis-viewer {
   position: relative;

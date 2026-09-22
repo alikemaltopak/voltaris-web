@@ -91,9 +91,9 @@ const en: Dictionary = {
     heroTagline: "An electromobile built at the intersection of efficiency and performance.",
     sketchEyebrow: "01 — VEHICLE / DESIGN STAGE",
     sketchNote: "Early design sketch. Dimensions are not final. Keep scrolling to complete the drawing.",
-    modelPlaceholderTitle: "3D Vehicle Model",
-    modelPlaceholderText:
-      "Once you share your .glb / .gltf model, we'll embed an interactive viewer here.",
+    viewerHint: "Drag to rotate",
+    viewerUnsupported:
+      "Your browser cannot display 3D content. Use a current version of Chrome, Safari, Firefox or Edge to inspect the car; if hardware acceleration is switched off, turning it back on in your browser settings may be all it takes.",
     photosPlaceholderTitle: "Vehicle Gallery",
     photosPlaceholderText: "We'll publish the gallery here once you share vehicle photos.",
     specsTitle: "Technical Specifications",

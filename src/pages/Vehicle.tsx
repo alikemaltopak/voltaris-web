@@ -3,6 +3,7 @@ import { SectionHeading } from "../components/SectionHeading";
 import { PageHero } from "../components/PageHero";
 import { PlaceholderBox } from "../components/PlaceholderBox";
 import { CarSketchReveal } from "../components/CarSketchReveal";
+import { CarViewer } from "../components/CarViewer";
 import { Reveal } from "../components/Reveal";
 
 export function Vehicle() {
@@ -16,12 +17,7 @@ export function Vehicle() {
 
       <section className="section">
         <div className="container vehicle__grid">
-          <PlaceholderBox
-            icon="model"
-            title={t.vehicle.modelPlaceholderTitle}
-            text={t.vehicle.modelPlaceholderText}
-            className="placeholder-box--tall"
-          />
+          <CarViewer />
           <Reveal>
             <SectionHeading kicker={t.vehicle.heroTitle} title={t.vehicle.specsTitle} />
             <dl className="specs-list">

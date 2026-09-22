@@ -88,9 +88,9 @@ const tr = {
     heroTagline: "Verimlilik ve performansı bir araya getiren elektromobil.",
     sketchEyebrow: "01 — ARAÇ / TASARIM AŞAMASI",
     sketchNote: "Ön tasarım eskizi. Ölçüler kesinleşmemiştir. Aşağı kaydırarak çizimi tamamlayın.",
-    modelPlaceholderTitle: "3D Araç Modeli",
-    modelPlaceholderText:
-      ".glb / .gltf formatındaki 3D modelinizi paylaştığınızda bu alana interaktif bir görüntüleyici entegre edeceğiz.",
+    viewerHint: "Döndürmek için sürükleyin",
+    viewerUnsupported:
+      "Tarayıcınız 3D görüntülemeyi desteklemiyor. Aracı incelemek için güncel bir Chrome, Safari, Firefox veya Edge sürümü kullanın; donanım hızlandırma kapalıysa tarayıcı ayarlarından açmanız da yeterli olabilir.",
     photosPlaceholderTitle: "Araç Galerisi",
     photosPlaceholderText: "Araç fotoğraflarınızı paylaştığınızda galeriyi burada yayınlayacağız.",
     specsTitle: "Teknik Özellikler",
