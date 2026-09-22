@@ -86,9 +86,8 @@ için iki dosyada da ilgili anahtarı güncellemeniz yeterli.
   ekleyebiliriz
 - **Teknik özellikler** — Araç sayfası özellik tablosu (menzil, güç, ağırlık vb.)
 - **Sponsor logoları** — Sponsorlar sayfası logo alanı
-- **İletişim formu** — Şu an demo amaçlıdır, hiçbir sunucuya veri göndermez; gerçek
-  gönderim için bir form servisine bağlanması gerekir (başvuru formu bağlandı,
-  iletişim formu bağlanmadı)
+- **Sosyal medya** — İletişim sayfasında yalnızca Instagram var; LinkedIn/YouTube
+  hesapları açılınca `src/pages/Contact.tsx`'e eklenebilir
 
 ## Renk paleti ve tasarım
 

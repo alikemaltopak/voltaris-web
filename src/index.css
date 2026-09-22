@@ -28,6 +28,13 @@
   --font-display: "Archivo", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
   --font-body: "Archivo", system-ui, -apple-system, sans-serif;
+
+  /* Sponsor tier metals — only for the thin rules and card edges that mark a tier. */
+  --tier-platinum: var(--accent);
+  --tier-gold: #e2b84a;
+  --tier-silver: #b4bac4;
+  --tier-bronze: #c58a55;
+  --tier-supporter: #7fa8d6;
 }
 
 :root:not([data-theme="light"]) {
@@ -56,6 +63,11 @@
 
   --pencil: #98a0a9;
   --pencil-strong: #0e1216;
+
+  --tier-gold: #b08a1e;
+  --tier-silver: #7f8791;
+  --tier-bronze: #9a6130;
+  --tier-supporter: #3d6ea3;
 }
 
 * {
@@ -924,16 +936,22 @@ ul {
 .specs-list__row {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
 }
 
+/* Values like "Kremayer-pinyon · 3,47 m dönüş yarıçapı" are longer than the
+   phone row; keep the label whole and let the value wrap on its own side. */
 .specs-list__row dt {
+  flex-shrink: 0;
   color: var(--text-muted);
   font-size: 0.95rem;
 }
 
 .specs-list__row dd {
+  text-align: right;
   margin: 0;
   font-family: var(--font-mono);
   font-weight: 500;
@@ -1093,25 +1111,559 @@ ul {
   opacity: 0.7;
 }
 
-/* Sponsors */
-.sponsor-logos {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
+/* Sponsors — one full-bleed band per tier that slides sideways as the page
+   scrolls (SponsorBand.tsx). Logos keep their brand colours on a transparent
+   background; the dark theme swaps in reversed versions where a wordmark is
+   dark (see data/sponsors.ts). */
+.sponsor-wall {
+  overflow: hidden;
+  padding-top: clamp(140px, 18vh, 200px);
+  padding-bottom: 120px;
 }
 
-.sponsor-logo-slot {
-  aspect-ratio: 2 / 1;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
+.sponsor-wall__title {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: clamp(3rem, 9vw, 7.5rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+
+.sponsor-band {
+  --tier-color: var(--tier-silver);
+  --logo-a: 46px;
+  --logo-gap: 104px;
+  --band-pad: 40px;
+  /* At rest the colour is there but quieter, so eight brands in a row don't
+     shout over one another; hover brings one up to full strength. */
+  --rest-sat: 0.65;
+  --rest-opacity: 0.82;
+  margin-top: 64px;
+}
+
+.sponsor-band--platinum {
+  --tier-color: var(--tier-platinum);
+  --logo-a: 70px;
+  --logo-gap: 136px;
+  --band-pad: 60px;
+  --rest-sat: 0.9;
+  --rest-opacity: 0.96;
+}
+
+.sponsor-band--gold {
+  --tier-color: var(--tier-gold);
+  --logo-a: 52px;
+  --logo-gap: 112px;
+  --band-pad: 46px;
+  --rest-sat: 0.75;
+  --rest-opacity: 0.88;
+}
+
+.sponsor-band__head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--text-dim);
+  gap: 16px;
+  margin-bottom: 20px;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.sponsor-band__index,
+.sponsor-band__count {
+  color: var(--tier-color);
+  letter-spacing: 0.16em;
+}
+
+.sponsor-band__name {
+  margin: 0;
+  font: inherit;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.sponsor-band__rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--tier-color), transparent);
+  opacity: 0.55;
+}
+
+/* Full-bleed strip between hairlines; the edges fade so logos drift in and out
+   instead of being sliced off at the viewport. */
+.sponsor-band__viewport {
+  position: relative;
+  padding: var(--band-pad) 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.sponsor-band--platinum .sponsor-band__viewport {
+  border-color: color-mix(in srgb, var(--tier-color) 28%, var(--border));
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--tier-color) 6%, transparent) 50%,
+    transparent
+  );
+}
+
+.sponsor-band__track {
+  display: flex;
+  align-items: center;
+  gap: var(--logo-gap);
+  width: max-content;
+  padding: 0 calc(var(--logo-gap) / 2);
+  will-change: transform;
+}
+
+.sponsor-band--still .sponsor-band__viewport {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.sponsor-band--still .sponsor-band__track {
+  width: auto;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 48px;
+}
+
+.sponsor-logo {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.sponsor-logo__mark {
+  position: relative;
+  display: block;
+  width: calc(var(--logo-a) * var(--w));
+  height: calc(var(--logo-a) * var(--h));
+  filter: saturate(var(--rest-sat));
+  opacity: var(--rest-opacity);
+  transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+.sponsor-logo__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Dark is the default theme: show the reversed mark, hide the light-paper one. */
+.sponsor-logo__img--light {
+  display: none;
+}
+
+:root[data-theme="light"] .sponsor-logo__img--light {
+  display: block;
+}
+
+:root[data-theme="light"] .sponsor-logo__img--dark {
+  display: none;
+}
+
+.sponsor-logo__name {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 50%;
+  transform: translate(-50%, -4px);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--tier-color);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+@media (hover: hover) {
+  .sponsor-logo:hover .sponsor-logo__mark {
+    filter: none;
+    opacity: 1;
+    transform: translateY(-3px) scale(1.06);
+  }
+
+  .sponsor-logo:hover .sponsor-logo__name {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.sponsor-logo:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 10px;
+}
+
+.sponsor-logo:focus-visible .sponsor-logo__mark {
+  filter: none;
+  opacity: 1;
+}
+
+.sponsor-logo:focus-visible .sponsor-logo__name {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Package cards pick up the same metal on their top edge. */
+.tier-card--platinum { border-top: 3px solid var(--tier-platinum); }
+.tier-card--gold { border-top: 3px solid var(--tier-gold); }
+.tier-card--silver { border-top: 3px solid var(--tier-silver); }
+.tier-card--bronze { border-top: 3px solid var(--tier-bronze); }
+.tier-card--supporter { border-top: 3px solid var(--tier-supporter); }
+
+.tier-card--platinum .tier-card__index { color: var(--tier-platinum); }
+.tier-card--gold .tier-card__index { color: var(--tier-gold); }
+.tier-card--silver .tier-card__index { color: var(--tier-silver); }
+.tier-card--bronze .tier-card__index { color: var(--tier-bronze); }
+.tier-card--supporter .tier-card__index { color: var(--tier-supporter); }
+
+/* Perks fill the card; the CTA sits on the bottom edge so all four line up. */
+.tier-card--platinum,
+.tier-card--gold,
+.tier-card--silver,
+.tier-card--bronze,
+.tier-card--supporter {
+  display: flex;
+  flex-direction: column;
+}
+
+.tier-card__perks {
+  flex: 1;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.tier-card__cta {
+  align-self: flex-start;
+}
+
+.tier-card--platinum .tier-card__cta { color: var(--tier-platinum); }
+.tier-card--gold .tier-card__cta { color: var(--tier-gold); }
+.tier-card--silver .tier-card__cta { color: var(--tier-silver); }
+.tier-card--bronze .tier-card__cta { color: var(--tier-bronze); }
+.tier-card--supporter .tier-card__cta { color: var(--tier-supporter); }
+
+.tier-card__perks li {
+  position: relative;
+  padding-left: 16px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.tier-card__perks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+/* Package cards are buttons: they open the detail card (SponsorPackageModal). */
+button.tier-card {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.tier-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.tiers__grid--packages {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.tier-card__price {
+  display: block;
+  margin: -4px 0 18px;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+@media (hover: hover) {
+  button.tier-card:hover .tier-card__cta {
+    letter-spacing: 0.14em;
+  }
+}
+
+.tier-card__cta {
+  transition: letter-spacing 0.3s ease;
+}
+
+/* ---- Package detail card ------------------------------------------------ */
+.package-modal {
+  --tier-color: var(--accent);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  animation: package-fade 0.3s ease both;
+}
+
+.package-modal__card {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: min(88vh, 900px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 36px 40px 32px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--tier-color) 34%, var(--border));
+  border-top: 3px solid var(--tier-color);
+  box-shadow:
+    0 40px 120px -40px color-mix(in srgb, var(--tier-color) 45%, transparent),
+    0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  animation: package-rise 0.45s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+.package-modal__card--platinum { --tier-color: var(--tier-platinum); }
+.package-modal__card--gold { --tier-color: var(--tier-gold); }
+.package-modal__card--silver { --tier-color: var(--tier-silver); }
+.package-modal__card--bronze { --tier-color: var(--tier-bronze); }
+.package-modal__card--supporter { --tier-color: var(--tier-supporter); }
+
+/* Soft tier-coloured light from the top edge — the "premium" cue, kept faint. */
+.package-modal__glow {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 220px;
+  background: radial-gradient(
+    ellipse 70% 100% at 50% 0%,
+    color-mix(in srgb, var(--tier-color) 16%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.package-modal__head {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.package-modal__kicker {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tier-color);
+}
+
+.package-modal__close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.package-modal__close:hover,
+.package-modal__close:focus-visible {
+  border-color: var(--tier-color);
+  color: var(--text);
+  outline: none;
+}
+
+.package-modal__title-row {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.package-modal__title-row h2 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.package-modal__price {
+  font-family: var(--font-mono);
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  color: var(--tier-color);
+}
+
+.package-modal__summary {
+  position: relative;
+  margin: 14px 0 26px;
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.package-modal__stats {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.4fr) 1fr;
+  margin: 0 0 30px;
+  border: 1px solid var(--border);
+}
+
+.package-modal__stats > div {
+  padding: 14px 16px;
+}
+
+.package-modal__stats > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.package-modal__stats dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.package-modal__stats dd {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.package-modal__section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.package-modal__section::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--tier-color), transparent);
+  opacity: 0.5;
+}
+
+.package-modal__details {
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+}
+
+.package-modal__details li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.package-modal__details li:last-child {
+  border-bottom: 0;
+}
+
+.package-modal__num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--tier-color);
+  padding-top: 3px;
+}
+
+.package-modal__details strong {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.package-modal__details p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.package-modal__collab-intro {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.package-modal__collab {
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+}
+
+.package-modal__collab li {
+  position: relative;
+  padding: 6px 0 6px 18px;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.package-modal__collab li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.95em;
+  width: 6px;
+  height: 6px;
+  background: var(--tier-color);
+}
+
+.package-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+
+@keyframes package-fade {
+  from { opacity: 0; }
+}
+
+@keyframes package-rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
 }
 
 /* Contact */
@@ -1168,6 +1720,37 @@ ul {
 .form-success {
   color: var(--accent);
   font-size: 0.9rem;
+}
+
+.contact-form--sent {
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 420px;
+}
+
+.contact-form--sent h2 {
+  margin: 0;
+}
+
+.contact-form--sent p {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+}
+
+.contact-form__mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+.contact-form button:disabled {
+  opacity: 0.55;
+  cursor: progress;
 }
 
 /* Dynamic application form fields */
@@ -1462,6 +2045,12 @@ ul {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+a.social-links__slot:hover {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 /* Application form page */
@@ -1664,7 +2253,11 @@ ul {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .sponsor-logos {
+  .sponsor-band {
+    --logo-gap: 80px;
+  }
+
+  .tiers__grid--packages {
     grid-template-columns: repeat(3, 1fr);
   }
 
@@ -1691,10 +2284,47 @@ ul {
   .departments__grid,
   .members__grid,
   .timeline,
-  .tiers__grid,
-  .sponsor-logos {
+  .tiers__grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .sponsor-band {
+    --logo-a: 36px;
+    --logo-gap: 64px;
+    --band-pad: 30px;
+    margin-top: 48px;
+  }
+
+  .sponsor-band--platinum {
+    --logo-a: 50px;
+    --logo-gap: 80px;
+    --band-pad: 40px;
+  }
+
+  .sponsor-band--gold {
+    --logo-a: 40px;
+    --band-pad: 34px;
+  }
+
+  /* Perk lists hold words like "materyallerinde" that won't shrink below
+     their own width, which pushed the second column past the gutter. */
+  .tiers__grid,
+  .tiers__grid--packages,
+  .timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .package-modal {
+    padding: 0;
+    place-items: end stretch;
+  }
+
+  .package-modal__card {
+    width: 100%;
+    max-height: 92vh;
+    padding: 28px 22px 24px;
+  }
+
 
   .question-block {
     grid-template-columns: 1fr;
@@ -1713,7 +2343,8 @@ ul {
      is exactly the motion this preference asks us to drop. */
   .option-pill:active,
   .scale-pill:active,
-  .komite-card--choice:active {
+  .komite-card--choice:active,
+  .sponsor-logo:hover .sponsor-logo__mark {
     transform: none;
   }
 }

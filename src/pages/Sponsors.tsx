@@ -1,50 +1,66 @@
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { SectionHeading } from "../components/SectionHeading";
-import { PageHero } from "../components/PageHero";
 import { Reveal } from "../components/Reveal";
+import { SponsorBand } from "../components/SponsorBand";
+import { SponsorPackageModal } from "../components/SponsorPackageModal";
+import { SPONSOR_TIERS, sponsors } from "../data/sponsors";
 
 export function Sponsors() {
   const { t } = useLanguage();
+  const [openTier, setOpenTier] = useState<number | null>(null);
+  const closeModal = useCallback(() => setOpenTier(null), []);
+  const tiers = t.sponsors.tiers;
 
   return (
     <>
-      <PageHero title={t.sponsors.heroTitle} subtitle={t.sponsors.heroSubtitle} />
+      <section className="section section--alt sponsor-wall">
+        <div className="container">
+          <h1 className="sponsor-wall__title">{t.sponsors.currentSponsorsTitle}</h1>
+        </div>
+
+        {SPONSOR_TIERS.map((tier, index) => {
+          const members = sponsors.filter((sponsor) => sponsor.tier === tier);
+          if (members.length === 0) return null;
+          return (
+            <SponsorBand
+              key={tier}
+              tier={tier}
+              index={index}
+              title={t.sponsors.tierNames[tier]}
+              members={members}
+              direction={index % 2 === 0 ? "left" : "right"}
+              visitLabel={t.sponsors.visitWebsite}
+            />
+          );
+        })}
+      </section>
 
       <section className="section">
         <div className="container">
-          <SectionHeading title={t.sponsors.introTitle} />
-          <p className="lead-text">{t.sponsors.introText}</p>
-        </div>
-      </section>
-
-      <section className="section section--alt">
-        <div className="container">
-          <SectionHeading title={t.sponsors.currentSponsorsTitle} align="center" />
-          <Reveal className="sponsor-logos" stagger=".sponsor-logo-slot">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div className="sponsor-logo-slot" key={index}>
-                LOGO
-              </div>
-            ))}
-          </Reveal>
-          <p className="note note--center">{t.sponsors.currentSponsorsNote}</p>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <SectionHeading title={t.sponsors.tiersTitle} align="center" />
-          <Reveal className="tiers__grid" stagger=".tier-card">
-            {t.sponsors.tiers.map((tier, index) => (
-              <div className="tier-card" key={tier.name}>
+          <SectionHeading title={t.sponsors.tiersTitle} subtitle={t.sponsors.tiersSubtitle} align="center" />
+          <Reveal className="tiers__grid tiers__grid--packages" stagger=".tier-card">
+            {tiers.map((tier, index) => (
+              <button
+                type="button"
+                className={`tier-card tier-card--${tier.id}`}
+                key={tier.id}
+                onClick={() => setOpenTier(index)}
+                aria-haspopup="dialog"
+              >
                 <span className="tier-card__index">/ {String(index + 1).padStart(2, "0")}</span>
                 <h3>{tier.name}</h3>
-                <p>{tier.description}</p>
-              </div>
+                <span className="tier-card__price">{tier.price}</span>
+                <ul className="tier-card__perks">
+                  {tier.perks.map((perk) => (
+                    <li key={perk}>{perk}</li>
+                  ))}
+                </ul>
+                <span className="link-arrow tier-card__cta">{t.sponsors.packageModal.open} →</span>
+              </button>
             ))}
           </Reveal>
-          <p className="note note--center">{t.sponsors.tiersNote}</p>
         </div>
       </section>
 
@@ -52,11 +68,21 @@ export function Sponsors() {
         <div className="container join__inner">
           <h2>{t.sponsors.ctaTitle}</h2>
           <p>{t.sponsors.ctaText}</p>
-          <Link to="/iletisim" className="btn btn--primary">
+          <Link to="/iletisim?paket=general" className="btn btn--primary">
             {t.sponsors.ctaButton}
           </Link>
         </div>
       </section>
+
+      {openTier !== null && (
+        <SponsorPackageModal
+          tier={tiers[openTier]}
+          index={openTier}
+          total={tiers.length}
+          email={t.contact.email}
+          onClose={closeModal}
+        />
+      )}
     </>
   );
 }

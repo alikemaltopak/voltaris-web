@@ -27,3 +27,18 @@ export function scrollToTop(options?: { immediate?: boolean }) {
     window.scrollTo(0, 0);
   }
 }
+
+/**
+ * Freeze the page behind a modal. Lenis drives scrolling here, so stopping it is
+ * what actually holds the page still; the overflow lock covers the
+ * reduced-motion path, where Lenis never starts.
+ */
+export function lockScroll() {
+  instance?.stop();
+  document.documentElement.style.overflow = "hidden";
+}
+
+export function unlockScroll() {
+  document.documentElement.style.overflow = "";
+  instance?.start();
+}

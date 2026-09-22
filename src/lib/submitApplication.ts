@@ -1,4 +1,5 @@
 import type { Question } from "../data/applicationForms";
+import { postToFormEndpoint } from "./formEndpoint";
 
 /** Bir dosya alanının taşıdığı değer — base64 gövdesiyle birlikte. */
 export type UploadedFile = {
@@ -101,18 +102,7 @@ type SubmitArgs = {
   onProgress?: (percent: number) => void;
 };
 
-/**
- * Başvuruyu Apps Script uç noktasına gönderir.
- *
- * fetch yerine XMLHttpRequest kullanılıyor: fetch yükleme ilerlemesini
- * bildiremiyor, Apps Script ise dosyasız istekte bile 2-4 saniye sürüyor.
- * Yüzdeyi göstermek beklemeyi katlanılır kılan tek şey.
- *
- * Gövde düz bir string ve üstüne özel başlık eklenmiyor; böylece tarayıcı
- * bunu "basit istek" sayıp ön kontrol (preflight) göndermiyor — Apps Script
- * web uygulamaları OPTIONS isteğine cevap veremediği için Content-Type
- * ayarlarsak istek CORS'a takılır.
- */
+/** Başvuruyu Apps Script uç noktasına gönderir (bkz. formEndpoint.ts). */
 export async function submitApplication({
   committeeName,
   questions,
@@ -120,13 +110,6 @@ export async function submitApplication({
   honeypot,
   onProgress,
 }: SubmitArgs): Promise<void> {
-  const endpoint = import.meta.env.VITE_BASVURU_ENDPOINT;
-  const key = import.meta.env.VITE_BASVURU_ANAHTARI;
-
-  if (!endpoint || !key) {
-    throw new Error("Başvuru uç noktası tanımlı değil (VITE_BASVURU_ENDPOINT / VITE_BASVURU_ANAHTARI).");
-  }
-
   let dosya: UploadedFile | undefined;
   const cevaplar: { id: string; soru: string; tip: string; cevap: string | string[] }[] = [];
 
@@ -146,40 +129,10 @@ export async function submitApplication({
     });
   }
 
-  const body = JSON.stringify({
-    anahtar: key,
-    komiteAdi: committeeName,
-    botTuzagi: honeypot,
-    cevaplar,
-    dosya,
-  });
-
   // Dosya yoksa gövde birkaç kilobayt: yükleme anında biter ve tek bir
   // ilerleme olayı bile gelmeyebilir. Beklemenin tamamı sunucu tarafında,
   // o yüzden baştan "yükleme bitti" say.
   if (!dosya) onProgress?.(100);
 
-  const raw = await new Promise<string>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", endpoint);
-    xhr.timeout = 120_000;
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
-    };
-    // Son paket gittiğinde yüzdeyi kesin olarak kapat; onprogress'in tam
-    // 100 ile bitmesi garanti değil.
-    xhr.upload.onload = () => onProgress?.(100);
-    xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300
-        ? resolve(xhr.responseText)
-        : reject(new Error(`Sunucu ${xhr.status} döndü.`));
-    xhr.onerror = () => reject(new Error("Ağ hatası."));
-    xhr.ontimeout = () => reject(new Error("İstek zaman aşımına uğradı."));
-
-    xhr.send(body);
-  });
-
-  const result = JSON.parse(raw) as { durum?: string; mesaj?: string };
-  if (result.durum !== "ok") throw new Error(result.mesaj || "Başvuru kaydedilemedi.");
+  await postToFormEndpoint({ komiteAdi: committeeName, botTuzagi: honeypot, cevaplar, dosya }, onProgress);
 }

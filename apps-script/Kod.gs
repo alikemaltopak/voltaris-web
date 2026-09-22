@@ -1,9 +1,12 @@
 /**
- * Voltaris başvuru formu → Google E-Tablo + Drive
+ * Voltaris site formları → Google E-Tablo + Drive + e-posta
  *
  * Bu script "Voltaris Başvuruları" e-tablosuna bağlıdır (Uzantılar → Apps Script).
- * Siteden gelen her başvuruyu komitesine ait sayfaya bir satır olarak ekler,
- * varsa CV dosyasını Drive'a kaydedip satıra bağlantısını koyar.
+ * İki tür istek karşılar:
+ *  - Başvuru (varsayılan): komitesine ait sayfaya bir satır ekler, varsa CV'yi
+ *    Drive'a kaydedip satıra bağlantısını koyar.
+ *  - İletişim (tur: "iletisim"): mesajı takım adresine e-posta olarak iletir
+ *    (Yanıtla doğrudan gönderene gider) ve "İletişim" sayfasına kaydeder.
  *
  * Kurulum adımları için KURULUM.md dosyasına bak.
  */
@@ -18,6 +21,9 @@ const CV_KLASOR_ID = '1XXTrj3kGo5mnWKw7xHb9jtGnoSkELoWb';
 
 /** Her başvuruda haber verilecek adres. Boş bırakılırsa e-posta gönderilmez. */
 const BILDIRIM_EPOSTA = '';
+
+/** İletişim formundan gelen mesajların gideceği adres. */
+const ILETISIM_EPOSTA = 'voltaris.official@gmail.com';
 
 /** Kabul edilen en büyük CV boyutu. */
 const MAKS_DOSYA_MB = 8;
@@ -40,6 +46,8 @@ function doPost(e) {
     // Bal küpü: gerçek kullanıcıya görünmeyen alan. Doluysa gönderen bir bot,
     // hata döndürmek yerine sessizce yutuyoruz ki tekrar denemesin.
     if (gelen.botTuzagi) return cevap('ok', 'ok');
+
+    if (gelen.tur === 'iletisim') return iletisimMesaji(gelen);
 
     const cevaplar = Array.isArray(gelen.cevaplar) ? gelen.cevaplar : [];
     if (cevaplar.length === 0) return cevap('hata', 'Boş başvuru.');
@@ -79,6 +87,40 @@ function doPost(e) {
   } finally {
     kilit.releaseLock();
   }
+}
+
+/**
+ * İletişim formu: önce satırı yaz, sonra e-postayı gönder — e-posta kotası
+ * dolsa bile mesaj tabloda kaybolmadan durur.
+ */
+function iletisimMesaji(gelen) {
+  const ad = kisalt(gelen.ad, 120);
+  const eposta = kisalt(gelen.eposta, 200);
+  const konu = kisalt(gelen.konu, 200) || 'Web sitesinden mesaj';
+  const mesaj = kisalt(gelen.mesaj, 5000);
+  if (!ad || !eposta || !mesaj) return cevap('hata', 'Eksik alan.');
+
+  const sayfa = sayfayiGetir('İletişim');
+  basliklariEsitle(sayfa, [ZAMAN_BASLIGI, 'Ad Soyad', 'E-posta', 'Konu', 'Mesaj']);
+  sayfa.appendRow([new Date(), ad, eposta, konu, mesaj]);
+
+  try {
+    MailApp.sendEmail({
+      to: ILETISIM_EPOSTA,
+      replyTo: eposta,
+      name: 'Voltaris Web Sitesi',
+      subject: '[Site] ' + konu + ' — ' + ad,
+      body: ad + ' <' + eposta + '> web sitesinden yazdı:\n\n' + mesaj +
+            '\n\n— \nBu e-postayı yanıtladığında cevap doğrudan ' + eposta + ' adresine gider.',
+    });
+  } catch (hata) {
+    console.error(hata);
+  }
+  return cevap('ok', 'ok');
+}
+
+function kisalt(deger, en) {
+  return String(deger || '').trim().substring(0, en);
 }
 
 /** Tarayıcıdan URL'ye girilirse boş sayfa yerine anlaşılır bir şey dönsün. */

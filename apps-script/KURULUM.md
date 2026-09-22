@@ -1,7 +1,33 @@
-# Başvuru formu → Google E-Tablo kurulumu
+# Site formları → Google E-Tablo + e-posta kurulumu
+
+Aynı script iki formu karşılıyor:
+
+- **Başvuru formu** → komite sayfalarına satır, CV'ler Drive'a.
+- **İletişim formu** (sponsorluk paketlerinden gelenler dahil) → mesaj
+  `ILETISIM_EPOSTA` adresine e-posta olarak gider (Yanıtla doğrudan gönderene
+  gider) ve "İletişim" sayfasına da kaydedilir.
 
 Site tarafı hazır. Geriye Apps Script'i yayınlayıp iki ortam değişkenini
 doldurmak kalıyor. Tamamı yaklaşık 15 dakika.
+
+## Neden bu adımları takımdan biri yapmak zorunda?
+
+Sitedeki formlar veriyi doğrudan e-tabloya yazamaz; araya küçük bir program
+girer: **Apps Script**. Bu program Voltaris'in Google hesabının *içinde*
+yaşar ve o hesabın yetkisiyle çalışır — e-tabloya satır ekler, Drive'a CV
+kaydeder, `voltaris.official@gmail.com` adına e-posta gönderir.
+
+Google, bir hesabın adına e-posta gönderen ya da Drive'ına yazan kodun
+**hesap sahibinin kendi eliyle** yüklenmesini ve izin ekranında onaylanmasını
+şart koşar. Bu yüzden:
+
+- Kodu projede (`apps-script/Kod.gs`) biz yazıp güncelliyoruz,
+- ama onu Google'a yapıştırıp **"Yeni sürüm" olarak yayınlamak** hesaba
+  giriş yapabilen birinin işi. Dışarıdan (siteden, Claude'dan, başka bir
+  araçtan) bu yapılamaz.
+
+Kod her değiştiğinde bu yayınlama bir kez tekrarlanır. Sitenin kendisi (Vercel)
+ayrıca bir şey istemez; adres ve anahtar aynı kalır.
 
 ## Hazır olan Drive kaynakları
 
@@ -67,9 +93,34 @@ sütunundaki bağlantı Drive'daki dosyaya gitmeli.
 
 ## Bilinmesi gerekenler
 
+## Script güncellemesi (mevcut kurulumu yenilemek)
+
+İlk kurulum bir kez yapıldı; kod değiştiğinde yapılacak olan sadece bu:
+
+1. E-tabloyu aç → **Uzantılar → Apps Script**.
+2. Editörde ⌘A (Windows'ta Ctrl+A) ile her şeyi seç, sil.
+3. Projedeki `apps-script/Kod.gs` dosyasının tamamını kopyalayıp yapıştır.
+4. Yapıştırınca en üstteki ayarlar örnek değerlere döner. İkisini geri yaz:
+   - `GIZLI_ANAHTAR` → `.env` dosyasındaki `VITE_BASVURU_ANAHTARI` ile aynı değer
+   - `BILDIRIM_EPOSTA` → başvuru bildirimi istiyorsan `'voltaris.official@gmail.com'`
+   (`ILETISIM_EPOSTA` ve `CV_KLASOR_ID` zaten doğru; dokunma.)
+5. Kaydet (⌘S).
+6. **Dağıt → Dağıtımları yönet** → listedeki dağıtımın yanındaki **kalem** →
+   **Sürüm** açılır menüsünden **Yeni sürüm** → **Dağıt**.
+   "Yeni dağıtım" *seçme* — o yeni bir adres üretir ve site eski adrese
+   gitmeye devam eder.
+7. İzin ekranı çıkarsa (yeni bir izin gerektiğinde çıkar): hesabı seç →
+   "Gelişmiş" → "…projesine git" → **İzin ver**.
+8. Kontrol: `/exec` adresini tarayıcıda aç; "uç noktası çalışıyor" yazısı
+   görünmeli.
+
 **Script'i her değiştirdiğinde yeniden dağıt.** Kaydetmek yetmez:
 **Dağıt → Dağıtımları yönet → kalem simgesi → Sürüm: Yeni sürüm → Dağıt**.
 Bunu atlarsan eski kod çalışmaya devam eder. URL değişmez.
+
+**Script'i güncellerken ayarlar sıfırlanır.** Yeni `Kod.gs`'i yapıştırınca
+`GIZLI_ANAHTAR` ve `BILDIRIM_EPOSTA` satırlarını önceki değerleriyle tekrar
+doldurmayı unutma; yoksa site "Yetkisiz istek" alır.
 
 **Siteye yeni soru eklemek script'i bozmaz.** Script gelen soruların
 metnini başlık olarak kullanıyor; tanımadığı bir soru görürse sona yeni sütun
