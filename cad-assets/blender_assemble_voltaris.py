@@ -55,7 +55,43 @@ MATERIALS = {
 # Tinted glazing. Kept as blended alpha rather than real transmission: every
 # glTF viewer honours alpha, while KHR_materials_transmission is patchier, and
 # at this size the difference is not visible.
-GLASS = ((0.020, 0.043, 0.055, 0.30), 0.0, 0.06)
+GLASS = ((0.030, 0.052, 0.062, 0.16), 0.0, 0.05)
+
+# --- Interior -------------------------------------------------------------
+# The cockpit floor sits at z = 0.19 and the roll cage tops out at 1.13, so
+# there is about 0.9 m of headroom to seat a driver in.
+FLOOR_Z = 0.19
+SEAT_AT = (-0.05, 0.0, FLOOR_Z)
+
+# Side profile of the bucket seat, from the top of the headrest down the back
+# and out along the cushion. Each point carries the seat's half-width there and
+# how far the bolsters rise out of the surface — which is all a racing seat is:
+# a channel that grips at the shoulders, waist and thighs.
+SEAT_SPINE = [
+    # (x, z, half-width, bolster)
+    (-0.28, 0.78, 0.145, 0.15),
+    (-0.25, 0.67, 0.205, 0.17),
+    (-0.21, 0.56, 0.225, 0.14),
+    (-0.16, 0.39, 0.23, 0.09),
+    (-0.10, 0.21, 0.225, 0.10),
+    (-0.02, 0.09, 0.235, 0.13),
+    (0.10, 0.05, 0.245, 0.14),
+    (0.30, 0.04, 0.24, 0.12),
+    (0.44, 0.06, 0.225, 0.07),
+    (0.52, 0.02, 0.21, 0.02),
+]
+SEAT_RIB = 16  # samples across the seat
+
+INTERIOR = {
+    "Koltuk": ((0.020, 0.021, 0.024, 1), 0.0, 0.88),
+    "Kokpit": ((0.035, 0.037, 0.042, 1), 0.25, 0.55),
+    "Direksiyon": ((0.028, 0.030, 0.034, 1), 0.15, 0.62),
+}
+# The two lit panels in front of the driver.
+DISPLAYS = {
+    "Ekran_Multimedya": ((0.02, 0.09, 0.12, 1), (0.10, 0.62, 0.78, 1), 1.6),
+    "Ekran_Gosterge": ((0.02, 0.08, 0.10, 1), (0.13, 0.70, 0.82, 1), 1.4),
+}
 
 # Which STL stem becomes which object, with the shell parts flagged for the
 # quarter turn that lines them up with the chassis.
@@ -92,8 +128,21 @@ def material(name):
     if name in bpy.data.materials:
         return bpy.data.materials[name]
 
-    if name in EMISSIVE:
-        base, glow, strength = EMISSIVE[name]
+    if name in INTERIOR:
+        colour, metallic, rough = INTERIOR[name]
+        mat = bpy.data.materials.new(name)
+        mat.use_nodes = True
+        b = mat.node_tree.nodes["Principled BSDF"]
+        b.inputs["Base Color"].default_value = colour
+        b.inputs["Metallic"].default_value = metallic
+        b.inputs["Roughness"].default_value = rough
+        # Dash and trim are single sheets; culled backfaces would make them
+        # vanish whenever the camera swings behind one.
+        mat.use_backface_culling = False
+        return mat
+
+    if name in EMISSIVE or name in DISPLAYS:
+        base, glow, strength = (EMISSIVE | DISPLAYS)[name]
         mat = bpy.data.materials.new(name)
         mat.use_nodes = True
         b = mat.node_tree.nodes["Principled BSDF"]
@@ -102,6 +151,7 @@ def material(name):
         b.inputs["Roughness"].default_value = 0.12
         b.inputs["Emission Color"].default_value = glow
         b.inputs["Emission Strength"].default_value = strength
+        mat.use_backface_culling = False
         return mat
 
     colour, metallic, rough = GLASS if name == "Cam" else MATERIALS[name]
@@ -229,6 +279,154 @@ def lozenge(name, half_a, half_b, rings=9, segments=72, power=3.2):
     return bpy.data.objects.new(name, mesh)
 
 
+def mesh_object(name, verts, faces, material, thickness=0.0, smooth=True):
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    select_only(obj)
+    if thickness:
+        solid = obj.modifiers.new("kalinlik", "SOLIDIFY")
+        solid.thickness = thickness
+        solid.offset = 0
+        bpy.ops.object.modifier_apply(modifier=solid.name)
+    if smooth:
+        try:
+            bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
+        except AttributeError:
+            bpy.ops.object.shade_smooth()
+    obj.select_set(False)
+    obj.data.materials.append(material)
+    return obj
+
+
+def bucket_seat():
+    """A racing seat swept from its side profile.
+
+    Built as one continuous shell rather than an assembly of boxes: a bucket
+    seat is a single moulded shape, and boxes would leave seams exactly where
+    the eye looks for a smooth channel.
+    """
+    verts, faces = [], []
+    for i, (x, z, half, bolster) in enumerate(SEAT_SPINE):
+        # Surface normal in the side plane, pointing into the cabin.
+        prev = SEAT_SPINE[max(i - 1, 0)]
+        nxt = SEAT_SPINE[min(i + 1, len(SEAT_SPINE) - 1)]
+        tx, tz = nxt[0] - prev[0], nxt[1] - prev[1]
+        length = math.hypot(tx, tz) or 1.0
+        nx, nz = -tz / length, tx / length
+        for j in range(SEAT_RIB):
+            t = -1 + 2 * j / (SEAT_RIB - 1)
+            rise = bolster * t**4  # flat down the middle, curling at the edges
+            verts.append((x + nx * rise, half * t, z + nz * rise))
+    for i in range(len(SEAT_SPINE) - 1):
+        for j in range(SEAT_RIB - 1):
+            a = i * SEAT_RIB + j
+            faces.append((a, a + 1, a + SEAT_RIB + 1, a + SEAT_RIB))
+    obj = mesh_object("Koltuk", verts, faces, material("Koltuk"), thickness=0.035)
+    obj.location = SEAT_AT
+    bake(obj)
+    return obj
+
+
+def dash_panel():
+    """A dash with a rolled top edge, curving back towards the door tops."""
+    # (x offset, z) up the face, the top rolling over towards the driver.
+    profile = [(0.02, -0.12), (0.0, -0.06), (-0.005, 0.02), (-0.03, 0.085), (-0.075, 0.115), (-0.12, 0.12)]
+    half, ribs, sweep = 0.40, 15, 0.10
+    verts, faces = [], []
+    for ox, z in profile:
+        for j in range(ribs):
+            t = -1 + 2 * j / (ribs - 1)
+            verts.append((ox - sweep * t * t, half * t, z))
+    for i in range(len(profile) - 1):
+        for j in range(ribs - 1):
+            a = i * ribs + j
+            faces.append((a, a + 1, a + ribs + 1, a + ribs))
+    obj = mesh_object("Kokpit_Panel", verts, faces, material("Kokpit"), thickness=0.022)
+    obj.location = (0.78, 0, 0.60)
+    bake(obj)
+    return obj
+
+
+def panel(name, size, at, rotation, slot):
+    """A flat panel — dashboard face, screen or trim."""
+    w, h = size
+    verts = [(0, -w / 2, -h / 2), (0, w / 2, -h / 2), (0, w / 2, h / 2), (0, -w / 2, h / 2)]
+    obj = mesh_object(name, verts, [(0, 1, 2, 3)], material(slot), smooth=False)
+    obj.location = at
+    obj.rotation_euler = rotation
+    bake(obj)
+    return obj
+
+
+def steering_wheel():
+    """Rim, hub and three spokes, tilted back the way a wheel sits."""
+    made = []
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.135, minor_radius=0.017, major_segments=40, minor_segments=10)
+    rim = bpy.context.object
+    rim.name = "Direksiyon"
+    rim.data.materials.append(material("Direksiyon"))
+    made.append(rim)
+
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.042, depth=0.05, vertices=20)
+    hub = bpy.context.object
+    hub.name = "Direksiyon_Gobek"
+    hub.rotation_euler = (0, 0, 0)
+    hub.data.materials.append(material("Direksiyon"))
+    made.append(hub)
+
+    for k in range(3):
+        angle = math.radians(90 + k * 120)
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        spoke = bpy.context.object
+        spoke.name = f"Direksiyon_Kol_{k}"
+        spoke.scale = (0.09, 0.022, 0.012)
+        spoke.location = (math.cos(angle) * 0.075, math.sin(angle) * 0.075, 0)
+        spoke.rotation_euler = (0, 0, angle)
+        spoke.data.materials.append(material("Direksiyon"))
+        made.append(spoke)
+
+    for obj in made:
+        select_only(obj)
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        obj.select_set(False)
+
+    # Join, then stand the wheel up and rake it back.
+    select_only(made[0])
+    for obj in made[1:]:
+        obj.select_set(True)
+    bpy.ops.object.join()
+    wheel = bpy.context.object
+    wheel.name = wheel.data.name = "Direksiyon"
+    wheel.rotation_euler = (0, math.radians(68), 0)
+    wheel.location = (0.61, 0, 0.66)
+    bake(wheel)
+    try:
+        bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
+    except AttributeError:
+        pass
+    return wheel
+
+
+def add_interior():
+    """Seat, wheel, dash and the two lit screens in front of the driver."""
+    made = [bucket_seat(), steering_wheel()]
+
+    # The dash sits just under the windscreen base, which the shell puts at
+    # x = 0.80, z = 0.82.
+    made.append(dash_panel())
+    made.append(
+        panel("Ekran_Multimedya", (0.26, 0.135), (0.755, 0.0, 0.595), (0, math.radians(-8), 0), "Ekran_Multimedya")
+    )
+    # The cluster rides on the column, just behind the wheel.
+    made.append(
+        panel("Ekran_Gosterge", (0.19, 0.08), (0.695, 0.0, 0.735), (0, math.radians(-42), 0), "Ekran_Gosterge")
+    )
+    return made
+
+
 def add_lamps(body):
     """Lay the headlights and tail bar onto the bodywork."""
     made = []
@@ -343,6 +541,10 @@ def main():
         obj.location -= middle
         bake(obj)
 
+    # After the centring, not before: the interior is laid out by hand against
+    # the finished car's coordinates, so it must not be shifted again.
+    everything += add_interior()
+
     lo, hi = world_bounds(everything)
     after = sum(len(o.data.polygons) for o in everything)
     print(f"arac: {hi.x - lo.x:.3f} m uzun, {hi.y - lo.y:.3f} m genis, {hi.z - lo.z:.3f} m yuksek")
@@ -412,6 +614,7 @@ def render_previews(objs, out_dir):
         "yan": (Vector((0.02, -1.0, 0.10)), 6.0),
         "arka-ceyrek": (Vector((-0.78, -0.58, 0.26)), 5.6),
         "ust": (Vector((0.30, -0.35, 1.0)), 5.8),
+        "kokpit": (Vector((0.70, -0.52, 0.40)), 1.6),
     }
     for name, (d, dist) in views.items():
         d = d.normalized()

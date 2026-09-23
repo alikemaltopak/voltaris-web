@@ -221,10 +221,10 @@ function Studio({ lights, imageUrl }: { lights: number; imageUrl: string | null 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
         <circleGeometry args={[PODIUM_R, 96]} />
         <MeshReflectorMaterial
-          resolution={512}
+          resolution={256}
           mixBlur={1.1}
           mixStrength={22}
-          blur={[360, 110]}
+          blur={[200, 60]}
           depthScale={1.1}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.3}
@@ -442,7 +442,7 @@ export function CarViewer() {
   return (
     <div className="car-studio">
       <div className="car-studio__stage" onPointerDown={() => setSpinning(false)}>
-        <Canvas shadows dpr={[1, 2]} camera={{ position: VIEWS.onCeyrek.at, fov: 40 }} gl={{ antialias: true }}>
+        <Canvas shadows dpr={[1, 1.75]} camera={{ position: VIEWS.onCeyrek.at, fov: 40 }} gl={{ antialias: true }}>
           <color attach="background" args={["#06070a"]} />
           <Suspense fallback={null}>
             {/* The environment is built from light panels rather than a drei
