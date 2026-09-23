@@ -33,15 +33,115 @@ interface ViewPreset {
 
 // Camera positions in the model's own frame: +X is the nose, +Y is up.
 const VIEWS = {
-  onCeyrek: { tr: "Ön 3/4", en: "Front 3/4", at: [3.05, 1.3, 3.5] },
-  yan: { tr: "Yan", en: "Side", at: [0.1, 0.95, 4.9] },
-  arkaCeyrek: { tr: "Arka 3/4", en: "Rear 3/4", at: [-3.25, 1.35, 3.4] },
-  ust: { tr: "Kuşbakışı", en: "Top", at: [1.6, 4.6, 1.8] },
+  onCeyrek: { tr: "Ön 3/4", en: "Front 3/4", at: [2.35, 1.6, 4.85] },
+  yan: { tr: "Yan", en: "Side", at: [0.1, 1.2, 5.45] },
+  arkaCeyrek: { tr: "Arka 3/4", en: "Rear 3/4", at: [-3.35, 1.65, 4.25] },
+  ust: { tr: "Kuşbakışı", en: "Top", at: [1.8, 4.1, 2.05] },
 } satisfies Record<string, ViewPreset>;
 
 type ViewKey = keyof typeof VIEWS;
 
-const TARGET = new THREE.Vector3(0, 0.55, 0);
+const TARGET = new THREE.Vector3(0, 0.62, 0);
+
+// Studio dimensions, in metres, in the car's own frame: +X is the nose, +Y is
+// up, +Z is across. The car sits on the podium, whose top is y = 0.
+const FLOOR_Y = -0.1;
+const PODIUM_R = 2.15;
+const COVE_R = 9;
+const COVE_H = 8;
+const COVE_FLARE = 3.2;
+
+/** One overhead softbox: a dark housing with a lit diffuser under it. */
+function Softbox({
+  position,
+  rotation = [0, 0, 0],
+  size,
+  glow = 2.2,
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  size: [number, number];
+  glow?: number;
+}) {
+  const [along, across] = size;
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh position={[0, 0.045, 0]}>
+        <boxGeometry args={[along, 0.07, across]} />
+        <meshStandardMaterial color="#0a0b0d" metalness={0.8} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[along - 0.09, 0.012, across - 0.09]} />
+        {/* toneMapped off, or the diffusers read as grey rather than lit. */}
+        <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={glow} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
+/** The room: curved cove, turntable podium, lighting rig and front screen. */
+function Studio() {
+  // A cove that flares as it rises, so floor and wall meet with no corner —
+  // the seamless backdrop a real studio sweeps into.
+  const cove = useMemo(() => {
+    const points = [new THREE.Vector2(COVE_R, FLOOR_Y)];
+    for (let i = 1; i <= 20; i++) {
+      const t = i / 20;
+      points.push(
+        new THREE.Vector2(
+          COVE_R + COVE_FLARE * (1 - Math.cos((t * Math.PI) / 2)),
+          FLOOR_Y + COVE_H * t,
+        ),
+      );
+    }
+    return new THREE.LatheGeometry(points, 96);
+  }, []);
+
+  return (
+    <group>
+      <mesh geometry={cove}>
+        <meshStandardMaterial color="#0b0d11" roughness={0.62} metalness={0.05} side={THREE.BackSide} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y, 0]} receiveShadow>
+        <circleGeometry args={[COVE_R + 0.05, 72]} />
+        <meshStandardMaterial color="#0b0d11" roughness={0.62} metalness={0.05} />
+      </mesh>
+
+      {/* Turntable podium, with a lit rim so its edge reads against the floor. */}
+      <mesh position={[0, FLOOR_Y / 2, 0]} receiveShadow>
+        <cylinderGeometry args={[PODIUM_R, PODIUM_R + 0.09, -FLOOR_Y, 96]} />
+        <meshStandardMaterial color="#101318" roughness={0.3} metalness={0.35} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]}>
+        <torusGeometry args={[PODIUM_R + 0.02, 0.022, 12, 96]} />
+        <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={1.7} toneMapped={false} />
+      </mesh>
+
+      {/* Overhead rig: one long box down the middle, two strips angled in. */}
+      <Softbox position={[0, 2.85, 0]} size={[4.4, 1.6]} glow={2.4} />
+      <Softbox position={[0, 2.9, 2.85]} rotation={[Math.PI * (38 / 180), 0, 0]} size={[4.4, 0.55]} glow={2} />
+      <Softbox position={[0, 2.9, -2.85]} rotation={[-Math.PI * (38 / 180), 0, 0]} size={[4.4, 0.55]} glow={2} />
+      <Softbox position={[-2.9, 2.25, 0]} rotation={[0, 0, Math.PI / 4]} size={[0.6, 1.8]} glow={1.8} />
+
+      {/* The white screen standing in front of the nose. This is what lays the
+          long highlight down the bonnet and flanks. */}
+      <mesh position={[3.55, 1.25, 0]} rotation={[0, -Math.PI / 2, -Math.PI * (10 / 180)]}>
+        <planeGeometry args={[2.7, 2.4]} />
+        <meshStandardMaterial
+          color="#fff"
+          emissive="#fff"
+          emissiveIntensity={0.85}
+          toneMapped={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      <mesh position={[3.62, 1.25, 0]} rotation={[0, -Math.PI / 2, -Math.PI * (10 / 180)]}>
+        <planeGeometry args={[2.86, 2.56]} />
+        <meshStandardMaterial color="#0a0b0d" metalness={0.75} roughness={0.4} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
 
 /** Does this browser have a working WebGL context at all? */
 function webglAvailable() {
@@ -183,17 +283,15 @@ export function CarViewer() {
       <div className="car-studio__stage" onPointerDown={() => setSpinning(false)}>
         <Canvas shadows dpr={[1, 2]} camera={{ position: VIEWS.onCeyrek.at, fov: 40 }} gl={{ antialias: true }}>
           <color attach="background" args={["#06070a"]} />
-          {/* Fades the far edge of the floor into the background, so the studio
-              has no visible horizon seam cutting across the car. */}
-          <fog attach="fog" args={["#06070a", 6, 13.5]} />
           <Suspense fallback={null}>
             {/* The environment is built from light panels rather than a drei
                 preset, because the presets fetch an HDR from a third-party CDN
                 at runtime. Metal and paint still get something to reflect. */}
             <Environment resolution={256}>
-              <Lightformer intensity={3.4} position={[0, 5, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[9, 4, 1]} />
-              <Lightformer intensity={1.2} position={[-5, 2, -3]} scale={[6, 4, 1]} />
-              <Lightformer intensity={1.8} color="#9fe7ff" position={[5, 2.4, 3]} scale={[5, 3, 1]} />
+              <Lightformer intensity={3} position={[0, 2.85, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[4.4, 1.6, 1]} />
+              <Lightformer intensity={1.5} position={[0, 2.9, -2.85]} rotation={[-Math.PI / 4, 0, 0]} scale={[4.4, 0.6, 1]} />
+              <Lightformer intensity={1.5} position={[0, 2.9, 2.85]} rotation={[Math.PI / 4, 0, 0]} scale={[4.4, 0.6, 1]} />
+              <Lightformer intensity={2.2} position={[3.55, 1.25, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[2.7, 2.4, 1]} />
             </Environment>
             {/* Overhead softbox, as in a real studio. */}
             <directionalLight position={[1.5, 7, 2.5]} intensity={2.6} />
@@ -207,20 +305,15 @@ export function CarViewer() {
               spinning={spinning}
               homeKey={nudge}
             />
-            <ContactShadows position={[0, 0.01, 0]} opacity={0.75} scale={11} blur={2.6} far={3.2} />
-            {/* The floor catches the overhead light as a pool, which is what
-                makes it read as a studio rather than a void. */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-              <circleGeometry args={[42, 72]} />
-              <meshStandardMaterial color="#0c0e13" roughness={0.55} metalness={0.15} />
-            </mesh>
+            <ContactShadows position={[0, 0.012, 0]} opacity={0.7} scale={6.5} blur={2.4} far={2.6} />
+            <Studio />
           </Suspense>
           <ViewRig view={view} nudge={nudge} />
           <OrbitControls
             makeDefault
             enablePan={false}
-            minDistance={2.6}
-            maxDistance={9.5}
+            minDistance={3}
+            maxDistance={11}
             // Stop the camera dropping under the floor.
             maxPolarAngle={Math.PI / 2.06}
             target={TARGET}

@@ -1003,7 +1003,7 @@ ul {
 
 .car-studio__stage {
   position: relative;
-  height: 520px;
+  height: 600px;
 }
 
 .car-studio__stage canvas {
@@ -1146,7 +1146,7 @@ ul {
 .chassis-viewer {
   position: relative;
   width: 100%;
-  height: 520px;
+  height: 600px;
   background: var(--surface);
   border: 1px solid var(--border);
 }
