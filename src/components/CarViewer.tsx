@@ -13,6 +13,8 @@ import * as THREE from "three";
 import { useLanguage } from "../context/LanguageContext";
 
 const MODEL_URL = "/models/voltaris-arac.glb";
+// The view behind the studio until someone drops in their own picture.
+const DEFAULT_BACKDROP = "/backdrops/antik-sahil.jpg";
 
 interface Finish {
   id: string;
@@ -140,7 +142,7 @@ function Backdrop({ imageUrl, lights }: { imageUrl: string | null; lights: numbe
       // is why a wide panorama suits this screen best.
       const shape = loaded.image.width / loaded.image.height;
       const span = SCREEN_ASPECT / shape;
-      loaded.wrapS = THREE.ClampToEdgeWrapping;
+      loaded.wrapS = THREE.MirroredRepeatWrapping;
       // Negative, because the screen is seen from inside the curve and the
       // picture would otherwise read backwards.
       loaded.repeat.x = -span;
@@ -412,11 +414,11 @@ export function CarViewer() {
   const [view, setView] = useState<ViewKey>("onCeyrek");
   const [nudge, setNudge] = useState(0);
   const [lights, setLights] = useState(1);
-  const [backdrop, setBackdrop] = useState<string | null>(null);
+  const [backdrop, setBackdrop] = useState<string | null>(DEFAULT_BACKDROP);
 
   // Object URLs are handed out by the browser and have to be handed back.
   useEffect(() => () => {
-    if (backdrop) URL.revokeObjectURL(backdrop);
+    if (backdrop?.startsWith("blob:")) URL.revokeObjectURL(backdrop);
   }, [backdrop]);
 
   const pickBackdrop = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -424,7 +426,7 @@ export function CarViewer() {
     event.target.value = "";
     if (!file) return;
     setBackdrop((previous) => {
-      if (previous) URL.revokeObjectURL(previous);
+      if (previous?.startsWith("blob:")) URL.revokeObjectURL(previous);
       return URL.createObjectURL(file);
     });
   };
