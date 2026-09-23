@@ -33,15 +33,15 @@ interface ViewPreset {
 
 // Camera positions in the model's own frame: +X is the nose, +Y is up.
 const VIEWS = {
-  onCeyrek: { tr: "Ön 3/4", en: "Front 3/4", at: [2.35, 1.6, 4.85] },
-  yan: { tr: "Yan", en: "Side", at: [0.1, 1.2, 5.45] },
-  arkaCeyrek: { tr: "Arka 3/4", en: "Rear 3/4", at: [-3.35, 1.65, 4.25] },
+  onCeyrek: { tr: "Ön 3/4", en: "Front 3/4", at: [2.5, 1.95, 5.15] },
+  yan: { tr: "Yan", en: "Side", at: [0.1, 1.5, 5.7] },
+  arkaCeyrek: { tr: "Arka 3/4", en: "Rear 3/4", at: [-3.5, 1.95, 4.5] },
   ust: { tr: "Kuşbakışı", en: "Top", at: [1.8, 4.1, 2.05] },
 } satisfies Record<string, ViewPreset>;
 
 type ViewKey = keyof typeof VIEWS;
 
-const TARGET = new THREE.Vector3(0, 0.62, 0);
+const TARGET = new THREE.Vector3(0, 0.72, 0);
 
 // Studio dimensions, in metres, in the car's own frame: +X is the nose, +Y is
 // up, +Z is across. The car sits on the podium, whose top is y = 0.
@@ -51,36 +51,124 @@ const COVE_R = 9;
 const COVE_H = 8;
 const COVE_FLARE = 3.2;
 
-/** One overhead softbox: a dark housing with a lit diffuser under it. */
+// The picture screen: a wide arc hung high on the back wall, centred opposite
+// the default camera so it fills the background of the opening shot.
+const SCREEN_R = 8.5;
+const SCREEN_H = 5.4;
+const SCREEN_Y = 3.9;
+const SCREEN_ARC = 76;
+const SCREEN_FROM = 206 - SCREEN_ARC / 2;
+
+// The overhead rig: hung high and kept slim, cropping into the top of frame.
+const RIG: { at: [number, number, number]; tilt: number; size: [number, number] }[] = [
+  { at: [0, 3.35, 0], tilt: 0, size: [3.8, 0.75] },
+  { at: [0, 3.25, 3.5], tilt: 40, size: [3.8, 0.26] },
+  { at: [0, 3.25, -3.5], tilt: -40, size: [3.8, 0.26] },
+];
+
+/** One overhead softbox: a slim housing, a lit diffuser, and drop rods. */
 function Softbox({
   position,
   rotation = [0, 0, 0],
   size,
-  glow = 2.2,
+  glow,
 }: {
   position: [number, number, number];
   rotation?: [number, number, number];
   size: [number, number];
-  glow?: number;
+  glow: number;
 }) {
   const [along, across] = size;
   return (
     <group position={position} rotation={rotation}>
-      <mesh position={[0, 0.045, 0]}>
-        <boxGeometry args={[along, 0.07, across]} />
-        <meshStandardMaterial color="#0a0b0d" metalness={0.8} roughness={0.35} />
+      <mesh position={[0, 0.026, 0]}>
+        <boxGeometry args={[along, 0.05, across]} />
+        <meshStandardMaterial color="#0b0d10" metalness={0.85} roughness={0.26} />
       </mesh>
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[along - 0.09, 0.012, across - 0.09]} />
+      <mesh>
+        <boxGeometry args={[along - 0.05, 0.008, across - 0.05]} />
         {/* toneMapped off, or the diffusers read as grey rather than lit. */}
         <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={glow} toneMapped={false} />
+      </mesh>
+      {/* Thin rods running up out of frame, so the rig reads as hung rather
+          than floating in mid-air. */}
+      {[-along * 0.34, along * 0.34].map((x) => (
+        <mesh key={x} position={[x, 1.2, 0]}>
+          <cylinderGeometry args={[0.012, 0.012, 2.4, 8]} />
+          <meshStandardMaterial color="#14171c" metalness={0.9} roughness={0.3} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * The curved screen hung behind the car. Empty it is a dark panel; given a
+ * picture it becomes the view behind the studio.
+ *
+ * The picture is read from the visitor's own file picker and never leaves
+ * their browser.
+ */
+function Backdrop({ imageUrl, lights }: { imageUrl: string | null; lights: number }) {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    if (!imageUrl) {
+      setTexture(null);
+      return;
+    }
+    let live = true;
+    new THREE.TextureLoader().load(imageUrl, (loaded) => {
+      if (!live) {
+        loaded.dispose();
+        return;
+      }
+      loaded.colorSpace = THREE.SRGBColorSpace;
+      // Seen from inside the curve, so the picture has to be flipped across
+      // to read the right way round.
+      loaded.wrapS = THREE.RepeatWrapping;
+      loaded.repeat.x = -1;
+      loaded.offset.x = 1;
+      setTexture(loaded);
+    });
+    return () => {
+      live = false;
+    };
+  }, [imageUrl]);
+
+  useEffect(() => () => texture?.dispose(), [texture]);
+
+  const arc = (radius: number, height: number, from: number, sweep: number) =>
+    [radius, radius, height, 120, 1, true, THREE.MathUtils.degToRad(from), THREE.MathUtils.degToRad(sweep)] as const;
+
+  return (
+    <group position={[0, SCREEN_Y, 0]}>
+      {/* A bezel a little behind and a little proud of the picture, so the
+          edge of the screen reads as a frame rather than as a cut. */}
+      <mesh>
+        <cylinderGeometry args={arc(SCREEN_R + 0.07, SCREEN_H + 0.18, SCREEN_FROM - 0.7, SCREEN_ARC + 1.4)} />
+        <meshStandardMaterial color="#0a0c10" metalness={0.8} roughness={0.34} side={THREE.BackSide} />
+      </mesh>
+      <mesh>
+        <cylinderGeometry args={arc(SCREEN_R, SCREEN_H, SCREEN_FROM, SCREEN_ARC)} />
+        {texture ? (
+          <meshBasicMaterial map={texture} side={THREE.BackSide} toneMapped={false} />
+        ) : (
+          <meshStandardMaterial
+            color="#0d1016"
+            emissive="#13323c"
+            emissiveIntensity={0.25 * lights}
+            roughness={0.66}
+            side={THREE.BackSide}
+          />
+        )}
       </mesh>
     </group>
   );
 }
 
 /** The room: curved cove, turntable podium, lighting rig and front screen. */
-function Studio() {
+function Studio({ lights, imageUrl }: { lights: number; imageUrl: string | null }) {
   // A cove that flares as it rises, so floor and wall meet with no corner —
   // the seamless backdrop a real studio sweeps into.
   const cove = useMemo(() => {
@@ -114,14 +202,26 @@ function Studio() {
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]}>
         <torusGeometry args={[PODIUM_R + 0.02, 0.022, 12, 96]} />
-        <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={1.7} toneMapped={false} />
+        <meshStandardMaterial
+          color="#22d3ee"
+          emissive="#22d3ee"
+          emissiveIntensity={1.7 * lights}
+          toneMapped={false}
+        />
       </mesh>
 
-      {/* Overhead rig: one long box down the middle, two strips angled in. */}
-      <Softbox position={[0, 2.85, 0]} size={[4.4, 1.6]} glow={2.4} />
-      <Softbox position={[0, 2.9, 2.85]} rotation={[Math.PI * (38 / 180), 0, 0]} size={[4.4, 0.55]} glow={2} />
-      <Softbox position={[0, 2.9, -2.85]} rotation={[-Math.PI * (38 / 180), 0, 0]} size={[4.4, 0.55]} glow={2} />
-      <Softbox position={[-2.9, 2.25, 0]} rotation={[0, 0, Math.PI / 4]} size={[0.6, 1.8]} glow={1.8} />
+      <Backdrop imageUrl={imageUrl} lights={lights} />
+
+      {/* Overhead rig: one panel down the middle, two strips angled in. */}
+      {RIG.map(({ at, tilt, size }) => (
+        <Softbox
+          key={`${at[1]}-${at[2]}`}
+          position={at}
+          rotation={[THREE.MathUtils.degToRad(tilt), 0, 0]}
+          size={size}
+          glow={2.2 * lights}
+        />
+      ))}
 
       {/* The white screen standing in front of the nose. This is what lays the
           long highlight down the bonnet and flanks. */}
@@ -130,7 +230,7 @@ function Studio() {
         <meshStandardMaterial
           color="#fff"
           emissive="#fff"
-          emissiveIntensity={0.85}
+          emissiveIntensity={0.85 * lights}
           toneMapped={false}
           side={THREE.DoubleSide}
         />
@@ -267,6 +367,23 @@ export function CarViewer() {
   const [spinning, setSpinning] = useState(true);
   const [view, setView] = useState<ViewKey>("onCeyrek");
   const [nudge, setNudge] = useState(0);
+  const [lights, setLights] = useState(1);
+  const [backdrop, setBackdrop] = useState<string | null>(null);
+
+  // Object URLs are handed out by the browser and have to be handed back.
+  useEffect(() => () => {
+    if (backdrop) URL.revokeObjectURL(backdrop);
+  }, [backdrop]);
+
+  const pickBackdrop = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setBackdrop((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return URL.createObjectURL(file);
+    });
+  };
 
   if (!supported) {
     return (
@@ -288,16 +405,16 @@ export function CarViewer() {
                 preset, because the presets fetch an HDR from a third-party CDN
                 at runtime. Metal and paint still get something to reflect. */}
             <Environment resolution={256}>
-              <Lightformer intensity={3} position={[0, 2.85, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[4.4, 1.6, 1]} />
-              <Lightformer intensity={1.5} position={[0, 2.9, -2.85]} rotation={[-Math.PI / 4, 0, 0]} scale={[4.4, 0.6, 1]} />
-              <Lightformer intensity={1.5} position={[0, 2.9, 2.85]} rotation={[Math.PI / 4, 0, 0]} scale={[4.4, 0.6, 1]} />
-              <Lightformer intensity={2.2} position={[3.55, 1.25, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[2.7, 2.4, 1]} />
+              <Lightformer intensity={3 * lights} position={[0, 3.35, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[3.8, 0.75, 1]} />
+              <Lightformer intensity={1.5 * lights} position={[0, 3.25, -3.5]} rotation={[-Math.PI / 4, 0, 0]} scale={[3.8, 0.28, 1]} />
+              <Lightformer intensity={1.5 * lights} position={[0, 3.25, 3.5]} rotation={[Math.PI / 4, 0, 0]} scale={[3.8, 0.28, 1]} />
+              <Lightformer intensity={2.2 * lights} position={[3.55, 1.25, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[2.7, 2.4, 1]} />
             </Environment>
             {/* Overhead softbox, as in a real studio. */}
-            <directionalLight position={[1.5, 7, 2.5]} intensity={2.6} />
-            <directionalLight position={[-3, 2.4, -4.5]} intensity={1.35} color="#bfe6ff" />
-            <directionalLight position={[-4, 3, -3]} intensity={0.55} />
-            <ambientLight intensity={0.18} />
+            <directionalLight position={[1.5, 7, 2.5]} intensity={2.6 * lights} />
+            <directionalLight position={[-3, 2.4, -4.5]} intensity={1.35 * lights} color="#bfe6ff" />
+            <directionalLight position={[-4, 3, -3]} intensity={0.55 * lights} />
+            <ambientLight intensity={0.18 * lights} />
             <Car
               finish={finish}
               headlights={headlights}
@@ -306,7 +423,7 @@ export function CarViewer() {
               homeKey={nudge}
             />
             <ContactShadows position={[0, 0.012, 0]} opacity={0.7} scale={6.5} blur={2.4} far={2.6} />
-            <Studio />
+            <Studio lights={lights} imageUrl={backdrop} />
           </Suspense>
           <ViewRig view={view} nudge={nudge} />
           <OrbitControls
@@ -358,6 +475,33 @@ export function CarViewer() {
               <span>{item.on ? t.vehicle.viewerOn : t.vehicle.viewerOff}</span>
             </button>
           ))}
+        </div>
+
+        <div className="car-studio__slider">
+          <label htmlFor="studio-lights">{t.vehicle.viewerLights}</label>
+          <input
+            id="studio-lights"
+            type="range"
+            min={0}
+            max={2}
+            step={0.05}
+            value={lights}
+            onChange={(event) => setLights(Number(event.target.value))}
+          />
+          <span>{Math.round(lights * 100)}%</span>
+        </div>
+
+        <div className="car-studio__backdrop">
+          <span className="car-studio__label">{t.vehicle.viewerBackdrop}</span>
+          <label className="car-studio__view car-studio__upload">
+            {t.vehicle.viewerBackdropPick}
+            <input type="file" accept="image/*" onChange={pickBackdrop} />
+          </label>
+          {backdrop && (
+            <button type="button" className="car-studio__view" onClick={() => setBackdrop(null)}>
+              {t.vehicle.viewerBackdropClear}
+            </button>
+          )}
         </div>
 
         <div className="car-studio__views">

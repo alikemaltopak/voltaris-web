@@ -1082,10 +1082,59 @@ ul {
 }
 
 .car-studio__toggles,
-.car-studio__views {
+.car-studio__views,
+.car-studio__backdrop {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.car-studio__slider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.car-studio__slider label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.42);
+  white-space: nowrap;
+}
+
+.car-studio__slider input {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.car-studio__slider span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.62);
+  width: 4ch;
+  text-align: right;
+}
+
+/* The file input is driven by its label, which is styled as a chip. */
+.car-studio__upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.car-studio__upload {
+  position: relative;
+}
+
+.car-studio__upload:focus-within {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .car-studio__chip,
