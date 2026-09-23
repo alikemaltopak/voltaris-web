@@ -117,6 +117,13 @@ LAMPS = [
 ]
 LAMP_PROUD = 0.004  # metres the lens stands off the paint
 
+# Livery. The mark was lifted from the last frame of the home page's assembly
+# animation, which is the only copy of it in the project.
+DECAL_IMAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "decals", "voltaris-logo.png")
+DECAL_SIZE = 0.46          # metres square, on the door
+DECAL_AT = (0.10, 0.50)    # (x along the car, z up)
+DECAL_FROM = 1.5           # y to project from, each side
+
 
 def args():
     a = sys.argv[sys.argv.index("--") + 1 :]
@@ -427,6 +434,79 @@ def add_interior():
     return made
 
 
+def decal_material():
+    if "Logo" in bpy.data.materials:
+        return bpy.data.materials["Logo"]
+    mat = bpy.data.materials.new("Logo")
+    mat.use_nodes = True
+    tree = mat.node_tree
+    bsdf = tree.nodes["Principled BSDF"]
+    tex = tree.nodes.new("ShaderNodeTexImage")
+    tex.image = bpy.data.images.load(DECAL_IMAGE)
+    tex.image.colorspace_settings.name = "sRGB"
+    tree.links.new(bsdf.inputs["Base Color"], tex.outputs["Color"])
+    tree.links.new(bsdf.inputs["Alpha"], tex.outputs["Alpha"])
+    bsdf.inputs["Metallic"].default_value = 0.0
+    bsdf.inputs["Roughness"].default_value = 0.34
+    mat.blend_method = "BLEND"
+    return mat
+
+
+def add_decals(body):
+    """Lay the mark on both doors, following the curve of the panel."""
+    made = []
+    for side, name in ((1, "Logo_Sol"), (-1, "Logo_Sag")):
+        rows = cols = 11
+        half = DECAL_SIZE / 2
+        verts, faces, uvs = [], [], []
+        for i in range(rows):
+            for j in range(cols):
+                u, v = j / (cols - 1), i / (rows - 1)
+                verts.append(((u - 0.5) * DECAL_SIZE, (v - 0.5) * DECAL_SIZE, 0.0))
+                # The patch's local axes land differently on each flank: on
+                # the +Y side its Y points at the floor and its X reads back to
+                # front, so that copy is turned about both to keep the wordmark
+                # upright and running forwards.
+                uvs.append((1 - u, 1 - v) if side > 0 else (u, v))
+        for i in range(rows - 1):
+            for j in range(cols - 1):
+                a = i * cols + j
+                faces.append((a, a + 1, a + cols + 1, a + cols))
+
+        mesh = bpy.data.meshes.new(name)
+        mesh.from_pydata(verts, [], faces)
+        mesh.update()
+        layer = mesh.uv_layers.new(name="UVMap")
+        for poly in mesh.polygons:
+            for loop in poly.loop_indices:
+                layer.data[loop].uv = uvs[mesh.loops[loop].vertex_index]
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.collection.objects.link(obj)
+        obj.location = (DECAL_AT[0], side * DECAL_FROM, DECAL_AT[1])
+        # Local +Z away from the car, so the projection runs inwards.
+        obj.rotation_euler = (math.radians(-90 * side), 0, 0)
+
+        select_only(obj)
+        wrap = obj.modifiers.new("lay", "SHRINKWRAP")
+        wrap.target = body
+        wrap.wrap_method = "PROJECT"
+        wrap.use_project_z = True
+        wrap.use_negative_direction = True
+        wrap.use_positive_direction = False
+        wrap.offset = 0.0015
+        bpy.ops.object.modifier_apply(modifier=wrap.name)
+        try:
+            bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
+        except AttributeError:
+            pass
+        obj.select_set(False)
+        bake(obj)
+        obj.data.materials.append(decal_material())
+        made.append(obj)
+        _ = half
+    return made
+
+
 def add_lamps(body):
     """Lay the headlights and tail bar onto the bodywork."""
     made = []
@@ -544,6 +624,7 @@ def main():
     # After the centring, not before: the interior is laid out by hand against
     # the finished car's coordinates, so it must not be shifted again.
     everything += add_interior()
+    everything += add_decals(next(o for o in everything if o.name == "Govde"))
 
     lo, hi = world_bounds(everything)
     after = sum(len(o.data.polygons) for o in everything)
@@ -557,7 +638,7 @@ def main():
         export_format="GLB",
         export_apply=True,
         export_normals=True,
-        export_texcoords=False,
+        export_texcoords=True,
         export_yup=True,
     )
     print(f"yazildi: {out}  ({os.path.getsize(out) / 1e6:.1f} MB)")
