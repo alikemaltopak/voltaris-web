@@ -92,6 +92,12 @@ const en: Dictionary = {
     sketchEyebrow: "01 — VEHICLE / DESIGN STAGE",
     sketchNote: "Early design sketch. Dimensions are not final. Keep scrolling to complete the drawing.",
     viewerHint: "Drag to rotate",
+    viewerFinish: "BODY COLOUR",
+    viewerHeadlights: "Headlights",
+    viewerTaillights: "Tail lights",
+    viewerTurntable: "Turntable",
+    viewerOn: "ON",
+    viewerOff: "OFF",
     viewerUnsupported:
       "Your browser cannot display 3D content. Use a current version of Chrome, Safari, Firefox or Edge to inspect the car; if hardware acceleration is switched off, turning it back on in your browser settings may be all it takes.",
     photosPlaceholderTitle: "Vehicle Gallery",

@@ -48,6 +48,21 @@ tekerlek 1,22 milyon üçgen tutuyordu — dosyanın %98'i, kimsenin bakmadığ�
 dişinde. Bu yüzden `--split` gövdeye ince, tekerlek ve aynalara 30 kat kaba
 tolerans veriyor.
 
+### Farlar ve stoplar
+
+CAD'de yok. Kabuk katısının 94 yüzeyinin tamamı gövde paneli, tekerlek yuvası
+ve pah — lamba geometrisi hiç çizilmemiş. Bu yüzden `blender_assemble_voltaris.py`
+içindeki `LAMPS` listesi onları üretiyor: her lamba aracın dışında düz bir
+mercek olarak başlıyor, sonra gövdeye doğru yansıtılıp (shrinkwrap) yüzeye
+yapışıyor. Böylece kenarları kendi düzgün konturunu koruyor ama gövdenin
+eğrisini takip ediyor.
+
+Alternatifi gövde mesh'inden yüzey seçip kopyalamaktı; o da kenarı üçgen
+sınırlarına oturtup tırtıklı bırakırdı.
+
+Konumlar metre cinsinden ve **son koordinat sisteminde** (burun +X, yukarı +Z,
+araç merkezde). Değiştirirken önizleme render'ına bakmak yeterli.
+
 ### `--glass` numaraları
 
 Kabuk katısının 94 yüzeyi var; listelenen altısı ön cam, yan camlar ve arka cam.

@@ -61,6 +61,26 @@ GLASS = ((0.020, 0.043, 0.055, 0.30), 0.0, 0.06)
 # quarter turn that lines them up with the chassis.
 SHELL_STEMS = {"govde": "Govde", "cam": "Cam", "tekerlek": "Tekerlek", "ayna": "Ayna"}
 
+# (base colour, emission colour, strength) for the lamps.
+EMISSIVE = {
+    "Far": ((0.55, 0.60, 0.68, 1), (0.85, 0.93, 1.0, 1), 3.0),
+    "Stop": ((0.20, 0.02, 0.03, 1), (1.0, 0.035, 0.05, 1), 2.0),
+}
+
+# The CAD carries no lamps — all 94 faces of the shell are bodywork, wheel
+# arches and fillets — so they are modelled here and laid onto the paint.
+# Each one starts as a flat lozenge outside the car and is projected onto the
+# bodywork, which is what keeps its outline smooth while it follows the
+# curvature; cutting a patch out of the body mesh instead would leave the
+# ragged triangle-scale border we spent so long removing elsewhere.
+# (name, material, x to project from, centre (y, z), size (y, z))
+LAMPS = [
+    ("Far_01", "Far", 1.70, (0.45, 0.56), (0.34, 0.125)),
+    ("Far_02", "Far", 1.70, (-0.45, 0.56), (0.34, 0.125)),
+    ("Stop", "Stop", -2.80, (0.0, 0.62), (1.16, 0.085)),
+]
+LAMP_PROUD = 0.004  # metres the lens stands off the paint
+
 
 def args():
     a = sys.argv[sys.argv.index("--") + 1 :]
@@ -71,6 +91,19 @@ def args():
 def material(name):
     if name in bpy.data.materials:
         return bpy.data.materials[name]
+
+    if name in EMISSIVE:
+        base, glow, strength = EMISSIVE[name]
+        mat = bpy.data.materials.new(name)
+        mat.use_nodes = True
+        b = mat.node_tree.nodes["Principled BSDF"]
+        b.inputs["Base Color"].default_value = base
+        b.inputs["Metallic"].default_value = 0.0
+        b.inputs["Roughness"].default_value = 0.12
+        b.inputs["Emission Color"].default_value = glow
+        b.inputs["Emission Strength"].default_value = strength
+        return mat
+
     colour, metallic, rough = GLASS if name == "Cam" else MATERIALS[name]
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
@@ -172,6 +205,66 @@ def paint_wheel(obj):
         poly.material_index = 0 if radius(poly.center) > RIM_EDGE * outer else 1
 
 
+def lozenge(name, half_a, half_b, rings=9, segments=72, power=3.2):
+    """A flat superellipse patch in local XY, dense enough to follow a curve."""
+    verts, faces = [(0.0, 0.0, 0.0)], []
+    for r in range(1, rings + 1):
+        t = r / rings
+        for s in range(segments):
+            angle = 2 * math.pi * s / segments
+            c, si = math.cos(angle), math.sin(angle)
+            u = math.copysign(abs(c) ** (2 / power), c)
+            v = math.copysign(abs(si) ** (2 / power), si)
+            verts.append((u * half_a * t, v * half_b * t, 0.0))
+    for s in range(segments):
+        faces.append((0, 1 + s, 1 + (s + 1) % segments))
+    for r in range(1, rings):
+        inner, outer = 1 + (r - 1) * segments, 1 + r * segments
+        for s in range(segments):
+            n = (s + 1) % segments
+            faces.append((inner + s, outer + s, outer + n, inner + n))
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    return bpy.data.objects.new(name, mesh)
+
+
+def add_lamps(body):
+    """Lay the headlights and tail bar onto the bodywork."""
+    made = []
+    for name, slot, from_x, (cy, cz), (width, height) in LAMPS:
+        obj = lozenge(name, height / 2, width / 2)
+        bpy.context.collection.objects.link(obj)
+        obj.location = (from_x, cy, cz)
+        # Turn the patch so its local +Z faces away from the car; the
+        # projection then runs along local -Z, straight into the bodywork.
+        # The rotation stays live until the modifier is applied, because
+        # Shrinkwrap projects along the object's own axes — baking it first
+        # leaves the projection pointing at the sky.
+        obj.rotation_euler = (0, math.radians(90 if from_x > 0 else -90), 0)
+
+        select_only(obj)
+        wrap = obj.modifiers.new("lay", "SHRINKWRAP")
+        wrap.target = body
+        wrap.wrap_method = "PROJECT"
+        wrap.use_project_z = True
+        wrap.use_negative_direction = True
+        wrap.use_positive_direction = False
+        wrap.offset = LAMP_PROUD
+        bpy.ops.object.modifier_apply(modifier=wrap.name)
+        try:
+            bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
+        except AttributeError:
+            bpy.ops.object.shade_smooth()
+        obj.select_set(False)
+        bake(obj)
+
+        obj.data.materials.clear()
+        obj.data.materials.append(material(slot))
+        made.append(obj)
+    return made
+
+
 def main():
     stl_dir, out, preview = args()
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -236,6 +329,19 @@ def main():
             else:
                 slot = "Govde_Boya"
             obj.data.materials.append(material(slot))
+
+    # After the car is in its final frame, so the lamp positions can be given
+    # in the metres-and-nose-forward coordinates the numbers above use.
+    everything += add_lamps(next(o for o in everything if o.name == "Govde"))
+
+    # Centre the finished car over the origin so a viewer can orbit it without
+    # having to know where the CAD happened to put it. Height stays put: the
+    # tyres are already on z = 0.
+    lo, hi = world_bounds(everything)
+    middle = Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, 0))
+    for obj in everything:
+        obj.location -= middle
+        bake(obj)
 
     lo, hi = world_bounds(everything)
     after = sum(len(o.data.polygons) for o in everything)

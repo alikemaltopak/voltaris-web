@@ -89,6 +89,12 @@ const tr = {
     sketchEyebrow: "01 — ARAÇ / TASARIM AŞAMASI",
     sketchNote: "Ön tasarım eskizi. Ölçüler kesinleşmemiştir. Aşağı kaydırarak çizimi tamamlayın.",
     viewerHint: "Döndürmek için sürükleyin",
+    viewerFinish: "GÖVDE RENGİ",
+    viewerHeadlights: "Farlar",
+    viewerTaillights: "Stoplar",
+    viewerTurntable: "Döner podyum",
+    viewerOn: "AÇIK",
+    viewerOff: "KAPALI",
     viewerUnsupported:
       "Tarayıcınız 3D görüntülemeyi desteklemiyor. Aracı incelemek için güncel bir Chrome, Safari, Firefox veya Edge sürümü kullanın; donanım hızlandırma kapalıysa tarayıcı ayarlarından açmanız da yeterli olabilir.",
     photosPlaceholderTitle: "Araç Galerisi",
