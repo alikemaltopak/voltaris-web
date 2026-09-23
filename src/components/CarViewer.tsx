@@ -1,6 +1,13 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
+import {
+  ContactShadows,
+  Environment,
+  Lightformer,
+  MeshReflectorMaterial,
+  OrbitControls,
+  useGLTF,
+} from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { useLanguage } from "../context/LanguageContext";
@@ -58,6 +65,9 @@ const SCREEN_H = 6;
 const SCREEN_Y = 3.2;
 const SCREEN_ARC = 180;
 const SCREEN_FROM = 206 - SCREEN_ARC / 2;
+// Width-to-height of the unrolled screen, used to lay a picture on it without
+// stretching: the arc is 27 m across and 6 m tall.
+const SCREEN_ASPECT = (Math.PI * SCREEN_R * SCREEN_ARC) / 180 / SCREEN_H;
 
 // The overhead rig: hung high and kept slim, cropping into the top of frame.
 const RIG: { at: [number, number, number]; tilt: number; size: [number, number] }[] = [
@@ -124,11 +134,17 @@ function Backdrop({ imageUrl, lights }: { imageUrl: string | null; lights: numbe
         return;
       }
       loaded.colorSpace = THREE.SRGBColorSpace;
-      // Seen from inside the curve, so the picture has to be flipped across
-      // to read the right way round.
-      loaded.wrapS = THREE.RepeatWrapping;
-      loaded.repeat.x = -1;
-      loaded.offset.x = 1;
+      // Fit the picture to the screen's height at its own proportions: a
+      // snapshot would otherwise be smeared across 27 m of arc. Anything
+      // narrower than the sweep runs its edge pixels out to the sides, which
+      // is why a wide panorama suits this screen best.
+      const shape = loaded.image.width / loaded.image.height;
+      const span = SCREEN_ASPECT / shape;
+      loaded.wrapS = THREE.ClampToEdgeWrapping;
+      // Negative, because the screen is seen from inside the curve and the
+      // picture would otherwise read backwards.
+      loaded.repeat.x = -span;
+      loaded.offset.x = (1 + span) / 2;
       setTexture(loaded);
     });
     return () => {
@@ -200,6 +216,23 @@ function Studio({ lights, imageUrl }: { lights: number; imageUrl: string | null 
         <cylinderGeometry args={[PODIUM_R, PODIUM_R + 0.09, -FLOOR_Y, 96]} />
         <meshStandardMaterial color="#101318" roughness={0.3} metalness={0.35} />
       </mesh>
+      {/* Its top is a mirror, softened. A car standing on its own reflection
+          is most of what separates a showroom shot from a model on a plate. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
+        <circleGeometry args={[PODIUM_R, 96]} />
+        <MeshReflectorMaterial
+          resolution={512}
+          mixBlur={1.1}
+          mixStrength={22}
+          blur={[360, 110]}
+          depthScale={1.1}
+          minDepthThreshold={0.4}
+          maxDepthThreshold={1.3}
+          color="#0e1116"
+          metalness={0.55}
+          roughness={0.72}
+        />
+      </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]}>
         <torusGeometry args={[PODIUM_R + 0.02, 0.022, 12, 96]} />
         <meshStandardMaterial
@@ -255,16 +288,43 @@ function Car({ finish, headlights, taillights, spinning, homeKey }: CarProps) {
   // that the controls edit them in place.
   const parts = useMemo(() => {
     const found: Record<string, THREE.MeshStandardMaterial> = {};
+
+    // Car paint is two layers: pigment under a sheet of lacquer. glTF only
+    // carries the pigment, so the bodywork is promoted to a material that can
+    // hold the lacquer on top — it is what gives the sharp, tight highlight a
+    // plain metal shader cannot.
+    // Built field by field rather than with copy(), which reaches for
+    // clearcoat properties a plain standard material has never heard of.
+    const lacquer = (standard: THREE.MeshStandardMaterial) =>
+      new THREE.MeshPhysicalMaterial({
+        name: standard.name,
+        color: standard.color.clone(),
+        metalness: standard.metalness,
+        roughness: standard.roughness,
+        map: standard.map,
+        normalMap: standard.normalMap,
+        side: standard.side,
+        flatShading: standard.flatShading,
+        clearcoat: 1,
+        clearcoatRoughness: 0.055,
+      });
+
     scene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
       child.castShadow = true;
       child.receiveShadow = true;
-      for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
-        const standard = material as THREE.MeshStandardMaterial;
-        if (!standard?.name) continue;
+      const slots = Array.isArray(child.material) ? child.material : [child.material];
+      const swapped = slots.map((material) => {
+        let standard = material as THREE.MeshStandardMaterial;
+        if (!standard?.name) return material;
+        if (standard.name === "Govde_Boya" && !(standard instanceof THREE.MeshPhysicalMaterial)) {
+          standard = lacquer(standard);
+        }
         standard.envMapIntensity = 1.2;
         found[standard.name] = standard;
-      }
+        return standard;
+      });
+      child.material = Array.isArray(child.material) ? swapped : swapped[0];
     });
     return found;
   }, [scene]);
