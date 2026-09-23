@@ -54,9 +54,9 @@ const COVE_FLARE = 3.2;
 // The picture screen: a wide arc hung high on the back wall, centred opposite
 // the default camera so it fills the background of the opening shot.
 const SCREEN_R = 8.5;
-const SCREEN_H = 5.4;
-const SCREEN_Y = 3.9;
-const SCREEN_ARC = 76;
+const SCREEN_H = 6;
+const SCREEN_Y = 3.2;
+const SCREEN_ARC = 180;
 const SCREEN_FROM = 206 - SCREEN_ARC / 2;
 
 // The overhead rig: hung high and kept slim, cropping into the top of frame.
@@ -223,22 +223,6 @@ function Studio({ lights, imageUrl }: { lights: number; imageUrl: string | null 
         />
       ))}
 
-      {/* The white screen standing in front of the nose. This is what lays the
-          long highlight down the bonnet and flanks. */}
-      <mesh position={[3.55, 1.25, 0]} rotation={[0, -Math.PI / 2, -Math.PI * (10 / 180)]}>
-        <planeGeometry args={[2.7, 2.4]} />
-        <meshStandardMaterial
-          color="#fff"
-          emissive="#fff"
-          emissiveIntensity={0.85 * lights}
-          toneMapped={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh position={[3.62, 1.25, 0]} rotation={[0, -Math.PI / 2, -Math.PI * (10 / 180)]}>
-        <planeGeometry args={[2.86, 2.56]} />
-        <meshStandardMaterial color="#0a0b0d" metalness={0.75} roughness={0.4} side={THREE.DoubleSide} />
-      </mesh>
     </group>
   );
 }
@@ -408,12 +392,12 @@ export function CarViewer() {
               <Lightformer intensity={3 * lights} position={[0, 3.35, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[3.8, 0.75, 1]} />
               <Lightformer intensity={1.5 * lights} position={[0, 3.25, -3.5]} rotation={[-Math.PI / 4, 0, 0]} scale={[3.8, 0.28, 1]} />
               <Lightformer intensity={1.5 * lights} position={[0, 3.25, 3.5]} rotation={[Math.PI / 4, 0, 0]} scale={[3.8, 0.28, 1]} />
-              <Lightformer intensity={2.2 * lights} position={[3.55, 1.25, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[2.7, 2.4, 1]} />
             </Environment>
             {/* Overhead softbox, as in a real studio. */}
             <directionalLight position={[1.5, 7, 2.5]} intensity={2.6 * lights} />
             <directionalLight position={[-3, 2.4, -4.5]} intensity={1.35 * lights} color="#bfe6ff" />
             <directionalLight position={[-4, 3, -3]} intensity={0.55 * lights} />
+            <directionalLight position={[6, 2, 1.5]} intensity={0.9 * lights} color="#eef6ff" />
             <ambientLight intensity={0.18 * lights} />
             <Car
               finish={finish}
@@ -430,7 +414,7 @@ export function CarViewer() {
             makeDefault
             enablePan={false}
             minDistance={3}
-            maxDistance={11}
+            maxDistance={8}
             // Stop the camera dropping under the floor.
             maxPolarAngle={Math.PI / 2.06}
             target={TARGET}
