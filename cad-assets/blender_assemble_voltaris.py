@@ -136,7 +136,9 @@ DECALS = [
 def args():
     a = sys.argv[sys.argv.index("--") + 1 :]
     preview = a[a.index("--preview") + 1] if "--preview" in a else None
-    return a[0], a[1], preview
+    # Mirror-finish paint shows every crease the thinning leaves behind, so an
+    # offline render wants the mesh whole. File size only matters on the web.
+    return a[0], a[1], preview, "--full" in a
 
 
 def material(name):
@@ -217,6 +219,15 @@ def clean(obj):
         bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
     except AttributeError:
         bpy.ops.object.shade_smooth()
+
+    # CAD tessellation gives a smooth panel wildly uneven triangles, and a
+    # normal averaged over them swings about — which is what puts the crumpled
+    # sheen on the flanks under a mirror finish. Weighting each face's
+    # contribution by its area steadies them.
+    weighted = obj.modifiers.new("normaller", "WEIGHTED_NORMAL")
+    weighted.weight = 70
+    weighted.keep_sharp = True
+    bpy.ops.object.modifier_apply(modifier=weighted.name)
     obj.select_set(False)
 
 
@@ -575,7 +586,7 @@ def add_lamps(body):
 
 
 def main():
-    stl_dir, out, preview = args()
+    stl_dir, out, preview, full = args()
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
     shell, frame = [], []
@@ -626,7 +637,8 @@ def main():
     before = sum(len(o.data.polygons) for o in everything)
     for obj in everything:
         clean(obj)
-        decimate(obj)
+        if not full:
+            decimate(obj)
         if obj.name.startswith("Tekerlek"):
             paint_wheel(obj)
         else:
