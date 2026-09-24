@@ -31,6 +31,7 @@ import math
 import os
 import sys
 
+import bmesh
 import bpy
 from mathutils import Vector
 
@@ -119,10 +120,17 @@ LAMP_PROUD = 0.004  # metres the lens stands off the paint
 
 # Livery. The mark was lifted from the last frame of the home page's assembly
 # animation, which is the only copy of it in the project.
-DECAL_IMAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "decals", "voltaris-logo.png")
-DECAL_SIZE = 0.46          # metres square, on the door
-DECAL_AT = (0.10, 0.50)    # (x along the car, z up)
-DECAL_FROM = 1.5           # y to project from, each side
+DECAL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "decals")
+DECAL_FROM = 1.5  # y to project from, each side
+
+# Each decal is a picture laid over a rectangle of the car's side view, given
+# as the metres it really occupies: (name, file, x from, x to, z from, z to).
+# The shut lines are drawn this way rather than modelled because the projection
+# is flat along Y, which is exactly how a side elevation maps onto a flank.
+DECALS = [
+    ("Panel", "panel-lines.png", -0.80, 1.05, 0.15, 1.00),
+    ("Logo", "voltaris-logo.png", -0.08, 0.28, 0.34, 0.70),
+]
 
 
 def args():
@@ -434,77 +442,100 @@ def add_interior():
     return made
 
 
-def decal_material():
-    if "Logo" in bpy.data.materials:
-        return bpy.data.materials["Logo"]
-    mat = bpy.data.materials.new("Logo")
+def decal_material(name, filename):
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     tree = mat.node_tree
     bsdf = tree.nodes["Principled BSDF"]
     tex = tree.nodes.new("ShaderNodeTexImage")
-    tex.image = bpy.data.images.load(DECAL_IMAGE)
+    tex.image = bpy.data.images.load(os.path.join(DECAL_DIR, filename))
     tex.image.colorspace_settings.name = "sRGB"
     tree.links.new(bsdf.inputs["Base Color"], tex.outputs["Color"])
     tree.links.new(bsdf.inputs["Alpha"], tex.outputs["Alpha"])
     bsdf.inputs["Metallic"].default_value = 0.0
-    bsdf.inputs["Roughness"].default_value = 0.34
+    # Shut lines are shadow gaps, so they are matte; a glossy strip catches the
+    # studio lights and the line washes out to nothing.
+    bsdf.inputs["Roughness"].default_value = 0.95 if name == "Panel" else 0.34
     mat.blend_method = "BLEND"
     return mat
 
 
 def add_decals(body):
-    """Lay the mark on both doors, following the curve of the panel."""
+    """Lay the shut lines and the mark onto both flanks, following the panel."""
     made = []
-    for side, name in ((1, "Logo_Sol"), (-1, "Logo_Sag")):
-        rows = cols = 11
-        half = DECAL_SIZE / 2
-        verts, faces, uvs = [], [], []
-        for i in range(rows):
-            for j in range(cols):
-                u, v = j / (cols - 1), i / (rows - 1)
-                verts.append(((u - 0.5) * DECAL_SIZE, (v - 0.5) * DECAL_SIZE, 0.0))
-                # The patch's local axes land differently on each flank: on
-                # the +Y side its Y points at the floor and its X reads back to
-                # front, so that copy is turned about both to keep the wordmark
-                # upright and running forwards.
-                uvs.append((1 - u, 1 - v) if side > 0 else (u, v))
-        for i in range(rows - 1):
-            for j in range(cols - 1):
-                a = i * cols + j
-                faces.append((a, a + 1, a + cols + 1, a + cols))
-
-        mesh = bpy.data.meshes.new(name)
-        mesh.from_pydata(verts, [], faces)
-        mesh.update()
-        layer = mesh.uv_layers.new(name="UVMap")
-        for poly in mesh.polygons:
-            for loop in poly.loop_indices:
-                layer.data[loop].uv = uvs[mesh.loops[loop].vertex_index]
-        obj = bpy.data.objects.new(name, mesh)
-        bpy.context.collection.objects.link(obj)
-        obj.location = (DECAL_AT[0], side * DECAL_FROM, DECAL_AT[1])
-        # Local +Z away from the car, so the projection runs inwards.
-        obj.rotation_euler = (math.radians(-90 * side), 0, 0)
-
-        select_only(obj)
-        wrap = obj.modifiers.new("lay", "SHRINKWRAP")
-        wrap.target = body
-        wrap.wrap_method = "PROJECT"
-        wrap.use_project_z = True
-        wrap.use_negative_direction = True
-        wrap.use_positive_direction = False
-        wrap.offset = 0.0015
-        bpy.ops.object.modifier_apply(modifier=wrap.name)
-        try:
-            bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
-        except AttributeError:
-            pass
-        obj.select_set(False)
-        bake(obj)
-        obj.data.materials.append(decal_material())
-        made.append(obj)
-        _ = half
+    for label, filename, x0, x1, z0, z1 in DECALS:
+        for side, suffix in ((1, "Sol"), (-1, "Sag")):
+            made.append(one_decal(body, f"{label}_{suffix}", filename, side, x0, x1, z0, z1))
     return made
+
+
+def one_decal(body, name, filename, side, x0, x1, z0, z1):
+    width, height = x1 - x0, z1 - z0
+    # About one vertex every 25 mm. The cleanup below removes a ring of faces
+    # wherever the projection misses, so a coarse patch loses whole stretches
+    # of line; a fine one only loses its fringe.
+    cols = max(12, int(width / 0.025))
+    rows = max(12, int(height / 0.025))
+    verts, faces, uvs = [], [], []
+    for i in range(rows):
+        for j in range(cols):
+            u, v = j / (cols - 1), i / (rows - 1)
+            verts.append(((u - 0.5) * width, (v - 0.5) * height, 0.0))
+            # The patch's local axes land differently on each flank: on the
+            # +Y side its Y points at the floor and its X reads back to front,
+            # so that copy is turned about both to keep the picture upright
+            # and running forwards.
+            uvs.append((1 - u, 1 - v) if side > 0 else (u, v))
+    for i in range(rows - 1):
+        for j in range(cols - 1):
+            a = i * cols + j
+            faces.append((a, a + 1, a + cols + 1, a + cols))
+
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    layer = mesh.uv_layers.new(name="UVMap")
+    for poly in mesh.polygons:
+        for loop in poly.loop_indices:
+            layer.data[loop].uv = uvs[mesh.loops[loop].vertex_index]
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.location = ((x0 + x1) / 2, side * DECAL_FROM, (z0 + z1) / 2)
+    # Local +Z away from the car, so the projection runs inwards.
+    obj.rotation_euler = (math.radians(-90 * side), 0, 0)
+
+    select_only(obj)
+    wrap = obj.modifiers.new("lay", "SHRINKWRAP")
+    wrap.target = body
+    wrap.wrap_method = "PROJECT"
+    wrap.use_project_z = True
+    wrap.use_negative_direction = True
+    wrap.use_positive_direction = False
+    wrap.offset = 0.0015
+    bpy.ops.object.modifier_apply(modifier=wrap.name)
+
+    # Shrinkwrap leaves any vertex that missed the car exactly where it was, so
+    # a patch wider than the panel drags stretched sheets out beside the body.
+    # Anything that did not travel inwards is cut away.
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    stranded = [v for v in bm.verts if v.co.z > -0.2]
+    if stranded:
+        bmesh.ops.delete(bm, geom=stranded, context="VERTS")
+        bm.to_mesh(obj.data)
+        obj.data.update()
+    bm.free()
+
+    try:
+        bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
+    except AttributeError:
+        pass
+    obj.select_set(False)
+    bake(obj)
+    obj.data.materials.append(decal_material(name.rsplit("_", 1)[0], filename))
+    return obj
 
 
 def add_lamps(body):
