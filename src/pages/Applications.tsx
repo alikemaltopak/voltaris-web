@@ -347,6 +347,7 @@ export function Applications() {
     try {
       const committee = t.applications.committees.find((item) => item.id === selectedCommittee);
       await submitApplication({
+        committeeId: String(selectedCommittee),
         committeeName: committee?.name ?? String(selectedCommittee),
         questions,
         answers,

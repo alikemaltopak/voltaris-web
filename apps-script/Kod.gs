@@ -48,7 +48,36 @@ const PAKET_ADLARI = {
 const MAKS_DOSYA_MB = 8;
 
 const ZAMAN_BASLIGI = 'Gönderim Zamanı';
-const CV_BASLIGI = 'CV / Ön Yazı';
+const KOMITE_BASLIGI = 'Komite';
+const CV_BASLIGI = 'CV';
+
+/** Bütün başvuruların yazıldığı tek sayfa. */
+const BASVURU_SAYFASI = 'Başvurular';
+
+/**
+ * Sayfadaki sütunlar, sırasıyla: soru kimliği → kısa başlık. Kimliğe göre
+ * eşlendiği için İngilizce formdan gelen başvuru da aynı sütunlara düşer.
+ * Burada olmayan yeni bir soru gelirse, soru metniyle sona kendi sütunu açılır.
+ */
+const SUTUNLAR = [
+  ['', ZAMAN_BASLIGI],
+  ['', KOMITE_BASLIGI],
+  ['ad_soyad', 'Ad Soyad'],
+  ['eposta', 'E-posta'],
+  ['telefon', 'Telefon'],
+  ['bolum', 'Bölüm'],
+  ['sinif', 'Sınıf'],
+  ['nasil_duydun', 'Bizi nereden duydu'],
+  ['neden_katilmak_istiyorsun', 'Neden katılmak istiyor'],
+  ['ekleyecek_bir_seyin_var_mi', 'Eklemek istedikleri'],
+];
+
+/** Komite grupları sayfada bu sırayla durur, her biri kendi renginde. */
+const KOMITELER = [
+  { ad: 'Mekanik', renk: '#e8f1fb', esler: ['mekanik', 'Mekanik', 'Mechanical'] },
+  { ad: 'Elektrik', renk: '#fdf6e3', esler: ['elektrik', 'Elektrik', 'Electrical'] },
+  { ad: 'Destek', renk: '#eaf6ec', esler: ['destek', 'Destek', 'Support'] },
+];
 
 // ------------------------------------------------------------------ GİRİŞ --
 
@@ -71,7 +100,7 @@ function doPost(e) {
     const cevaplar = Array.isArray(gelen.cevaplar) ? gelen.cevaplar : [];
     if (cevaplar.length === 0) return cevap('hata', 'Boş başvuru.');
 
-    const sayfa = sayfayiGetir(gelen.komiteAdi || 'Diğer');
+    const komite = komiteAdi(gelen.komite) || komiteAdi(gelen.komiteAdi) || 'Diğer';
     const adSoyad = cevapBul(cevaplar, 'ad_soyad') || 'isimsiz';
 
     var cvBaglantisi = '';
@@ -79,26 +108,16 @@ function doPost(e) {
       cvBaglantisi = dosyayiKaydet(gelen.dosya, adSoyad);
     }
 
-    // Sütun sırası: zaman → sorular (formdaki sırayla) → CV. CV sütunu yalnızca
-    // gerçekten dosya geldiğinde açılır; formda artık CV sorusu yok ve her
-    // başvuruda boş bir sütun eklemek, silinen sütunu geri getiriyordu.
-    const basliklar = [ZAMAN_BASLIGI]
-      .concat(cevaplar.map(function (c) { return c.soru; }))
-      .concat(cvBaglantisi ? [CV_BASLIGI] : []);
-
     const degerler = {};
     degerler[ZAMAN_BASLIGI] = new Date();
-    degerler[CV_BASLIGI] = cvBaglantisi;
-    cevaplar.forEach(function (c) { degerler[c.soru] = bicimle(c); });
+    degerler[KOMITE_BASLIGI] = komite;
+    cevaplar.forEach(function (c) { degerler[sutunBasligi(c)] = bicimle(c); });
+    // Formda CV sorusu yok; sütun yalnızca gerçekten dosya gelirse açılır.
+    if (cvBaglantisi) degerler[CV_BASLIGI] = cvBaglantisi;
 
-    basliklariEsitle(sayfa, basliklar);
+    satirEkle(basvuruSayfasi(), degerler);
 
-    const mevcutBasliklar = sayfa.getRange(1, 1, 1, sayfa.getLastColumn()).getValues()[0];
-    sayfa.appendRow(mevcutBasliklar.map(function (baslik) {
-      return Object.prototype.hasOwnProperty.call(degerler, baslik) ? degerler[baslik] : '';
-    }));
-
-    if (BILDIRIM_EPOSTA) bildirimGonder(gelen.komiteAdi, adSoyad, cevapBul(cevaplar, 'eposta'));
+    if (BILDIRIM_EPOSTA) bildirimGonder(komite, adSoyad, cevapBul(cevaplar, 'eposta'));
 
     return cevap('ok', 'ok');
   } catch (hata) {
@@ -214,72 +233,171 @@ function basliklariEsitle(sayfa, istenen) {
 
 // ------------------------------------------------------- TEK SEFERLİK --
 
-/** Formda şu an sorulan soruların başlıkları, iki dilde. */
-const GUNCEL_BASLIKLAR = [
-  ZAMAN_BASLIGI,
-  'Ad Soyad',
-  'E-posta adresin',
-  'Telefon numaran',
-  'Bölümün',
-  'Kaçıncı sınıftasın?',
-  "Voltaris'i nereden duydun?",
-  "Voltaris'e neden katılmak istiyorsun? Bizi en çok bu cevap ilgilendiriyor, uzun ve mükemmel olmak zorunda değil.",
-  'Eklemek istediğin bir şey var mı? (Portfolyo, GitHub, çizim, video linki vb. de buraya bırakabilirsin)',
-  'Full name',
-  'Your email address',
-  'Your phone number',
-  'Your department',
-  'What year are you in?',
-  'Where did you hear about Voltaris?',
-  "Why do you want to join Voltaris? This is the answer we care about most — it doesn't have to be long or perfect.",
-  "Anything else you'd like to add? (You can leave a portfolio, GitHub, sketch, or video link here too)",
-];
+/**
+ * Eski sayfalardaki başlıklar → yeni sayfadaki başlık. Soruların eski ve
+ * yeni metinleri, iki dilde. Burada olmayan sütunlar formdan kaldırılan
+ * sorulara ait; taşınmaz.
+ */
+const ESKI_BASLIKLAR = {
+  'Gönderim Zamanı': ZAMAN_BASLIGI,
+  'Ad Soyad': 'Ad Soyad',
+  'Full name': 'Ad Soyad',
+  'E-posta adresin': 'E-posta',
+  'Your email address': 'E-posta',
+  'Telefon numaran': 'Telefon',
+  'Your phone number': 'Telefon',
+  'Bölümün': 'Bölüm',
+  'Your department': 'Bölüm',
+  'Üniversite ve bölüm': 'Bölüm',
+  'University and department': 'Bölüm',
+  'Kaçıncı sınıftasın?': 'Sınıf',
+  'What year are you in?': 'Sınıf',
+  "Voltaris'i nereden duydun?": 'Bizi nereden duydu',
+  'Where did you hear about Voltaris?': 'Bizi nereden duydu',
+  "Voltaris'e neden katılmak istiyorsun? Bizi en çok bu cevap ilgilendiriyor, uzun ve mükemmel olmak zorunda değil.":
+    'Neden katılmak istiyor',
+  "Why do you want to join Voltaris? This is the answer we care about most — it doesn't have to be long or perfect.":
+    'Neden katılmak istiyor',
+  'Eklemek istediğin bir şey var mı? (Portfolyo, GitHub, çizim, video linki vb. de buraya bırakabilirsin)':
+    'Eklemek istedikleri',
+  "Anything else you'd like to add? (You can leave a portfolio, GitHub, sketch, or video link here too)":
+    'Eklemek istedikleri',
+  'CV / Ön Yazı': CV_BASLIGI,
+};
 
-/** Başvuruların yazıldığı komite sayfaları. İletişim sayfasına dokunulmaz. */
-const KOMITE_SAYFALARI = ['Mekanik', 'Elektrik', 'Destek', 'Mechanical', 'Electrical', 'Support'];
+/** Komite başına ayrı sayfa düzeninden kalan sayfalar. */
+const ESKI_SAYFALAR = ['Mekanik', 'Elektrik', 'Destek', 'Mechanical', 'Electrical', 'Support', 'Diğer'];
 
 /**
- * Formdan kaldırılan soruların sütunlarını ve hata ayıklama sırasında atılan
- * test satırlarını siler. Bir kez, Apps Script düzenleyicisinden elle
- * çalıştırılır (üstteki menüden bu fonksiyonu seçip "Çalıştır").
+ * Komite sayfalarını tek "Başvurular" sayfasında birleştirir. Bir kez, Apps
+ * Script düzenleyicisinden elle çalıştırılır (fonksiyon menüsünden seçip
+ * "Çalıştır").
  *
- * Silinecekleri tek tek saymak yerine güncel başlıkları tutar: tablodaki
- * başlıklar formun daha eski bir sürümünden kalma ve metinleri formdakiyle
- * birebir aynı değil ("CAD becerini…" gibi), bir silme listesi onları
- * kaçırırdı. Bu yüzden forma yeni soru ekledikten SONRA çalıştırma — o
- * sütunu da silmek ister.
+ * Gerçek başvurular taşınır, sonra eski sayfa silinir. Hata ayıklarken
+ * atılan "TEST… SILINEBILIR" satırları ve formdan kaldırılan soruların
+ * cevapları taşınmaz. Kullanılmayan boş "İletişim" sayfası da gider; iletişim
+ * mesajları çoktandır ayrı tabloya yazılıyor.
+ *
+ * Tekrar çalıştırmak zararsız: taşınacak eski sayfa kalmamışsa hiçbir şey yapmaz.
  */
-function eskiSutunlariTemizle() {
+function tekSayfayaTasi() {
   const kitap = SpreadsheetApp.getActiveSpreadsheet();
-  KOMITE_SAYFALARI.forEach(function (ad) {
-    const sayfa = kitap.getSheetByName(ad);
-    if (!sayfa || sayfa.getLastColumn() === 0) return;
+  const hedef = basvuruSayfasi();
+  var tasinan = 0;
+  var atlanan = 0;
 
-    const basliklar = sayfa.getRange(1, 1, 1, sayfa.getLastColumn()).getValues()[0];
-    var silinenSutun = 0;
-    // Sağdan sola: silinen sütun, solundakilerin numarasını kaydırmasın.
-    for (var i = basliklar.length - 1; i >= 0; i--) {
-      if (GUNCEL_BASLIKLAR.indexOf(basliklar[i]) === -1) {
-        sayfa.deleteColumn(i + 1);
-        silinenSutun++;
-      }
-    }
+  ESKI_SAYFALAR.forEach(function (ad) {
+    const eski = kitap.getSheetByName(ad);
+    if (!eski) return;
 
-    // Yalnızca "TEST… SILINEBILIR" olarak işaretlenmiş satırlar.
-    var silinenSatir = 0;
-    const adSutunu = sayfa.getRange(1, 1, 1, sayfa.getLastColumn()).getValues()[0].indexOf('Ad Soyad');
-    if (adSutunu !== -1 && sayfa.getLastRow() > 1) {
-      const adlar = sayfa.getRange(2, adSutunu + 1, sayfa.getLastRow() - 1, 1).getValues();
-      for (var r = adlar.length - 1; r >= 0; r--) {
-        const deger = String(adlar[r][0]);
-        if (deger.indexOf('TEST') === 0 && deger.indexOf('SILINEBILIR') !== -1) {
-          sayfa.deleteRow(r + 2);
-          silinenSatir++;
-        }
+    const tablo = eski.getLastRow() > 0 ? eski.getDataRange().getValues() : [];
+    const basliklar = tablo.length ? tablo[0] : [];
+    const komite = komiteAdi(ad) || ad;
+
+    for (var r = 1; r < tablo.length; r++) {
+      const degerler = {};
+      basliklar.forEach(function (baslik, i) {
+        const yeni = ESKI_BASLIKLAR[baslik];
+        if (yeni && tablo[r][i] !== '') degerler[yeni] = tablo[r][i];
+      });
+
+      const isim = String(degerler['Ad Soyad'] || '');
+      if (!isim && !degerler['E-posta']) continue; // boş satır
+      if (isim.indexOf('TEST') === 0 && isim.indexOf('SILINEBILIR') !== -1) {
+        atlanan++;
+        continue;
       }
+
+      degerler[KOMITE_BASLIGI] = komite;
+      // Numarayı metin olarak sakla. Sayı olarak yazılmış olanın baştaki 0'ı
+      // zaten gitmiş; bu ancak bundan sonrasını korur.
+      if (degerler['Telefon'] !== undefined) degerler['Telefon'] = "'" + String(degerler['Telefon']);
+
+      satirEkle(hedef, degerler);
+      tasinan++;
     }
-    console.log(ad + ': ' + silinenSutun + ' sütun, ' + silinenSatir + ' test satırı silindi.');
+    kitap.deleteSheet(eski);
   });
+
+  const iletisim = kitap.getSheetByName('İletişim');
+  if (iletisim && iletisim.getLastRow() <= 1) kitap.deleteSheet(iletisim);
+
+  console.log(tasinan + ' başvuru taşındı, ' + atlanan + ' test satırı bırakıldı.');
+}
+
+/** Sitenin gönderdiği kimliği ya da adı ("elektrik", "Electrical") Türkçe ada çevirir. */
+function komiteAdi(deger) {
+  if (!deger) return '';
+  for (var i = 0; i < KOMITELER.length; i++) {
+    if (KOMITELER[i].esler.indexOf(String(deger)) !== -1) return KOMITELER[i].ad;
+  }
+  return '';
+}
+
+function sutunBasligi(cevap) {
+  for (var i = 0; i < SUTUNLAR.length; i++) {
+    if (SUTUNLAR[i][0] && SUTUNLAR[i][0] === cevap.id) return SUTUNLAR[i][1];
+  }
+  return cevap.soru;
+}
+
+/** "Başvurular" sayfası; yoksa başlıkları ve komite renkleriyle kurar. */
+function basvuruSayfasi() {
+  const kitap = SpreadsheetApp.getActiveSpreadsheet();
+  var sayfa = kitap.getSheetByName(BASVURU_SAYFASI);
+  if (sayfa) return sayfa;
+
+  sayfa = sayfayiGetir(BASVURU_SAYFASI, kitap);
+  basliklariEsitle(sayfa, SUTUNLAR.map(function (s) { return s[1]; }));
+
+  // Satırın rengi Komite sütunundan gelir, satır nereye eklenirse eklensin.
+  const veri = sayfa.getRange('A2:Z');
+  sayfa.setConditionalFormatRules(KOMITELER.map(function (k) {
+    return SpreadsheetApp.newConditionalFormatRule()
+      .whenFormulaSatisfied('=$B2="' + k.ad + '"')
+      .setBackground(k.renk)
+      .setRanges([veri])
+      .build();
+  }));
+  return sayfa;
+}
+
+/**
+ * Bir başvuruyu kendi komitesinin grubunun sonuna ekler: Mekanik'ler, sonra
+ * Elektrik'ler, sonra Destek'ler, her grubun içinde geliş sırasıyla. Sona
+ * eklemek grupları birbirine karıştırırdı.
+ */
+function satirEkle(sayfa, degerler) {
+  const istenen = SUTUNLAR.map(function (s) { return s[1]; }).concat(Object.keys(degerler));
+  // Bilinen başlıklar iki listede de geçer; biri elle silinmişse iki kez açılmasın.
+  basliklariEsitle(sayfa, istenen.filter(function (b, i) { return istenen.indexOf(b) === i; }));
+  const basliklar = sayfa.getRange(1, 1, 1, sayfa.getLastColumn()).getValues()[0];
+  const satir = basliklar.map(function (b) {
+    return Object.prototype.hasOwnProperty.call(degerler, b) ? degerler[b] : '';
+  });
+
+  const sira = KOMITELER.map(function (k) { return k.ad; });
+  const benim = sira.indexOf(degerler[KOMITE_BASLIGI]);
+  const son = sayfa.getLastRow();
+  var hedef = son; // Tanınmayan komite en sona.
+  if (benim !== -1) {
+    hedef = 1;
+    if (son > 1) {
+      const komiteSutunu = basliklar.indexOf(KOMITE_BASLIGI) + 1;
+      const komiteler = sayfa.getRange(2, komiteSutunu, son - 1, 1).getValues();
+      for (var i = 0; i < komiteler.length; i++) {
+        const k = sira.indexOf(komiteler[i][0]);
+        if (k !== -1 && k <= benim) hedef = i + 2;
+      }
+    }
+  }
+
+  sayfa.insertRowAfter(hedef);
+  const yeni = sayfa.getRange(hedef + 1, 1, 1, satir.length);
+  yeni.setValues([satir]);
+  // insertRowAfter üstteki satırın biçimini kopyalar; başlığın altına
+  // eklenen ilk satır kalın yazılmasın.
+  yeni.setFontWeight('normal');
 }
 
 /** Çoklu seçim dizilerini okunur tek hücreye çevirir. */

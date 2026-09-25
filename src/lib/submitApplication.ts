@@ -93,6 +93,8 @@ export async function prepareFile(file: File): Promise<UploadedFile> {
 }
 
 type SubmitArgs = {
+  /** "mekanik" | "elektrik" | "destek" — the sheet names the group from this. */
+  committeeId: string;
   committeeName: string;
   questions: Question[];
   answers: Answers;
@@ -102,6 +104,7 @@ type SubmitArgs = {
 
 /** Başvuruyu Apps Script uç noktasına gönderir (bkz. formEndpoint.ts). */
 export async function submitApplication({
+  committeeId,
   committeeName,
   questions,
   answers,
@@ -126,5 +129,11 @@ export async function submitApplication({
     });
   }
 
-  await postToFormEndpoint({ komiteAdi: committeeName, botTuzagi: honeypot, cevaplar, dosya });
+  await postToFormEndpoint({
+    komite: committeeId,
+    komiteAdi: committeeName,
+    botTuzagi: honeypot,
+    cevaplar,
+    dosya,
+  });
 }
