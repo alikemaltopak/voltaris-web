@@ -1,7 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
-  ContactShadows,
   Environment,
   Lightformer,
   MeshReflectorMaterial,
@@ -11,10 +10,11 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { useLanguage } from "../context/LanguageContext";
+import { lookFor, makeHologramMaterial } from "../three/hologram";
 
 const MODEL_URL = "/models/voltaris-arac.glb";
 // The view behind the studio until someone drops in their own picture.
-const DEFAULT_BACKDROP = "/backdrops/antik-sahil.jpg";
+const DEFAULT_BACKDROP: string | null = null;
 
 interface Finish {
   id: string;
@@ -279,71 +279,47 @@ interface CarProps {
   spinning: boolean;
   /** Bumped when a camera preset is picked, to bring the car back to square. */
   homeKey: number;
+  /** Overall brightness of the x-ray. */
+  glow: number;
 }
 
-function Car({ finish, headlights, taillights, spinning, homeKey }: CarProps) {
+function Car({ finish, headlights, taillights, spinning, homeKey, glow }: CarProps) {
   const { scene } = useGLTF(MODEL_URL);
   const group = useRef<THREE.Group>(null);
   const homing = useRef(false);
 
-  // The GLB carries its materials, so they only need finding once — after
-  // that the controls edit them in place.
+  // Every mesh gets its own x-ray material, keyed on the object's name rather
+  // than the material's: the painted model shares one material across parts
+  // that need to read at quite different brightnesses here.
   const parts = useMemo(() => {
-    const found: Record<string, THREE.MeshStandardMaterial> = {};
-
-    // Car paint is two layers: pigment under a sheet of lacquer. glTF only
-    // carries the pigment, so the bodywork is promoted to a material that can
-    // hold the lacquer on top — it is what gives the sharp, tight highlight a
-    // plain metal shader cannot.
-    // Built field by field rather than with copy(), which reaches for
-    // clearcoat properties a plain standard material has never heard of.
-    const lacquer = (standard: THREE.MeshStandardMaterial) =>
-      new THREE.MeshPhysicalMaterial({
-        name: standard.name,
-        color: standard.color.clone(),
-        metalness: standard.metalness,
-        roughness: standard.roughness,
-        map: standard.map,
-        normalMap: standard.normalMap,
-        side: standard.side,
-        flatShading: standard.flatShading,
-        clearcoat: 1,
-        clearcoatRoughness: 0.055,
-      });
-
+    const made: { name: string; material: THREE.ShaderMaterial }[] = [];
+    const scheme = new THREE.Color(finish.color);
     scene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
-      child.castShadow = true;
-      child.receiveShadow = true;
-      const slots = Array.isArray(child.material) ? child.material : [child.material];
-      const swapped = slots.map((material) => {
-        let standard = material as THREE.MeshStandardMaterial;
-        if (!standard?.name) return material;
-        if (standard.name === "Govde_Boya" && !(standard instanceof THREE.MeshPhysicalMaterial)) {
-          standard = lacquer(standard);
-        }
-        standard.envMapIntensity = 1.2;
-        found[standard.name] = standard;
-        return standard;
-      });
-      child.material = Array.isArray(child.material) ? swapped : swapped[0];
+      child.castShadow = false;
+      child.receiveShadow = false;
+      const material = makeHologramMaterial(scheme, lookFor(child.name), 1);
+      child.material = material;
+      made.push({ name: child.name, material });
     });
-    return found;
-  }, [scene]);
+    return made;
+    // Built once per model; colour and brightness are pushed in below.
+  }, [scene]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const paint = parts.Govde_Boya;
-    if (!paint) return;
-    paint.color = new THREE.Color(finish.color);
-    paint.metalness = finish.metalness;
-    paint.roughness = finish.roughness;
-    paint.needsUpdate = true;
+    const scheme = new THREE.Color(finish.color);
+    for (const { name, material } of parts) {
+      const look = lookFor(name);
+      if (!look.tint) material.uniforms.uColor.value.copy(scheme);
+    }
   }, [parts, finish]);
 
   useEffect(() => {
-    if (parts.Far) parts.Far.emissiveIntensity = headlights ? 3 : 0;
-    if (parts.Stop) parts.Stop.emissiveIntensity = taillights ? 2 : 0;
-  }, [parts, headlights, taillights]);
+    for (const { name, material } of parts) {
+      const lamp = name.startsWith("Far") ? headlights : name.startsWith("Stop") ? taillights : null;
+      material.uniforms.uGain.value = lamp === false ? 0 : glow;
+    }
+  }, [parts, glow, headlights, taillights]);
 
   useEffect(() => {
     if (homeKey > 0) homing.current = true;
@@ -373,11 +349,6 @@ function Car({ finish, headlights, taillights, spinning, homeKey }: CarProps) {
   return (
     <group ref={group}>
       <primitive object={scene} />
-      {/* A little spill on the floor, so switching the lamps on reads even in
-          a viewer with no volumetrics. */}
-      <pointLight position={[1.95, 0.45, 0.45]} intensity={headlights ? 1.1 : 0} distance={2.1} color="#cfe9ff" />
-      <pointLight position={[1.95, 0.45, -0.45]} intensity={headlights ? 1.1 : 0} distance={2.1} color="#cfe9ff" />
-      <pointLight position={[-1.9, 0.55, 0]} intensity={taillights ? 1.0 : 0} distance={1.8} color="#ff3344" />
     </group>
   );
 }
@@ -467,8 +438,8 @@ export function CarViewer() {
               taillights={taillights}
               spinning={spinning}
               homeKey={nudge}
+              glow={lights}
             />
-            <ContactShadows position={[0, 0.012, 0]} opacity={0.7} scale={6.5} blur={2.4} far={2.6} />
             <Studio lights={lights} imageUrl={backdrop} />
           </Suspense>
           <ViewRig view={view} nudge={nudge} />
