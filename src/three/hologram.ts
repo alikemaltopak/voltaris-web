@@ -22,12 +22,26 @@ export interface HologramLook {
   falloff: number;
   /** Multiplies the scheme colour; use for parts that should read warm. */
   tint?: THREE.ColorRepresentation;
+  /** How strongly the scanning band lights this part (default 0.9). */
+  scan?: number;
 }
+
+/**
+ * One clock shared by every hologram material, so the scan crosses the whole
+ * car as a single band rather than each part keeping its own time.
+ */
+export const SCAN_CLOCK = { value: 0 };
 
 const VERTEX = /* glsl */ `
   varying vec3 vNormal;
   varying vec3 vToEye;
+  varying float vAlong;
+  varying float vHeight;
   void main() {
+    // Model space, not world: the scan belongs to the car and turns with it
+    // on the turntable instead of sweeping a fixed plane of the room.
+    vAlong = position.x;
+    vHeight = position.y;
     vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
     vNormal = normalize(normalMatrix * normal);
     vToEye = normalize(-viewPosition.xyz);
@@ -41,14 +55,28 @@ const FRAGMENT = /* glsl */ `
   uniform float uRim;
   uniform float uFalloff;
   uniform float uGain;
+  uniform float uTime;
+  uniform float uScan;
   varying vec3 vNormal;
   varying vec3 vToEye;
+  varying float vAlong;
+  varying float vHeight;
   void main() {
     // Backfaces arrive with the normal pointing away; abs() treats both sides
     // alike, which is what lets the far wall of a panel glow too.
     float facing = abs(dot(normalize(vNormal), normalize(vToEye)));
     float edge = pow(1.0 - facing, uFalloff);
-    float strength = (uBase + uRim * edge) * uGain;
+
+    // A bright band sweeping nose to tail every few seconds, the scanner the
+    // references are built round, with a soft wake behind it.
+    float head = mod(uTime * 0.55, 5.2) - 2.6;
+    float band = exp(-pow((vAlong - head) / 0.07, 2.0));
+    float wake = exp(-max(head - vAlong, 0.0) * 2.4) * step(vAlong, head) * 0.22;
+
+    // Faint horizontal striations, like the raster of a projected image.
+    float lines = 0.86 + 0.14 * sin(vHeight * 260.0);
+
+    float strength = ((uBase + uRim * edge) * lines + (band + wake) * uScan) * uGain;
     gl_FragColor = vec4(uColor * strength, strength);
   }
 `;
@@ -66,6 +94,8 @@ export function makeHologramMaterial(
       uRim: { value: look.rim },
       uFalloff: { value: look.falloff },
       uGain: { value: gain },
+      uTime: SCAN_CLOCK,
+      uScan: { value: look.scan ?? 0.9 },
     },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
@@ -116,6 +146,33 @@ export const DEFAULT_LOOK: HologramLook = { base: 0.2, rim: 0.6, falloff: 2.0 };
  * worth wiring — a wireframe over the structure as well turns the whole car
  * into noise.
  */
+/**
+ * Crisp outlines of the parts with real edges — seat, dash, wheel, cage, pack,
+ * motors. The Fresnel glow shows curvature; these show where a shape turns a
+ * corner, which is what makes the interior read as designed parts rather than
+ * soft blobs.
+ */
+export const EDGE_ON = [
+  "Koltuk",
+  "Kokpit",
+  "Direksiyon",
+  "RollCage",
+  "Batarya_Kutu",
+  "Motor",
+  "Ekran",
+  "Ayna",
+];
+export const EDGE_ANGLE = 28; // degrees between faces before an edge is drawn
+
+export function makeEdgeMaterial(colour: THREE.Color, strength: number): THREE.LineBasicMaterial {
+  return new THREE.LineBasicMaterial({
+    color: colour.clone().multiplyScalar(strength),
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+}
+
 export const WIRE_PREFIX = "Tel_";
 
 export function makeWireMaterial(colour: THREE.Color, strength: number): THREE.MeshBasicMaterial {

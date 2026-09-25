@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import {
   Environment,
   Lightformer,
@@ -11,8 +12,12 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { useLanguage } from "../context/LanguageContext";
 import {
+  EDGE_ANGLE,
+  EDGE_ON,
+  SCAN_CLOCK,
   WIRE_PREFIX,
   lookFor,
+  makeEdgeMaterial,
   makeHologramMaterial,
   makeWireMaterial,
 } from "../three/hologram";
@@ -23,7 +28,7 @@ const DEFAULT_BACKDROP: string | null = null;
 
 // One scheme colour for the whole x-ray. Parts that need to stand out — the
 // pack, the motors, the cabling — carry their own tint in the look table.
-const SCHEME = "#29d3e8";
+const SCHEME = "#3fe0c4";
 
 interface ViewPreset {
   tr: string;
@@ -282,6 +287,8 @@ function Car({ spinning, homeKey, glow }: CarProps) {
   const parts = useMemo(() => {
     const made: { name: string; material: THREE.ShaderMaterial }[] = [];
     const wires: THREE.MeshBasicMaterial[] = [];
+    const edges: THREE.LineBasicMaterial[] = [];
+    const outlined: THREE.Mesh[] = [];
     const scheme = new THREE.Color(SCHEME);
     scene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
@@ -300,8 +307,22 @@ function Car({ spinning, homeKey, glow }: CarProps) {
       const material = makeHologramMaterial(scheme, lookFor(child.name), 1);
       child.material = material;
       made.push({ name: child.name, material });
+      if (EDGE_ON.some((key) => child.name.startsWith(key))) outlined.push(child);
     });
-    return { surfaces: made, wires, scheme };
+
+    // Outlines are added after the walk, so the traversal never visits the
+    // children it is creating. Each shares nothing but the source's shape.
+    for (const mesh of outlined) {
+      const lines = new THREE.LineSegments(
+        new THREE.EdgesGeometry(mesh.geometry, EDGE_ANGLE),
+        makeEdgeMaterial(scheme, 0.55),
+      );
+      lines.name = `${mesh.name}_kenar`;
+      lines.renderOrder = 2;
+      mesh.add(lines);
+      edges.push(lines.material as THREE.LineBasicMaterial);
+    }
+    return { surfaces: made, wires, edges, scheme };
     // Built once per model; colour and brightness are pushed in below.
   }, [scene]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -312,6 +333,9 @@ function Car({ spinning, homeKey, glow }: CarProps) {
     for (const wire of parts.wires) {
       wire.color.copy(parts.scheme).multiplyScalar(0.34 * glow);
     }
+    for (const edge of parts.edges) {
+      edge.color.copy(parts.scheme).multiplyScalar(0.55 * glow);
+    }
   }, [parts, glow]);
 
   useEffect(() => {
@@ -319,6 +343,7 @@ function Car({ spinning, homeKey, glow }: CarProps) {
   }, [homeKey]);
 
   useFrame((_, delta) => {
+    SCAN_CLOCK.value += delta;
     const car = group.current;
     if (!car) return;
     if (spinning) {
@@ -429,6 +454,9 @@ export function CarViewer() {
             />
             <Studio lights={lights} imageUrl={backdrop} />
           </Suspense>
+          <EffectComposer multisampling={0}>
+            <Bloom mipmapBlur intensity={0.8} luminanceThreshold={0.52} luminanceSmoothing={0.22} radius={0.55} />
+          </EffectComposer>
           <ViewRig view={view} nudge={nudge} />
           <OrbitControls
             makeDefault
