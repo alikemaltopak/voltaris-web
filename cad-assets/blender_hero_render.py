@@ -36,9 +36,27 @@ SHOTS = [
 
 
 def args():
-    a = sys.argv[sys.argv.index("--") + 1 :]
-    only = a[4] if len(a) > 4 else None
-    return a[0], a[1], int(a[2]) if len(a) > 2 else 200, int(a[3]) if len(a) > 3 else 2400, only
+    raw = sys.argv[sys.argv.index("--") + 1 :]
+    # --turntable N renders a full circle in N steps instead of the named
+    # shots. Consistency is the whole point of a turntable, so the camera is
+    # driven by one formula and nothing else in the scene moves.
+    turns = int(raw[raw.index("--turntable") + 1]) if "--turntable" in raw else 0
+    pos, skip = [], False
+    for item in raw:
+        if skip:
+            skip = False
+        elif item.startswith("--"):
+            skip = True
+        else:
+            pos.append(item)
+    return (
+        pos[0],
+        pos[1],
+        int(pos[2]) if len(pos) > 2 else 200,
+        int(pos[3]) if len(pos) > 3 else 2400,
+        pos[4] if len(pos) > 4 else None,
+        turns,
+    )
 
 
 def principled(mat):
@@ -176,7 +194,7 @@ def light_studio():
 
 
 def main():
-    src, out_dir, samples, width, only = args()
+    src, out_dir, samples, width, only, turns = args()
     os.makedirs(out_dir, exist_ok=True)
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -215,8 +233,22 @@ def main():
     bpy.context.collection.objects.link(cam)
     scene.camera = cam
 
-    for name, az, el, dist, lens, aim in SHOTS:
+    if turns:
+        # Frame 1 looks straight at the driver's side, nose to the right, and
+        # the camera walks anticlockwise from there.
+        plan = [
+            (f"frame_{i + 1:04d}", 90 + 360 * i / turns, 7, 12.4, 110, 0.62)
+            for i in range(turns)
+        ]
+    else:
+        plan = SHOTS
+
+    for name, az, el, dist, lens, aim in plan:
         if only and name != only:
+            continue
+        # A 72-frame turntable takes half an hour, so a run that gets cut off
+        # picks up where it stopped rather than starting again.
+        if turns and os.path.exists(f"{out_dir}/{name}.png"):
             continue
         cam_data.lens = lens
         a, e = math.radians(az), math.radians(el)
