@@ -79,10 +79,12 @@ function doPost(e) {
       cvBaglantisi = dosyayiKaydet(gelen.dosya, adSoyad);
     }
 
-    // Sütun sırası: zaman → sorular (formdaki sırayla) → CV.
+    // Sütun sırası: zaman → sorular (formdaki sırayla) → CV. CV sütunu yalnızca
+    // gerçekten dosya geldiğinde açılır; formda artık CV sorusu yok ve her
+    // başvuruda boş bir sütun eklemek, silinen sütunu geri getiriyordu.
     const basliklar = [ZAMAN_BASLIGI]
       .concat(cevaplar.map(function (c) { return c.soru; }))
-      .concat([CV_BASLIGI]);
+      .concat(cvBaglantisi ? [CV_BASLIGI] : []);
 
     const degerler = {};
     degerler[ZAMAN_BASLIGI] = new Date();
@@ -208,6 +210,76 @@ function basliklariEsitle(sayfa, istenen) {
   if (eksik.length === 0) return;
 
   sayfa.getRange(1, mevcut.length + 1, 1, eksik.length).setValues([eksik]).setFontWeight('bold');
+}
+
+// ------------------------------------------------------- TEK SEFERLİK --
+
+/** Formda şu an sorulan soruların başlıkları, iki dilde. */
+const GUNCEL_BASLIKLAR = [
+  ZAMAN_BASLIGI,
+  'Ad Soyad',
+  'E-posta adresin',
+  'Telefon numaran',
+  'Bölümün',
+  'Kaçıncı sınıftasın?',
+  "Voltaris'i nereden duydun?",
+  "Voltaris'e neden katılmak istiyorsun? Bizi en çok bu cevap ilgilendiriyor, uzun ve mükemmel olmak zorunda değil.",
+  'Eklemek istediğin bir şey var mı? (Portfolyo, GitHub, çizim, video linki vb. de buraya bırakabilirsin)',
+  'Full name',
+  'Your email address',
+  'Your phone number',
+  'Your department',
+  'What year are you in?',
+  'Where did you hear about Voltaris?',
+  "Why do you want to join Voltaris? This is the answer we care about most — it doesn't have to be long or perfect.",
+  "Anything else you'd like to add? (You can leave a portfolio, GitHub, sketch, or video link here too)",
+];
+
+/** Başvuruların yazıldığı komite sayfaları. İletişim sayfasına dokunulmaz. */
+const KOMITE_SAYFALARI = ['Mekanik', 'Elektrik', 'Destek', 'Mechanical', 'Electrical', 'Support'];
+
+/**
+ * Formdan kaldırılan soruların sütunlarını ve hata ayıklama sırasında atılan
+ * test satırlarını siler. Bir kez, Apps Script düzenleyicisinden elle
+ * çalıştırılır (üstteki menüden bu fonksiyonu seçip "Çalıştır").
+ *
+ * Silinecekleri tek tek saymak yerine güncel başlıkları tutar: tablodaki
+ * başlıklar formun daha eski bir sürümünden kalma ve metinleri formdakiyle
+ * birebir aynı değil ("CAD becerini…" gibi), bir silme listesi onları
+ * kaçırırdı. Bu yüzden forma yeni soru ekledikten SONRA çalıştırma — o
+ * sütunu da silmek ister.
+ */
+function eskiSutunlariTemizle() {
+  const kitap = SpreadsheetApp.getActiveSpreadsheet();
+  KOMITE_SAYFALARI.forEach(function (ad) {
+    const sayfa = kitap.getSheetByName(ad);
+    if (!sayfa || sayfa.getLastColumn() === 0) return;
+
+    const basliklar = sayfa.getRange(1, 1, 1, sayfa.getLastColumn()).getValues()[0];
+    var silinenSutun = 0;
+    // Sağdan sola: silinen sütun, solundakilerin numarasını kaydırmasın.
+    for (var i = basliklar.length - 1; i >= 0; i--) {
+      if (GUNCEL_BASLIKLAR.indexOf(basliklar[i]) === -1) {
+        sayfa.deleteColumn(i + 1);
+        silinenSutun++;
+      }
+    }
+
+    // Yalnızca "TEST… SILINEBILIR" olarak işaretlenmiş satırlar.
+    var silinenSatir = 0;
+    const adSutunu = sayfa.getRange(1, 1, 1, sayfa.getLastColumn()).getValues()[0].indexOf('Ad Soyad');
+    if (adSutunu !== -1 && sayfa.getLastRow() > 1) {
+      const adlar = sayfa.getRange(2, adSutunu + 1, sayfa.getLastRow() - 1, 1).getValues();
+      for (var r = adlar.length - 1; r >= 0; r--) {
+        const deger = String(adlar[r][0]);
+        if (deger.indexOf('TEST') === 0 && deger.indexOf('SILINEBILIR') !== -1) {
+          sayfa.deleteRow(r + 2);
+          silinenSatir++;
+        }
+      }
+    }
+    console.log(ad + ': ' + silinenSutun + ' sütun, ' + silinenSatir + ' test satırı silindi.');
+  });
 }
 
 /** Çoklu seçim dizilerini okunur tek hücreye çevirir. */

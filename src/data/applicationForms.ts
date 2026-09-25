@@ -44,7 +44,6 @@ export const applicationFormsTr: ApplicationFormsData = {
       id: "bolum",
       tip: "kisa_metin",
       soru: "Bölümün",
-      yardimciMetin: "Başvurular İYTE öğrencilerine açık. Örn: Makine Mühendisliği",
       zorunlu: true,
     },
     {
@@ -113,7 +112,6 @@ export const applicationFormsEn: ApplicationFormsData = {
       id: "bolum",
       tip: "kisa_metin",
       soru: "Your department",
-      yardimciMetin: "Applications are open to IZTECH students. e.g. Mechanical Engineering",
       zorunlu: true,
     },
     {

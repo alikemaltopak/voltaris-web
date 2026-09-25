@@ -142,3 +142,17 @@ yapacak arkadaşlara **ana klasörü** paylaş, e-tablo ve CV'ler birlikte gelir
 
 **Kotalar.** Apps Script'in ücretsiz kotası günde 20.000 çağrı ve 100 e-posta;
 üye alımı ölçeğinde sorun çıkarmaz.
+
+## Kaldırılan soruların sütunlarını silmek (bir kez)
+
+Formdan soru kaldırıldığında tablodaki sütunları kendiliğinden gitmez. `Kod.gs`
+içindeki `eskiSutunlariTemizle` bunu yapar:
+
+1. Güncel `Kod.gs`'i yapıştırıp kaydet (yukarıdaki "Script güncellemesi").
+2. Üstteki fonksiyon menüsünden **eskiSutunlariTemizle**'yi seç → **Çalıştır**.
+3. Alttaki **Yürütme günlüğü**'nde her sayfa için kaç sütun ve kaç test satırı
+   silindiği yazar.
+
+Sadece komite sayfalarına (Mekanik, Elektrik, Destek) dokunur; güncel sorular
+dışındaki her sütunu siler. **Forma yeni soru ekledikten sonra çalıştırma** —
+`GUNCEL_BASLIKLAR` listesinde olmayan o yeni sütunu da silmeye çalışır.
