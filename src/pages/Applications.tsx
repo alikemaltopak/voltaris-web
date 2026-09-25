@@ -22,6 +22,8 @@ import {
   type AnswerValue,
   type Answers,
 } from "../lib/submitApplication";
+import { isValidEmail, isValidPhone } from "../lib/formValidation";
+import { FormEndpointError } from "../lib/formEndpoint";
 
 type FormStrings = ReturnType<typeof useLanguage>["t"]["applications"]["form"];
 
@@ -54,6 +56,7 @@ function QuestionField({
       return (
         <input
           type="email"
+          autoComplete="email"
           className={inputClass}
           value={(value as string) ?? ""}
           onChange={(event) => onChange(event.target.value)}
@@ -63,6 +66,7 @@ function QuestionField({
       return (
         <input
           type="tel"
+          autoComplete="tel"
           className={inputClass}
           value={(value as string) ?? ""}
           onChange={(event) => onChange(event.target.value)}
@@ -282,11 +286,12 @@ function QuestionBlock({ number, children }: { number: number; children: ReactNo
 export function Applications() {
   const { t, lang } = useLanguage();
   const [answers, setAnswers] = useState<Answers>({});
-  const [invalidIds, setInvalidIds] = useState<Set<string>>(new Set());
+  // Soru id'si → altında gösterilecek hata.
+  const [invalidIds, setInvalidIds] = useState<Map<string, string>>(new Map());
   const [selectedCommittee, setSelectedCommittee] = useState<CommitteeId | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   // Bal küpü: ekranda görünmez, yalnızca formu körlemesine dolduran botlar yazar.
   const honeypotRef = useRef<HTMLInputElement>(null);
 
@@ -304,7 +309,7 @@ export function Applications() {
     setAnswers((prev) => ({ ...prev, [id]: value }));
     setInvalidIds((prev) => {
       if (!prev.has(id)) return prev;
-      const next = new Set(prev);
+      const next = new Map(prev);
       next.delete(id);
       return next;
     });
@@ -312,7 +317,7 @@ export function Applications() {
 
   function selectCommittee(id: CommitteeId) {
     setSelectedCommittee(id);
-    setInvalidIds(new Set());
+    setInvalidIds(new Map());
     setAnswers((prev) => {
       const next = { ...prev };
       for (const cid of Object.keys(formsData.formlar) as CommitteeId[]) {
@@ -329,21 +334,27 @@ export function Applications() {
     if (sending) return;
 
     const questions = [...formsData.ortakSorular, ...(selectedForm?.ozelSorular ?? [])];
-    const nextInvalid = new Set<string>();
+    const strings = t.applications.form;
+    const nextInvalid = new Map<string, string>();
     for (const question of questions) {
-      if (question.zorunlu && isEmptyAnswer(answers[question.id])) {
-        nextInvalid.add(question.id);
+      const value = answers[question.id];
+      if (isEmptyAnswer(value)) {
+        if (question.zorunlu) nextInvalid.set(question.id, strings.required);
+      } else if (question.tip === "eposta" && !isValidEmail(value as string)) {
+        nextInvalid.set(question.id, strings.invalidEmail);
+      } else if (question.tip === "telefon" && !isValidPhone(value as string)) {
+        nextInvalid.set(question.id, strings.invalidPhone);
       }
     }
     if (nextInvalid.size > 0) {
       setInvalidIds(nextInvalid);
-      const firstInvalidEl = document.getElementById(`question-${Array.from(nextInvalid)[0]}`);
+      const firstInvalidEl = document.getElementById(`question-${nextInvalid.keys().next().value}`);
       firstInvalidEl?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
     setSending(true);
-    setSendError(false);
+    setSendError(null);
     try {
       const committee = t.applications.committees.find((item) => item.id === selectedCommittee);
       await submitApplication({
@@ -355,9 +366,11 @@ export function Applications() {
       });
       setSubmitted(true);
       scrollToTop({ immediate: true });
-    } catch {
+    } catch (error) {
       // Ayrıntıyı başvurana göstermiyoruz; yapabileceği tek şey tekrar denemek.
-      setSendError(true);
+      // Aynı e-postayla ikinci başvuru bunun dışında: tekrar denemek işe yaramaz.
+      const duplicate = error instanceof FormEndpointError && error.code === "tekrar_basvuru";
+      setSendError(duplicate ? t.applications.form.duplicate : t.applications.form.error);
     } finally {
       setSending(false);
     }
@@ -379,7 +392,7 @@ export function Applications() {
           strings={t.applications.form}
         />
         {invalidIds.has(question.id) && (
-          <span className="form-field__error">{t.applications.form.required}</span>
+          <span className="form-field__error">{invalidIds.get(question.id)}</span>
         )}
       </label>
     );
@@ -464,7 +477,7 @@ export function Applications() {
                         </button>
                         {sendError && (
                           <p className="form-field__error" role="alert">
-                            {t.applications.form.error}
+                            {sendError}
                           </p>
                         )}
                         <p className="note">{t.applications.form.note}</p>

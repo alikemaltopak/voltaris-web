@@ -103,6 +103,19 @@ function doPost(e) {
     const komite = komiteAdi(gelen.komite) || komiteAdi(gelen.komiteAdi) || 'Diğer';
     const adSoyad = cevapBul(cevaplar, 'ad_soyad') || 'isimsiz';
 
+    // Site de aynı kontrolleri yapıyor (src/lib/formValidation.ts); bu,
+    // siteyi atlayıp doğrudan buraya gönderilenler için.
+    const eposta = cevapBul(cevaplar, 'eposta').trim();
+    if (!EPOSTA_DESENI.test(eposta)) return cevap('hata', 'Geçersiz e-posta.', 'gecersiz_eposta');
+    if (!telefonGecerli(cevapBul(cevaplar, 'telefon'))) {
+      return cevap('hata', 'Geçersiz telefon.', 'gecersiz_telefon');
+    }
+    // Kilit altındayız: aynı e-postayla aynı anda gelen iki başvurudan
+    // ikincisi, birincinin yazdığı satırı görür.
+    if (dahaOnceBasvurmus(basvuruSayfasi(), eposta)) {
+      return cevap('hata', 'Bu e-postayla zaten başvurulmuş.', 'tekrar_basvuru');
+    }
+
     var cvBaglantisi = '';
     if (gelen.dosya && gelen.dosya.veri) {
       cvBaglantisi = dosyayiKaydet(gelen.dosya, adSoyad);
@@ -182,9 +195,10 @@ function doGet() {
 
 // ---------------------------------------------------------------- YARDIMCI --
 
-function cevap(durum, mesaj) {
+/** `kod`, sitenin başvurana hangi mesajı göstereceğini seçtiği ad. */
+function cevap(durum, mesaj, kod) {
   return ContentService
-    .createTextOutput(JSON.stringify({ durum: durum, mesaj: mesaj }))
+    .createTextOutput(JSON.stringify({ durum: durum, mesaj: mesaj, kod: kod || '' }))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -193,6 +207,30 @@ function cevapBul(cevaplar, id) {
     if (cevaplar[i].id === id) return String(cevaplar[i].cevap || '');
   }
   return '';
+}
+
+/** ad@alan.uzanti: ad@gmail.com, ad@std.iyte.edu.tr. */
+const EPOSTA_DESENI = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i;
+
+/** Rakamlar ve olağan ayraçlar, başta isteğe bağlı +; 10–15 rakam. */
+function telefonGecerli(deger) {
+  const metin = String(deger).trim();
+  if (!/^\+?[\d\s().-]+$/.test(metin)) return false;
+  const rakam = metin.replace(/\D/g, '').length;
+  return rakam >= 10 && rakam <= 15;
+}
+
+/** E-posta sütununda aynı adres var mı (büyük/küçük harf ve boşluk fark etmez). */
+function dahaOnceBasvurmus(sayfa, eposta) {
+  const son = sayfa.getLastRow();
+  if (son < 2) return false;
+  const basliklar = sayfa.getRange(1, 1, 1, sayfa.getLastColumn()).getValues()[0];
+  const sutun = basliklar.indexOf('E-posta') + 1;
+  if (sutun === 0) return false;
+  const aranan = eposta.toLowerCase();
+  return sayfa.getRange(2, sutun, son - 1, 1).getValues().some(function (satir) {
+    return String(satir[0]).trim().toLowerCase() === aranan;
+  });
 }
 
 /** Adı verilen sayfayı döndürür, yoksa oluşturur. Tablo verilmezse başvuru tablosu. */

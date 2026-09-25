@@ -14,6 +14,17 @@
  *    without a preflight, so the browser adds one as soon as one is attached.
  *    An upload percentage broke every form on the site this way.
  */
+
+/** A reply the script sent on purpose; `code` says which (e.g. "tekrar_basvuru"). */
+export class FormEndpointError extends Error {
+  readonly code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 /** Where Apps Script sends the browser to collect a web app's reply. */
 const DELIVERY_HOST = "https://script.googleusercontent.com/";
 
@@ -52,8 +63,8 @@ export async function postToFormEndpoint(payload: Record<string, unknown>): Prom
     xhr.send(body);
   });
 
-  const result = JSON.parse(raw) as { durum?: string; mesaj?: string };
-  if (result.durum !== "ok") throw new Error(result.mesaj || "Gönderim kaydedilemedi.");
+  const result = JSON.parse(raw) as { durum?: string; mesaj?: string; kod?: string };
+  if (result.durum !== "ok") throw new FormEndpointError(result.mesaj || "Gönderim kaydedilemedi.", result.kod);
 }
 
 type ContactMessage = {
