@@ -133,7 +133,7 @@ const en: Dictionary = {
   applications: {
     heroTitle: "Applications",
     heroSubtitle:
-      "Fill out the form below — partway through, pick which committee you want to join and its specific questions will appear.",
+      "A short form that takes a few minutes — pick the committee you want to join at the end and send it.",
     committees: [
       {
         id: "mekanik",
@@ -164,6 +164,7 @@ const en: Dictionary = {
       note: "* What you share is used only for our internal review and is not passed on to anyone.",
       success: "We've received your application. We'll get back to you by email once we've reviewed it.",
       error: "We couldn't send your application. Check your connection and try again; if it keeps failing, email voltaris.official@gmail.com.",
+      otherPlaceholder: "Tell us briefly",
       fileChoose: "Choose File",
       fileReplace: "Replace",
       fileRemove: "Remove",

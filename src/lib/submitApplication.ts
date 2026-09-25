@@ -98,8 +98,6 @@ type SubmitArgs = {
   answers: Answers;
   /** Bal küpü alanının değeri; insan doldurmadığı için boş olmalı. */
   honeypot: string;
-  /** Yükleme yüzdesi (0-100). 100'e ulaşınca sıra sunucunun işlemesinde. */
-  onProgress?: (percent: number) => void;
 };
 
 /** Başvuruyu Apps Script uç noktasına gönderir (bkz. formEndpoint.ts). */
@@ -108,7 +106,6 @@ export async function submitApplication({
   questions,
   answers,
   honeypot,
-  onProgress,
 }: SubmitArgs): Promise<void> {
   let dosya: UploadedFile | undefined;
   const cevaplar: { id: string; soru: string; tip: string; cevap: string | string[] }[] = [];
@@ -129,10 +126,5 @@ export async function submitApplication({
     });
   }
 
-  // Dosya yoksa gövde birkaç kilobayt: yükleme anında biter ve tek bir
-  // ilerleme olayı bile gelmeyebilir. Beklemenin tamamı sunucu tarafında,
-  // o yüzden baştan "yükleme bitti" say.
-  if (!dosya) onProgress?.(100);
-
-  await postToFormEndpoint({ komiteAdi: committeeName, botTuzagi: honeypot, cevaplar, dosya }, onProgress);
+  await postToFormEndpoint({ komiteAdi: committeeName, botTuzagi: honeypot, cevaplar, dosya });
 }

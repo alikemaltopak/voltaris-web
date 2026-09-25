@@ -2548,3 +2548,8 @@ a.social-links__slot:hover {
     transform: none;
   }
 }
+
+/* The box that opens under a choice question when "Other" is picked. */
+.form-field__control--other {
+  margin-top: 12px;
+}

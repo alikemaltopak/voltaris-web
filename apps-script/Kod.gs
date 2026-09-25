@@ -213,7 +213,14 @@ function basliklariEsitle(sayfa, istenen) {
 /** Çoklu seçim dizilerini okunur tek hücreye çevirir. */
 function bicimle(cevap) {
   const deger = cevap.cevap;
-  if (!Array.isArray(deger)) return deger === undefined || deger === null ? '' : deger;
+  if (deger === undefined || deger === null) return '';
+
+  // E-Tablo rakamdan oluşan metni sayıya çevirir ve baştaki sıfırı atar:
+  // 05321234567 → 5321234567. Başa konan kesme işareti hücreyi metin olarak
+  // tutar, tabloda görünmez.
+  if (cevap.tip === 'telefon') return "'" + String(deger);
+
+  if (!Array.isArray(deger)) return deger;
 
   // Sıralamalı seçimde tercih sırası bilginin kendisi — numaralandırarak koru.
   if (cevap.tip === 'coklu_secim_siralamali') {

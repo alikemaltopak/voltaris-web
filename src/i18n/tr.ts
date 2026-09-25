@@ -130,7 +130,7 @@ const tr = {
   applications: {
     heroTitle: "Başvurular",
     heroSubtitle:
-      "Aşağıdaki formu doldur — ortasında hangi komiteye katılmak istediğini seç, o komitenin soruları otomatik olarak gelsin.",
+      "Birkaç dakikalık kısa bir form — sonunda hangi komiteye katılmak istediğini seçip gönder.",
     committees: [
       {
         id: "mekanik",
@@ -161,6 +161,7 @@ const tr = {
       note: "* Verdiğin bilgiler yalnızca takım içi değerlendirme için kullanılır, kimseyle paylaşılmaz.",
       success: "Başvurun bize ulaştı. Değerlendirme sonrası e-posta ile döneceğiz.",
       error: "Başvuru gönderilemedi. İnternet bağlantını kontrol edip tekrar dene; sorun sürerse voltaris.official@gmail.com adresine yazabilirsin.",
+      otherPlaceholder: "Kısaca yaz",
       fileChoose: "Dosya Seç",
       fileReplace: "Değiştir",
       fileRemove: "Kaldır",

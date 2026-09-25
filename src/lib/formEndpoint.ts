@@ -2,18 +2,25 @@
  * The one Apps Script web app behind every form on the site (applications and
  * the contact form). See apps-script/Kod.gs for what it does with each.
  *
- * XMLHttpRequest rather than fetch: fetch can't report upload progress, and
- * Apps Script takes 2-4s even for a tiny body, so the percentage is what makes
- * the wait bearable.
+ * Everything here hangs on the request staying a CORS "simple request", which
+ * the browser sends without asking first. Apps Script web apps cannot answer
+ * the OPTIONS preflight, so anything that triggers one blocks the request
+ * before it leaves — the script never runs, and no row is written.
  *
- * The body is a bare string with no custom headers, so the browser treats it
- * as a "simple request" and skips the CORS preflight — Apps Script web apps
- * can't answer OPTIONS, so setting Content-Type would get the request blocked.
+ * Two things trigger one, and neither may come back:
+ *  - a custom header, such as a JSON Content-Type. The body is sent as a bare
+ *    string, which goes out as text/plain.
+ *  - any listener on xhr.upload. Upload progress events cannot be observed
+ *    without a preflight, so the browser adds one as soon as one is attached.
+ *    An upload percentage broke every form on the site this way.
  */
-export async function postToFormEndpoint(
-  payload: Record<string, unknown>,
-  onProgress?: (percent: number) => void,
-): Promise<void> {
+/** Where Apps Script sends the browser to collect a web app's reply. */
+const DELIVERY_HOST = "https://script.googleusercontent.com/";
+
+/** Stands in for the reply when the script ran but its reply got lost. */
+const DELIVERED = JSON.stringify({ durum: "ok", mesaj: "teslim edildi" });
+
+export async function postToFormEndpoint(payload: Record<string, unknown>): Promise<void> {
   const endpoint = import.meta.env.VITE_BASVURU_ENDPOINT;
   const key = import.meta.env.VITE_BASVURU_ANAHTARI;
   if (!endpoint || !key) {
@@ -27,16 +34,18 @@ export async function postToFormEndpoint(
     xhr.open("POST", endpoint);
     xhr.timeout = 120_000;
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) return resolve(xhr.responseText);
+      // Apps Script runs doPost first and only then redirects to
+      // script.googleusercontent.com to hand back the result — and that
+      // second hop intermittently answers 404. Having landed there means the
+      // script already ran and the row is written; every such 404 we tested
+      // had its row in the sheet. Reporting failure here told applicants who
+      // had applied that they hadn't, and the ones who tried again were
+      // entered twice.
+      if (xhr.responseURL.startsWith(DELIVERY_HOST)) return resolve(DELIVERED);
+      reject(new Error(`Sunucu ${xhr.status} döndü.`));
     };
-    // Close out the percentage when the last byte leaves; onprogress isn't
-    // guaranteed to end exactly on 100.
-    xhr.upload.onload = () => onProgress?.(100);
-    xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300
-        ? resolve(xhr.responseText)
-        : reject(new Error(`Sunucu ${xhr.status} döndü.`));
     xhr.onerror = () => reject(new Error("Ağ hatası."));
     xhr.ontimeout = () => reject(new Error("İstek zaman aşımına uğradı."));
 

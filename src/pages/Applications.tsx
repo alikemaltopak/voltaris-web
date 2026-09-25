@@ -79,21 +79,46 @@ function QuestionField({
       );
     case "tekli_secim": {
       const current = (value as string) ?? "";
+      // The free-text option keeps its words in the same answer, as
+      // "Diğer: …", so it lands in one cell of the sheet with nothing to
+      // stitch back together on either end.
+      const other = question.digerSecenegi;
+      const otherPrefix = other ? `${other}: ` : "";
+      const onOther = Boolean(other) && (current === other || current.startsWith(otherPrefix));
+      const otherText = onOther && current.startsWith(otherPrefix) ? current.slice(otherPrefix.length) : "";
       return (
-        <div className="option-group" role="radiogroup">
-          {question.secenekler?.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={"option-pill" + (current === option ? " option-pill--active" : "")}
-              role="radio"
-              aria-checked={current === option}
-              onClick={() => onChange(option)}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="option-group" role="radiogroup">
+            {question.secenekler?.map((option) => {
+              const active = option === other ? onOther : current === option;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  className={"option-pill" + (active ? " option-pill--active" : "")}
+                  role="radio"
+                  aria-checked={active}
+                  // Picking "other" again must not wipe what was typed.
+                  onClick={() => (option === other && onOther ? undefined : onChange(option))}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+          {onOther && other && (
+            <input
+              type="text"
+              className="form-field__control form-field__control--other"
+              placeholder={strings.otherPlaceholder}
+              value={otherText}
+              autoFocus
+              onChange={(event) =>
+                onChange(event.target.value.trim() ? `${otherPrefix}${event.target.value}` : other)
+              }
+            />
+          )}
+        </>
       );
     }
     case "coklu_secim": {
@@ -261,7 +286,6 @@ export function Applications() {
   const [selectedCommittee, setSelectedCommittee] = useState<CommitteeId | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [sendError, setSendError] = useState(false);
   // Bal küpü: ekranda görünmez, yalnızca formu körlemesine dolduran botlar yazar.
   const honeypotRef = useRef<HTMLInputElement>(null);
@@ -319,7 +343,6 @@ export function Applications() {
     }
 
     setSending(true);
-    setProgress(0);
     setSendError(false);
     try {
       const committee = t.applications.committees.find((item) => item.id === selectedCommittee);
@@ -328,7 +351,6 @@ export function Applications() {
         questions,
         answers,
         honeypot: honeypotRef.current?.value ?? "",
-        onProgress: setProgress,
       });
       setSubmitted(true);
       scrollToTop({ immediate: true });
@@ -437,11 +459,7 @@ export function Applications() {
                     <Reveal>
                       <div className="question-form-page__submit">
                         <button type="submit" className="btn btn--primary" disabled={sending}>
-                          {!sending
-                            ? t.applications.form.submit
-                            : progress < 100
-                              ? `${t.applications.form.submitting} %${progress}`
-                              : t.applications.form.saving}
+                          {sending ? t.applications.form.saving : t.applications.form.submit}
                         </button>
                         {sendError && (
                           <p className="form-field__error" role="alert">
