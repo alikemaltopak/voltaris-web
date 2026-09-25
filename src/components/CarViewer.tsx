@@ -10,7 +10,12 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { useLanguage } from "../context/LanguageContext";
-import { lookFor, makeHologramMaterial } from "../three/hologram";
+import {
+  WIRE_PREFIX,
+  lookFor,
+  makeHologramMaterial,
+  makeWireMaterial,
+} from "../three/hologram";
 
 const MODEL_URL = "/models/voltaris-arac.glb";
 // The view behind the studio until someone drops in their own picture.
@@ -276,21 +281,37 @@ function Car({ spinning, homeKey, glow }: CarProps) {
   // that need to read at quite different brightnesses here.
   const parts = useMemo(() => {
     const made: { name: string; material: THREE.ShaderMaterial }[] = [];
+    const wires: THREE.MeshBasicMaterial[] = [];
     const scheme = new THREE.Color(SCHEME);
     scene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
       child.castShadow = false;
       child.receiveShadow = false;
+      // The model ships its own coarse copies of the outer panels for this.
+      // Wiring the full shell draws 16k triangles of line, which is not a
+      // lattice but a fill.
+      if (child.name.startsWith(WIRE_PREFIX)) {
+        const wire = makeWireMaterial(scheme, 0.34);
+        child.material = wire;
+        child.renderOrder = 1;
+        wires.push(wire);
+        return;
+      }
       const material = makeHologramMaterial(scheme, lookFor(child.name), 1);
       child.material = material;
       made.push({ name: child.name, material });
     });
-    return made;
+    return { surfaces: made, wires, scheme };
     // Built once per model; colour and brightness are pushed in below.
   }, [scene]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    for (const { material } of parts) material.uniforms.uGain.value = glow;
+    for (const { material } of parts.surfaces) material.uniforms.uGain.value = glow;
+    // The wires ride the same slider, a little under the surfaces so they
+    // stay a texture on the shell rather than a cage around it.
+    for (const wire of parts.wires) {
+      wire.color.copy(parts.scheme).multiplyScalar(0.34 * glow);
+    }
   }, [parts, glow]);
 
   useEffect(() => {

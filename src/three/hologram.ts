@@ -79,33 +79,54 @@ export function makeHologramMaterial(
 /**
  * How brightly each part of the car reads.
  *
- * The bodywork is barely there — it is the thing being seen through, and any
- * real brightness over a surface that large washes the rest out. The structure
- * and the powertrain are what the view exists to show.
+ * The bodywork carries the picture: it is the shape anyone recognises, and the
+ * wireframe over it supplies the detail. The structure inside is pulled back
+ * to sit behind the skin rather than burn through it — a chassis brighter than
+ * the car it lives in reads as a frame with a bag over it.
  */
 export const LOOKS: Record<string, HologramLook> = {
-  Govde: { base: 0.11, rim: 1.15, falloff: 1.9 },
-  Cam: { base: 0.06, rim: 0.75, falloff: 2.0 },
-  Ayna: { base: 0.16, rim: 0.8, falloff: 2.0 },
+  Govde: { base: 0.10, rim: 0.95, falloff: 2.0 },
+  Cam: { base: 0.09, rim: 0.8, falloff: 2.0 },
+  Ayna: { base: 0.20, rim: 0.85, falloff: 1.9 },
   Panel: { base: 0.5, rim: 0.5, falloff: 1.6 },
-  Sasi: { base: 0.55, rim: 0.7, falloff: 1.8 },
-  RollCage: { base: 0.6, rim: 0.8, falloff: 1.8 },
-  Tekerlek: { base: 0.22, rim: 0.85, falloff: 2.0 },
-  Koltuk: { base: 0.3, rim: 0.7, falloff: 2.0 },
-  Direksiyon: { base: 0.4, rim: 0.7, falloff: 1.8 },
-  Kokpit: { base: 0.26, rim: 0.6, falloff: 2.0 },
+  Sasi: { base: 0.26, rim: 0.7, falloff: 1.9 },
+  RollCage: { base: 0.30, rim: 0.8, falloff: 1.9 },
+  Tekerlek: { base: 0.20, rim: 0.85, falloff: 2.0 },
+  Koltuk: { base: 0.26, rim: 0.85, falloff: 1.9 },
+  Direksiyon: { base: 0.30, rim: 0.8, falloff: 1.8 },
+  Kokpit: { base: 0.22, rim: 0.7, falloff: 2.0 },
   Ekran: { base: 1.0, rim: 0.4, falloff: 1.5, tint: "#9beaff" },
-  Far: { base: 0.30, rim: 0.75, falloff: 1.9, tint: "#cfe9ff" },
-  Stop: { base: 0.28, rim: 0.75, falloff: 1.9, tint: "#ff4a3a" },
+  Far: { base: 1.05, rim: 0.8, falloff: 1.7, tint: "#d8f0ff" },
+  Stop: { base: 1.00, rim: 0.8, falloff: 1.7, tint: "#ff4436" },
   // The powertrain runs warm against the cold structure, so the eye finds it.
-  Batarya_Hucre: { base: 0.85, rim: 0.6, falloff: 1.7, tint: "#ff9b2e" },
+  Batarya_Hucre: { base: 0.55, rim: 0.6, falloff: 1.7, tint: "#ff9b2e" },
   Batarya_Kutu: { base: 0.38, rim: 0.8, falloff: 1.8, tint: "#ff7d16" },
   Batarya_Fan: { base: 0.85, rim: 0.5, falloff: 1.6, tint: "#ffb44a" },
-  Motor: { base: 0.85, rim: 0.9, falloff: 1.6, tint: "#ffae3d" },
-  Kablo: { base: 0.95, rim: 0.4, falloff: 1.5, tint: "#ff7a2a" },
+  Motor: { base: 0.60, rim: 0.9, falloff: 1.6, tint: "#ffae3d" },
 };
 
 export const DEFAULT_LOOK: HologramLook = { base: 0.2, rim: 0.6, falloff: 2.0 };
+
+/**
+ * The mesh's own topology, drawn over the skin.
+ *
+ * This is where the reference images get their detail: the lines are the
+ * surface's edges, not a texture painted on it, so they follow every curve and
+ * crowd wherever the CAD tessellation is dense. Only the outer parts are
+ * worth wiring — a wireframe over the structure as well turns the whole car
+ * into noise.
+ */
+export const WIRE_PREFIX = "Tel_";
+
+export function makeWireMaterial(colour: THREE.Color, strength: number): THREE.MeshBasicMaterial {
+  return new THREE.MeshBasicMaterial({
+    color: colour.clone().multiplyScalar(strength),
+    wireframe: true,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+}
 
 export function lookFor(name: string): HologramLook {
   const key = Object.keys(LOOKS).find((k) => name.startsWith(k));

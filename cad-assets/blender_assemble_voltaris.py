@@ -89,6 +89,7 @@ SEAT_RIB = 16  # samples across the seat
 INTERIOR = {
     "Koltuk": ((0.020, 0.021, 0.024, 1), 0.0, 0.88),
     "Kokpit": ((0.035, 0.037, 0.042, 1), 0.25, 0.55),
+    "Tel": ((0.30, 0.32, 0.34, 1), 0.0, 0.9),
     "Direksiyon": ((0.028, 0.030, 0.034, 1), 0.15, 0.62),
     "Batarya_Kutu": ((0.055, 0.058, 0.065, 1), 0.80, 0.38),
     "Batarya_Hucre": ((0.32, 0.33, 0.35, 1), 0.65, 0.30),
@@ -151,9 +152,7 @@ DECAL_FROM = 1.5  # y to project from, each side
 # as the metres it really occupies: (name, file, x from, x to, z from, z to).
 # The shut lines are drawn this way rather than modelled because the projection
 # is flat along Y, which is exactly how a side elevation maps onto a flank.
-DECALS = [
-    ("Panel", "panel-lines.png", -0.80, 1.05, 0.15, 1.00),
-]
+DECALS: list[tuple[str, str, float, float, float, float]] = []
 
 
 def args():
@@ -369,8 +368,17 @@ def bucket_seat():
             t = -1 + 2 * j / (SEAT_RIB - 1)
             rise = bolster * t**4  # flat down the middle, curling at the edges
             verts.append((x + nx * rise, half * t, z + nz * rise))
+    # Two openings through the shoulders, where the harness passes. The seat
+    # is a grid, so a hole is simply a patch of quads left out; the solidify
+    # that follows turns each one into a hole with a wall.
+    def in_harness_slot(spine_i, rib_j):
+        t = -1 + 2 * rib_j / (SEAT_RIB - 1)
+        return 2 <= spine_i <= 3 and 0.20 <= abs(t) <= 0.62
+
     for i in range(len(SEAT_SPINE) - 1):
         for j in range(SEAT_RIB - 1):
+            if in_harness_slot(i, j):
+                continue
             a = i * SEAT_RIB + j
             faces.append((a, a + 1, a + SEAT_RIB + 1, a + SEAT_RIB))
     made = []
@@ -688,6 +696,30 @@ def hub_motors():
     return made
 
 
+def wire_shells(objects, ratio=0.07):
+    """Coarse copies of the outer panels, to be drawn as wireframe.
+
+    The shell carries 16k triangles. Drawn as wire that is not a lattice, it
+    is a solid fill — so the lines get their own mesh, thinned until the
+    topology is sparse enough to read as lines over the paint.
+    """
+    made = []
+    for source in objects:
+        copy = source.copy()
+        copy.data = source.data.copy()
+        copy.name = copy.data.name = f"Tel_{source.name}"
+        bpy.context.collection.objects.link(copy)
+        select_only(copy)
+        thin = copy.modifiers.new("seyrelt", "DECIMATE")
+        thin.ratio = ratio
+        bpy.ops.object.modifier_apply(modifier=thin.name)
+        copy.select_set(False)
+        copy.data.materials.clear()
+        copy.data.materials.append(material("Tel"))
+        made.append(copy)
+    return made
+
+
 def add_lamps(body):
     """Lay the headlights and tail bar onto the bodywork."""
     made = []
@@ -807,6 +839,9 @@ def main():
     # the finished car's coordinates, so it must not be shifted again.
     everything += add_interior()
     everything += battery_pack() + hub_motors()
+    everything += wire_shells(
+        [o for o in everything if o.name.startswith(("Govde", "Tekerlek"))]
+    )
     everything += add_decals(next(o for o in everything if o.name == "Govde"))
 
     lo, hi = world_bounds(everything)
