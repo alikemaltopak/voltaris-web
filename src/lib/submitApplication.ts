@@ -100,6 +100,8 @@ type SubmitArgs = {
   answers: Answers;
   /** Bal küpü alanının değeri; insan doldurmadığı için boş olmalı. */
   honeypot: string;
+  /** Bu e-postanın önceki başvurusunun yerine geçsin. */
+  update: boolean;
 };
 
 /** Başvuruyu Apps Script uç noktasına gönderir (bkz. formEndpoint.ts). */
@@ -109,6 +111,7 @@ export async function submitApplication({
   questions,
   answers,
   honeypot,
+  update,
 }: SubmitArgs): Promise<void> {
   let dosya: UploadedFile | undefined;
   const cevaplar: { id: string; soru: string; tip: string; cevap: string | string[] }[] = [];
@@ -133,6 +136,7 @@ export async function submitApplication({
     komite: committeeId,
     komiteAdi: committeeName,
     botTuzagi: honeypot,
+    guncelle: update,
     cevaplar,
     dosya,
   });

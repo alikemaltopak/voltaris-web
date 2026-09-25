@@ -50,6 +50,8 @@ const MAKS_DOSYA_MB = 8;
 const ZAMAN_BASLIGI = 'Gönderim Zamanı';
 const KOMITE_BASLIGI = 'Komite';
 const CV_BASLIGI = 'CV';
+/** Yalnızca bir başvuru ilk kez güncellendiğinde açılır. */
+const GUNCELLEME_BASLIGI = 'Son Güncelleme';
 
 /** Bütün başvuruların yazıldığı tek sayfa. */
 const BASVURU_SAYFASI = 'Başvurular';
@@ -111,8 +113,12 @@ function doPost(e) {
       return cevap('hata', 'Geçersiz telefon.', 'gecersiz_telefon');
     }
     // Kilit altındayız: aynı e-postayla aynı anda gelen iki başvurudan
-    // ikincisi, birincinin yazdığı satırı görür.
-    if (dahaOnceBasvurmus(basvuruSayfasi(), eposta)) {
+    // ikincisi, birincinin yazdığı satırı görür. Site bir e-postanın daha
+    // önce başvurduğunu bilmeden gönderirse bu yanıtla öğrenir ve başvurana
+    // "Güncelle" düğmesini gösterir; ancak o düğmeyle gelen istek satırı değiştirir.
+    const sayfa = basvuruSayfasi();
+    const eskiSatir = basvuruSatiri(sayfa, eposta);
+    if (eskiSatir && !gelen.guncelle) {
       return cevap('hata', 'Bu e-postayla zaten başvurulmuş.', 'tekrar_basvuru');
     }
 
@@ -128,9 +134,19 @@ function doPost(e) {
     // Formda CV sorusu yok; sütun yalnızca gerçekten dosya gelirse açılır.
     if (cvBaglantisi) degerler[CV_BASLIGI] = cvBaglantisi;
 
-    satirEkle(basvuruSayfasi(), degerler);
+    if (eskiSatir) {
+      // Güncelleme: eski satır gider, yenisi komitesinin grubuna girer
+      // (komite değişmiş olabilir). İlk başvurunun zamanı ve yeni dosya
+      // gelmediyse eski CV korunur.
+      const eski = satirOku(sayfa, eskiSatir);
+      degerler[ZAMAN_BASLIGI] = eski[ZAMAN_BASLIGI] || new Date();
+      degerler[GUNCELLEME_BASLIGI] = new Date();
+      if (!cvBaglantisi && eski[CV_BASLIGI]) degerler[CV_BASLIGI] = eski[CV_BASLIGI];
+      sayfa.deleteRow(eskiSatir);
+    }
+    satirEkle(sayfa, degerler);
 
-    if (BILDIRIM_EPOSTA) bildirimGonder(komite, adSoyad, cevapBul(cevaplar, 'eposta'));
+    if (BILDIRIM_EPOSTA) bildirimGonder(komite, adSoyad, eposta, Boolean(eskiSatir));
 
     return cevap('ok', 'ok');
   } catch (hata) {
@@ -189,8 +205,18 @@ function kisalt(deger, en) {
 }
 
 /** Tarayıcıdan URL'ye girilirse boş sayfa yerine anlaşılır bir şey dönsün. */
-function doGet() {
-  return cevap('ok', 'Voltaris başvuru uç noktası çalışıyor.');
+/**
+ * ?eposta=…&anahtar=… ile: bu e-postayla başvuru var mı ("var" / "yok").
+ * Site, başvuran e-postasını yazınca sorar ve düğmeyi "Güncelle"ye çevirir.
+ */
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  if (!p.eposta) return cevap('ok', 'Voltaris başvuru uç noktası çalışıyor.');
+  if (p.anahtar !== GIZLI_ANAHTAR) return cevap('hata', 'Yetkisiz istek.');
+
+  const sayfa = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BASVURU_SAYFASI);
+  const var_ = sayfa && basvuruSatiri(sayfa, String(p.eposta).trim());
+  return cevap('ok', var_ ? 'var' : 'yok');
 }
 
 // ---------------------------------------------------------------- YARDIMCI --
@@ -220,17 +246,32 @@ function telefonGecerli(deger) {
   return rakam >= 10 && rakam <= 15;
 }
 
-/** E-posta sütununda aynı adres var mı (büyük/küçük harf ve boşluk fark etmez). */
-function dahaOnceBasvurmus(sayfa, eposta) {
+/**
+ * Bu e-postanın başvurusunun satır numarası, yoksa 0. Büyük/küçük harf ve
+ * baştaki/sondaki boşluk fark etmez.
+ */
+function basvuruSatiri(sayfa, eposta) {
   const son = sayfa.getLastRow();
-  if (son < 2) return false;
+  if (son < 2) return 0;
   const basliklar = sayfa.getRange(1, 1, 1, sayfa.getLastColumn()).getValues()[0];
   const sutun = basliklar.indexOf('E-posta') + 1;
-  if (sutun === 0) return false;
+  if (sutun === 0) return 0;
   const aranan = eposta.toLowerCase();
-  return sayfa.getRange(2, sutun, son - 1, 1).getValues().some(function (satir) {
-    return String(satir[0]).trim().toLowerCase() === aranan;
-  });
+  const epostalar = sayfa.getRange(2, sutun, son - 1, 1).getValues();
+  for (var i = 0; i < epostalar.length; i++) {
+    if (String(epostalar[i][0]).trim().toLowerCase() === aranan) return i + 2;
+  }
+  return 0;
+}
+
+/** Bir satırı başlık → değer olarak okur. */
+function satirOku(sayfa, satir) {
+  const genislik = sayfa.getLastColumn();
+  const basliklar = sayfa.getRange(1, 1, 1, genislik).getValues()[0];
+  const hucreler = sayfa.getRange(satir, 1, 1, genislik).getValues()[0];
+  const degerler = {};
+  basliklar.forEach(function (b, i) { if (b) degerler[b] = hucreler[i]; });
+  return degerler;
 }
 
 /** Adı verilen sayfayı döndürür, yoksa oluşturur. Tablo verilmezse başvuru tablosu. */
@@ -521,12 +562,14 @@ function dosyaAdiTemizle(ad) {
   return String(ad).replace(/[\\/:*?"<>|]/g, '-').substring(0, 80).trim();
 }
 
-function bildirimGonder(komite, adSoyad, eposta) {
+function bildirimGonder(komite, adSoyad, eposta, guncelleme) {
   try {
     MailApp.sendEmail({
       to: BILDIRIM_EPOSTA,
-      subject: 'Yeni Voltaris başvurusu — ' + komite + ' — ' + adSoyad,
-      body: adSoyad + ' (' + eposta + ') ' + komite + ' komitesine başvurdu.\n\n' +
+      subject: (guncelleme ? 'Güncellenen Voltaris başvurusu — ' : 'Yeni Voltaris başvurusu — ') +
+               komite + ' — ' + adSoyad,
+      body: adSoyad + ' (' + eposta + ') ' + komite +
+            (guncelleme ? ' komitesine yaptığı başvuruyu güncelledi.' : ' komitesine başvurdu.') + '\n\n' +
             SpreadsheetApp.getActiveSpreadsheet().getUrl(),
     });
   } catch (hata) {

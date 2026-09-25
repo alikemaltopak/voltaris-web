@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -23,7 +24,7 @@ import {
   type Answers,
 } from "../lib/submitApplication";
 import { isValidEmail, isValidPhone } from "../lib/formValidation";
-import { FormEndpointError } from "../lib/formEndpoint";
+import { FormEndpointError, hasApplied } from "../lib/formEndpoint";
 
 type FormStrings = ReturnType<typeof useLanguage>["t"]["applications"]["form"];
 
@@ -292,6 +293,9 @@ export function Applications() {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  // Daha önce başvurduğu anlaşılan e-posta; gönderim öncekinin yerine geçer.
+  const [appliedEmail, setAppliedEmail] = useState<string | null>(null);
+  const [updated, setUpdated] = useState(false);
   // Bal küpü: ekranda görünmez, yalnızca formu körlemesine dolduran botlar yazar.
   const honeypotRef = useRef<HTMLInputElement>(null);
 
@@ -304,6 +308,23 @@ export function Applications() {
   useLayoutEffect(() => {
     refreshScrollLimits();
   }, [selectedCommittee, submitted]);
+
+  // E-posta yazılınca, gönderimden önce sor ki düğme baştan doğru yazsın.
+  const email = typeof answers.eposta === "string" ? answers.eposta.trim().toLowerCase() : "";
+  const alreadyApplied = email !== "" && email === appliedEmail;
+  useEffect(() => {
+    if (!isValidEmail(email)) return;
+    let current = true;
+    const timer = window.setTimeout(() => {
+      hasApplied(email).then((applied) => {
+        if (current && applied) setAppliedEmail(email);
+      });
+    }, 600);
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [email]);
 
   function setAnswer(id: string, value: AnswerValue) {
     setAnswers((prev) => ({ ...prev, [id]: value }));
@@ -363,14 +384,20 @@ export function Applications() {
         questions,
         answers,
         honeypot: honeypotRef.current?.value ?? "",
+        update: alreadyApplied,
       });
+      setUpdated(alreadyApplied);
       setSubmitted(true);
       scrollToTop({ immediate: true });
     } catch (error) {
+      if (error instanceof FormEndpointError && error.code === "tekrar_basvuru") {
+        // Ön sorgu yetişmemiş ya da başarısız olmuş: düğme şimdi "Güncelle"ye
+        // döner, başvuran isterse bir daha basar.
+        setAppliedEmail(email);
+        return;
+      }
       // Ayrıntıyı başvurana göstermiyoruz; yapabileceği tek şey tekrar denemek.
-      // Aynı e-postayla ikinci başvuru bunun dışında: tekrar denemek işe yaramaz.
-      const duplicate = error instanceof FormEndpointError && error.code === "tekrar_basvuru";
-      setSendError(duplicate ? t.applications.form.duplicate : t.applications.form.error);
+      setSendError(t.applications.form.error);
     } finally {
       setSending(false);
     }
@@ -407,7 +434,7 @@ export function Applications() {
           {submitted ? (
             <Reveal className="form-success-page">
               <span className="form-success-page__mark">✓</span>
-              <h2>{t.applications.form.success}</h2>
+              <h2>{updated ? t.applications.form.updateSuccess : t.applications.form.success}</h2>
             </Reveal>
           ) : (
             <>
@@ -472,8 +499,17 @@ export function Applications() {
 
                     <Reveal>
                       <div className="question-form-page__submit">
+                        {alreadyApplied && (
+                          <p className="form-field__notice" role="status">
+                            {t.applications.form.updateNotice}
+                          </p>
+                        )}
                         <button type="submit" className="btn btn--primary" disabled={sending}>
-                          {sending ? t.applications.form.saving : t.applications.form.submit}
+                          {sending
+                            ? t.applications.form.saving
+                            : alreadyApplied
+                              ? t.applications.form.update
+                              : t.applications.form.submit}
                         </button>
                         {sendError && (
                           <p className="form-field__error" role="alert">

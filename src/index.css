@@ -1986,6 +1986,11 @@ button.tier-card:focus-visible {
   color: #f87171;
 }
 
+.form-field__notice {
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
 /* Hidden bot trap — never shown, never focusable, never read aloud. */
 .honeypot {
   position: absolute;

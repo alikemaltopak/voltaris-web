@@ -67,6 +67,25 @@ export async function postToFormEndpoint(payload: Record<string, unknown>): Prom
   if (result.durum !== "ok") throw new FormEndpointError(result.mesaj || "Gönderim kaydedilemedi.", result.kod);
 }
 
+/**
+ * Has this email already applied? Asked while the applicant is still filling
+ * in the form, so the button can read "update" before they press it. A plain
+ * GET is a simple request too. Any failure answers "no": the script still
+ * refuses a second application and says so, and the form recovers from that.
+ */
+export async function hasApplied(email: string): Promise<boolean> {
+  const endpoint = import.meta.env.VITE_BASVURU_ENDPOINT;
+  const key = import.meta.env.VITE_BASVURU_ANAHTARI;
+  if (!endpoint || !key) return false;
+  try {
+    const url = `${endpoint}?${new URLSearchParams({ eposta: email.trim(), anahtar: key })}`;
+    const result = (await (await fetch(url)).json()) as { durum?: string; mesaj?: string };
+    return result.durum === "ok" && result.mesaj === "var";
+  } catch {
+    return false;
+  }
+}
+
 type ContactMessage = {
   name: string;
   email: string;
