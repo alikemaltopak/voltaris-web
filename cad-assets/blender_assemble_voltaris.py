@@ -73,9 +73,9 @@ SEAT_AT = (-0.05, SEAT_Y, FLOOR_Z)
 # a channel that grips at the shoulders, waist and thighs.
 SEAT_SPINE = [
     # (x, z, half-width, bolster)
-    (-0.28, 0.78, 0.145, 0.15),
-    (-0.25, 0.67, 0.205, 0.17),
-    (-0.21, 0.56, 0.225, 0.14),
+    (-0.29, 0.80, 0.175, 0.24),
+    (-0.27, 0.72, 0.200, 0.26),
+    (-0.24, 0.64, 0.215, 0.20),
     (-0.16, 0.39, 0.23, 0.09),
     (-0.10, 0.21, 0.225, 0.10),
     (-0.02, 0.09, 0.235, 0.13),
@@ -94,7 +94,6 @@ INTERIOR = {
     "Batarya_Hucre": ((0.32, 0.33, 0.35, 1), 0.65, 0.30),
     "Batarya_Fan": ((0.02, 0.021, 0.024, 1), 0.30, 0.55),
     "Motor": ((0.035, 0.037, 0.042, 1), 0.85, 0.30),
-    "Kablo": ((0.20, 0.09, 0.02, 1), 0.10, 0.60),
 }
 # The two lit panels in front of the driver.
 DISPLAYS = {
@@ -135,9 +134,8 @@ LAMP_PROUD = 0.004  # metres the lens stands off the paint
 CELL_D, CELL_H, CELL_PITCH = 0.018, 0.065, 0.0205
 CELLS_X, CELLS_Y = 24, 14
 PACK_WALL = 0.006
-# Bolted on top of the raised rear subframe, whose deck the chassis puts
-# at z = 0.50, rather than resting on the floor.
-PACK_AT = (-1.10, 0.0, 0.555)
+# Down between the chassis rails, which is where it is carried.
+PACK_AT = (-1.10, 0.0, 0.265)
 
 # Two in-wheel motors on the rear axle, as the photograph of the pair shows.
 # The rear wheels sit at x = -1.00, y = +/-0.71, and the hub is coaxial.
@@ -690,61 +688,6 @@ def hub_motors():
     return made
 
 
-def cable(name, points, radius=0.012):
-    """A run of cable, drawn as a swept tube along a polyline."""
-    curve = bpy.data.curves.new(name, "CURVE")
-    curve.dimensions = "3D"
-    curve.bevel_depth = radius
-    curve.bevel_resolution = 3
-    curve.resolution_u = 3
-    spline = curve.splines.new("POLY")
-    spline.points.add(len(points) - 1)
-    for i, (x, y, z) in enumerate(points):
-        spline.points[i].co = (x, y, z, 1.0)
-    obj = bpy.data.objects.new(name, curve)
-    bpy.context.collection.objects.link(obj)
-    select_only(obj)
-    bpy.ops.object.convert(target="MESH")
-    obj = bpy.context.object
-    obj.name = obj.data.name = name
-    obj.data.materials.append(material("Kablo"))
-    obj.select_set(False)
-    return obj
-
-
-def wiring():
-    """High-voltage runs from the pack, and the low-voltage run forward."""
-    px, _, pz = PACK_AT
-    made = []
-    for side, tag in ((1, "Sol"), (-1, "Sag")):
-        made.append(
-            cable(
-                f"Kablo_Motor_{tag}",
-                [
-                    (px + 0.12, side * 0.10, pz - 0.05),
-                    (px + 0.16, side * 0.30, pz - 0.16),
-                    (px + 0.12, side * 0.52, pz - 0.24),
-                    (MOTOR_AT_X + 0.03, side * (MOTOR_AT_Y - 0.06), MOTOR_AT_Z + 0.02),
-                ],
-                radius=0.014,
-            )
-        )
-    made.append(
-        cable(
-            "Kablo_On",
-            [
-                (px + 0.22, 0.04, pz - 0.06),
-                (-0.60, 0.05, 0.26),
-                (0.10, 0.05, 0.23),
-                (0.55, 0.05, 0.34),
-                (0.72, 0.03, 0.52),
-            ],
-            radius=0.010,
-        )
-    )
-    return made
-
-
 def add_lamps(body):
     """Lay the headlights and tail bar onto the bodywork."""
     made = []
@@ -768,14 +711,6 @@ def add_lamps(body):
         wrap.use_positive_direction = False
         wrap.offset = LAMP_PROUD
         bpy.ops.object.modifier_apply(modifier=wrap.name)
-        # A lamp is a unit recessed into the bodywork, not a sticker on it.
-        # Pushing the lens back into the shell gives it a housing, which is
-        # what makes it read as a headlight in an x-ray rather than a decal.
-        deep = obj.modifiers.new("govde", "SOLIDIFY")
-        deep.thickness = 0.085
-        deep.offset = 1 if from_x > 0 else -1
-        bpy.ops.object.modifier_apply(modifier=deep.name)
-
         try:
             bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
         except AttributeError:
@@ -871,7 +806,7 @@ def main():
     # After the centring, not before: the interior is laid out by hand against
     # the finished car's coordinates, so it must not be shifted again.
     everything += add_interior()
-    everything += battery_pack() + hub_motors() + wiring()
+    everything += battery_pack() + hub_motors()
     everything += add_decals(next(o for o in everything if o.name == "Govde"))
 
     lo, hi = world_bounds(everything)

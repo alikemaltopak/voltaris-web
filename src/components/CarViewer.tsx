@@ -259,8 +259,6 @@ function webglAvailable() {
 }
 
 interface CarProps {
-  headlights: boolean;
-  taillights: boolean;
   spinning: boolean;
   /** Bumped when a camera preset is picked, to bring the car back to square. */
   homeKey: number;
@@ -268,7 +266,7 @@ interface CarProps {
   glow: number;
 }
 
-function Car({ headlights, taillights, spinning, homeKey, glow }: CarProps) {
+function Car({ spinning, homeKey, glow }: CarProps) {
   const { scene } = useGLTF(MODEL_URL);
   const group = useRef<THREE.Group>(null);
   const homing = useRef(false);
@@ -292,11 +290,8 @@ function Car({ headlights, taillights, spinning, homeKey, glow }: CarProps) {
   }, [scene]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    for (const { name, material } of parts) {
-      const lamp = name.startsWith("Far") ? headlights : name.startsWith("Stop") ? taillights : null;
-      material.uniforms.uGain.value = lamp === false ? 0 : glow;
-    }
-  }, [parts, glow, headlights, taillights]);
+    for (const { material } of parts) material.uniforms.uGain.value = glow;
+  }, [parts, glow]);
 
   useEffect(() => {
     if (homeKey > 0) homing.current = true;
@@ -355,8 +350,6 @@ function ViewRig({ view, nudge }: { view: ViewKey; nudge: number }) {
 export function CarViewer() {
   const { t, lang } = useLanguage();
   const [supported] = useState(webglAvailable);
-  const [headlights, setHeadlights] = useState(true);
-  const [taillights, setTaillights] = useState(true);
   const [spinning, setSpinning] = useState(true);
   const [view, setView] = useState<ViewKey>("onCeyrek");
   const [nudge, setNudge] = useState(0);
@@ -409,8 +402,6 @@ export function CarViewer() {
             <directionalLight position={[6, 2, 1.5]} intensity={0.9 * lights} color="#eef6ff" />
             <ambientLight intensity={0.18 * lights} />
             <Car
-              headlights={headlights}
-              taillights={taillights}
               spinning={spinning}
               homeKey={nudge}
               glow={lights}
@@ -434,8 +425,6 @@ export function CarViewer() {
       <div className="car-studio__panel">
         <div className="car-studio__toggles">
           {[
-            { key: "far", text: t.vehicle.viewerHeadlights, on: headlights, set: setHeadlights },
-            { key: "stop", text: t.vehicle.viewerTaillights, on: taillights, set: setTaillights },
             { key: "don", text: t.vehicle.viewerTurntable, on: spinning, set: setSpinning },
           ].map((item) => (
             <button
