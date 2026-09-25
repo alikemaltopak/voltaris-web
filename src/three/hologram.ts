@@ -88,7 +88,6 @@ export const LOOKS: Record<string, HologramLook> = {
   Cam: { base: 0.06, rim: 0.75, falloff: 2.0 },
   Ayna: { base: 0.16, rim: 0.8, falloff: 2.0 },
   Panel: { base: 0.5, rim: 0.5, falloff: 1.6 },
-  Logo: { base: 0.9, rim: 0.3, falloff: 1.5, tint: "#ff6a4d" },
   Sasi: { base: 0.55, rim: 0.7, falloff: 1.8 },
   RollCage: { base: 0.6, rim: 0.8, falloff: 1.8 },
   Tekerlek: { base: 0.22, rim: 0.85, falloff: 2.0 },
@@ -96,13 +95,14 @@ export const LOOKS: Record<string, HologramLook> = {
   Direksiyon: { base: 0.4, rim: 0.7, falloff: 1.8 },
   Kokpit: { base: 0.26, rim: 0.6, falloff: 2.0 },
   Ekran: { base: 1.0, rim: 0.4, falloff: 1.5, tint: "#9beaff" },
-  Far: { base: 0.9, rim: 0.4, falloff: 1.5, tint: "#dff3ff" },
-  Stop: { base: 0.8, rim: 0.4, falloff: 1.5, tint: "#ff5a4a" },
+  Far: { base: 0.30, rim: 0.75, falloff: 1.9, tint: "#cfe9ff" },
+  Stop: { base: 0.28, rim: 0.75, falloff: 1.9, tint: "#ff4a3a" },
   // The powertrain runs warm against the cold structure, so the eye finds it.
-  Batarya_Hucre: { base: 0.80, rim: 0.6, falloff: 1.7, tint: "#ffb648" },
-  Batarya_Kutu: { base: 0.34, rim: 0.7, falloff: 1.8, tint: "#ff9a2e" },
-  Batarya_Fan: { base: 0.8, rim: 0.5, falloff: 1.6, tint: "#ffc46a" },
-  Motor: { base: 0.80, rim: 0.7, falloff: 1.7, tint: "#ffd07a" },
+  Batarya_Hucre: { base: 0.85, rim: 0.6, falloff: 1.7, tint: "#ff9b2e" },
+  Batarya_Kutu: { base: 0.38, rim: 0.8, falloff: 1.8, tint: "#ff7d16" },
+  Batarya_Fan: { base: 0.85, rim: 0.5, falloff: 1.6, tint: "#ffb44a" },
+  Motor: { base: 0.85, rim: 0.9, falloff: 1.6, tint: "#ffae3d" },
+  Kablo: { base: 0.95, rim: 0.4, falloff: 1.5, tint: "#ff7a2a" },
 };
 
 export const DEFAULT_LOOK: HologramLook = { base: 0.2, rim: 0.6, falloff: 2.0 };

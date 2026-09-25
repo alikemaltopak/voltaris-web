@@ -62,7 +62,10 @@ GLASS = ((0.030, 0.052, 0.062, 0.16), 0.0, 0.05)
 # The cockpit floor sits at z = 0.19 and the roll cage tops out at 1.13, so
 # there is about 0.9 m of headroom to seat a driver in.
 FLOOR_Z = 0.19
-SEAT_AT = (-0.05, 0.0, FLOOR_Z)
+# Two seats side by side. With the nose at +X and Z up, +Y is the car's
+# left, so the driver sits at +SEAT_Y.
+SEAT_Y = 0.30
+SEAT_AT = (-0.05, SEAT_Y, FLOOR_Z)
 
 # Side profile of the bucket seat, from the top of the headrest down the back
 # and out along the cushion. Each point carries the seat's half-width there and
@@ -91,6 +94,7 @@ INTERIOR = {
     "Batarya_Hucre": ((0.32, 0.33, 0.35, 1), 0.65, 0.30),
     "Batarya_Fan": ((0.02, 0.021, 0.024, 1), 0.30, 0.55),
     "Motor": ((0.035, 0.037, 0.042, 1), 0.85, 0.30),
+    "Kablo": ((0.20, 0.09, 0.02, 1), 0.10, 0.60),
 }
 # The two lit panels in front of the driver.
 DISPLAYS = {
@@ -129,9 +133,11 @@ LAMP_PROUD = 0.004  # metres the lens stands off the paint
 # behind the seat. Counted off the photograph as 21 by 12; the real figure
 # should replace this once the box's own CAD arrives.
 CELL_D, CELL_H, CELL_PITCH = 0.018, 0.065, 0.0205
-CELLS_X, CELLS_Y = 21, 12
+CELLS_X, CELLS_Y = 24, 14
 PACK_WALL = 0.006
-PACK_AT = (-1.15, 0.0, 0.255)
+# Bolted on top of the raised rear subframe, whose deck the chassis puts
+# at z = 0.50, rather than resting on the floor.
+PACK_AT = (-1.10, 0.0, 0.555)
 
 # Two in-wheel motors on the rear axle, as the photograph of the pair shows.
 # The rear wheels sit at x = -1.00, y = +/-0.71, and the hub is coaxial.
@@ -149,7 +155,6 @@ DECAL_FROM = 1.5  # y to project from, each side
 # is flat along Y, which is exactly how a side elevation maps onto a flank.
 DECALS = [
     ("Panel", "panel-lines.png", -0.80, 1.05, 0.15, 1.00),
-    ("Logo", "voltaris-logo.png", -0.08, 0.28, 0.34, 0.70),
 ]
 
 
@@ -370,10 +375,13 @@ def bucket_seat():
         for j in range(SEAT_RIB - 1):
             a = i * SEAT_RIB + j
             faces.append((a, a + 1, a + SEAT_RIB + 1, a + SEAT_RIB))
-    obj = mesh_object("Koltuk", verts, faces, material("Koltuk"), thickness=0.035)
-    obj.location = SEAT_AT
-    bake(obj)
-    return obj
+    made = []
+    for side, tag in ((1, "Sol"), (-1, "Sag")):
+        obj = mesh_object(f"Koltuk_{tag}", list(verts), list(faces), material("Koltuk"), thickness=0.035)
+        obj.location = (SEAT_AT[0], side * SEAT_Y, SEAT_AT[2])
+        bake(obj)
+        made.append(obj)
+    return made
 
 
 def dash_panel():
@@ -447,7 +455,7 @@ def steering_wheel():
     wheel = bpy.context.object
     wheel.name = wheel.data.name = "Direksiyon"
     wheel.rotation_euler = (0, math.radians(68), 0)
-    wheel.location = (0.61, 0, 0.66)
+    wheel.location = (0.61, SEAT_Y, 0.66)
     bake(wheel)
     try:
         bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
@@ -458,7 +466,7 @@ def steering_wheel():
 
 def add_interior():
     """Seat, wheel, dash and the two lit screens in front of the driver."""
-    made = [bucket_seat(), steering_wheel()]
+    made = [*bucket_seat(), steering_wheel()]
 
     # The dash sits just under the windscreen base, which the shell puts at
     # x = 0.80, z = 0.82.
@@ -468,7 +476,7 @@ def add_interior():
     )
     # The cluster rides on the column, just behind the wheel.
     made.append(
-        panel("Ekran_Gosterge", (0.19, 0.08), (0.695, 0.0, 0.735), (0, math.radians(-42), 0), "Ekran_Gosterge")
+        panel("Ekran_Gosterge", (0.19, 0.08), (0.695, SEAT_Y, 0.735), (0, math.radians(-42), 0), "Ekran_Gosterge")
     )
     return made
 
@@ -625,18 +633,115 @@ def battery_pack():
 
 
 def hub_motors():
-    """In-wheel motors on the rear axle."""
+    """In-wheel motors on the rear axle.
+
+    A bare cylinder reads as a disc, not a motor. What makes one legible is the
+    step from case to end cover, the ring of cooling vents round the rim and
+    the axle poking out of the middle — so those are built, and joined into one
+    object per side.
+    """
     made = []
     for k, side in enumerate((1, -1)):
-        bpy.ops.mesh.primitive_cylinder_add(
-            radius=MOTOR_D / 2, depth=MOTOR_W, vertices=28,
-            location=(MOTOR_AT_X, side * MOTOR_AT_Y, MOTOR_AT_Z),
-            rotation=(math.radians(90), 0, 0),
-        )
+        y = side * MOTOR_AT_Y
+        across = math.radians(90)
+        pieces = []
+
+        def add(fn, **kw):
+            fn(**kw)
+            pieces.append(bpy.context.object)
+
+        # Case, then the narrower end cover standing proud of it.
+        add(bpy.ops.mesh.primitive_cylinder_add, radius=MOTOR_D / 2, depth=MOTOR_W,
+            vertices=32, location=(MOTOR_AT_X, y, MOTOR_AT_Z), rotation=(across, 0, 0))
+        add(bpy.ops.mesh.primitive_cylinder_add, radius=MOTOR_D * 0.34, depth=MOTOR_W * 1.5,
+            vertices=24, location=(MOTOR_AT_X, y, MOTOR_AT_Z), rotation=(across, 0, 0))
+        # Axle through the hub.
+        add(bpy.ops.mesh.primitive_cylinder_add, radius=0.018, depth=MOTOR_W * 2.6,
+            vertices=12, location=(MOTOR_AT_X, y, MOTOR_AT_Z), rotation=(across, 0, 0))
+
+        # Cooling vents round the rim.
+        for i in range(12):
+            a = 2 * math.pi * i / 12
+            add(bpy.ops.mesh.primitive_cube_add, size=1,
+                location=(MOTOR_AT_X + math.cos(a) * MOTOR_D * 0.38,
+                          y - side * MOTOR_W * 0.42,
+                          MOTOR_AT_Z + math.sin(a) * MOTOR_D * 0.38),
+                rotation=(0, -a, 0))
+            pieces[-1].scale = (MOTOR_D * 0.16, 0.010, 0.026)
+
+        # The arm that ties the hub to the suspension.
+        add(bpy.ops.mesh.primitive_cube_add, size=1,
+            location=(MOTOR_AT_X + 0.10, y, MOTOR_AT_Z - 0.03))
+        pieces[-1].scale = (0.20, 0.022, 0.045)
+
+        for piece in pieces:
+            select_only(piece)
+            bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+            piece.select_set(False)
+        select_only(pieces[0])
+        for piece in pieces[1:]:
+            piece.select_set(True)
+        bpy.ops.object.join()
         motor = bpy.context.object
         motor.name = motor.data.name = f"Motor_{k + 1:02d}"
+        motor.data.materials.clear()
         motor.data.materials.append(material("Motor"))
         made.append(motor)
+    return made
+
+
+def cable(name, points, radius=0.012):
+    """A run of cable, drawn as a swept tube along a polyline."""
+    curve = bpy.data.curves.new(name, "CURVE")
+    curve.dimensions = "3D"
+    curve.bevel_depth = radius
+    curve.bevel_resolution = 3
+    curve.resolution_u = 3
+    spline = curve.splines.new("POLY")
+    spline.points.add(len(points) - 1)
+    for i, (x, y, z) in enumerate(points):
+        spline.points[i].co = (x, y, z, 1.0)
+    obj = bpy.data.objects.new(name, curve)
+    bpy.context.collection.objects.link(obj)
+    select_only(obj)
+    bpy.ops.object.convert(target="MESH")
+    obj = bpy.context.object
+    obj.name = obj.data.name = name
+    obj.data.materials.append(material("Kablo"))
+    obj.select_set(False)
+    return obj
+
+
+def wiring():
+    """High-voltage runs from the pack, and the low-voltage run forward."""
+    px, _, pz = PACK_AT
+    made = []
+    for side, tag in ((1, "Sol"), (-1, "Sag")):
+        made.append(
+            cable(
+                f"Kablo_Motor_{tag}",
+                [
+                    (px + 0.12, side * 0.10, pz - 0.05),
+                    (px + 0.16, side * 0.30, pz - 0.16),
+                    (px + 0.12, side * 0.52, pz - 0.24),
+                    (MOTOR_AT_X + 0.03, side * (MOTOR_AT_Y - 0.06), MOTOR_AT_Z + 0.02),
+                ],
+                radius=0.014,
+            )
+        )
+    made.append(
+        cable(
+            "Kablo_On",
+            [
+                (px + 0.22, 0.04, pz - 0.06),
+                (-0.60, 0.05, 0.26),
+                (0.10, 0.05, 0.23),
+                (0.55, 0.05, 0.34),
+                (0.72, 0.03, 0.52),
+            ],
+            radius=0.010,
+        )
+    )
     return made
 
 
@@ -663,6 +768,14 @@ def add_lamps(body):
         wrap.use_positive_direction = False
         wrap.offset = LAMP_PROUD
         bpy.ops.object.modifier_apply(modifier=wrap.name)
+        # A lamp is a unit recessed into the bodywork, not a sticker on it.
+        # Pushing the lens back into the shell gives it a housing, which is
+        # what makes it read as a headlight in an x-ray rather than a decal.
+        deep = obj.modifiers.new("govde", "SOLIDIFY")
+        deep.thickness = 0.085
+        deep.offset = 1 if from_x > 0 else -1
+        bpy.ops.object.modifier_apply(modifier=deep.name)
+
         try:
             bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
         except AttributeError:
@@ -758,7 +871,7 @@ def main():
     # After the centring, not before: the interior is laid out by hand against
     # the finished car's coordinates, so it must not be shifted again.
     everything += add_interior()
-    everything += battery_pack() + hub_motors()
+    everything += battery_pack() + hub_motors() + wiring()
     everything += add_decals(next(o for o in everything if o.name == "Govde"))
 
     lo, hi = world_bounds(everything)

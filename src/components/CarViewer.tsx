@@ -16,23 +16,9 @@ const MODEL_URL = "/models/voltaris-arac.glb";
 // The view behind the studio until someone drops in their own picture.
 const DEFAULT_BACKDROP: string | null = null;
 
-interface Finish {
-  id: string;
-  tr: string;
-  en: string;
-  color: string;
-  metalness: number;
-  roughness: number;
-}
-
-const FINISHES: Finish[] = [
-  { id: "turkuaz", tr: "Voltaris Turkuaz", en: "Voltaris Turquoise", color: "#0f8fa6", metalness: 0.65, roughness: 0.22 },
-  { id: "gece", tr: "Gece Siyahı", en: "Midnight Black", color: "#15181d", metalness: 0.9, roughness: 0.16 },
-  { id: "gumus", tr: "Sıvı Gümüş", en: "Liquid Silver", color: "#b9c1cb", metalness: 0.95, roughness: 0.2 },
-  { id: "beyaz", tr: "İnci Beyazı", en: "Pearl White", color: "#eef1f5", metalness: 0.35, roughness: 0.25 },
-  { id: "kirmizi", tr: "Yarış Kırmızısı", en: "Racing Red", color: "#b21f24", metalness: 0.8, roughness: 0.2 },
-  { id: "lacivert", tr: "Derin Lacivert", en: "Deep Navy", color: "#17305e", metalness: 0.85, roughness: 0.19 },
-];
+// One scheme colour for the whole x-ray. Parts that need to stand out — the
+// pack, the motors, the cabling — carry their own tint in the look table.
+const SCHEME = "#29d3e8";
 
 interface ViewPreset {
   tr: string;
@@ -273,7 +259,6 @@ function webglAvailable() {
 }
 
 interface CarProps {
-  finish: Finish;
   headlights: boolean;
   taillights: boolean;
   spinning: boolean;
@@ -283,7 +268,7 @@ interface CarProps {
   glow: number;
 }
 
-function Car({ finish, headlights, taillights, spinning, homeKey, glow }: CarProps) {
+function Car({ headlights, taillights, spinning, homeKey, glow }: CarProps) {
   const { scene } = useGLTF(MODEL_URL);
   const group = useRef<THREE.Group>(null);
   const homing = useRef(false);
@@ -293,7 +278,7 @@ function Car({ finish, headlights, taillights, spinning, homeKey, glow }: CarPro
   // that need to read at quite different brightnesses here.
   const parts = useMemo(() => {
     const made: { name: string; material: THREE.ShaderMaterial }[] = [];
-    const scheme = new THREE.Color(finish.color);
+    const scheme = new THREE.Color(SCHEME);
     scene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
       child.castShadow = false;
@@ -305,14 +290,6 @@ function Car({ finish, headlights, taillights, spinning, homeKey, glow }: CarPro
     return made;
     // Built once per model; colour and brightness are pushed in below.
   }, [scene]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const scheme = new THREE.Color(finish.color);
-    for (const { name, material } of parts) {
-      const look = lookFor(name);
-      if (!look.tint) material.uniforms.uColor.value.copy(scheme);
-    }
-  }, [parts, finish]);
 
   useEffect(() => {
     for (const { name, material } of parts) {
@@ -378,7 +355,6 @@ function ViewRig({ view, nudge }: { view: ViewKey; nudge: number }) {
 export function CarViewer() {
   const { t, lang } = useLanguage();
   const [supported] = useState(webglAvailable);
-  const [finish, setFinish] = useState(FINISHES[0]);
   const [headlights, setHeadlights] = useState(true);
   const [taillights, setTaillights] = useState(true);
   const [spinning, setSpinning] = useState(true);
@@ -433,7 +409,6 @@ export function CarViewer() {
             <directionalLight position={[6, 2, 1.5]} intensity={0.9 * lights} color="#eef6ff" />
             <ambientLight intensity={0.18 * lights} />
             <Car
-              finish={finish}
               headlights={headlights}
               taillights={taillights}
               spinning={spinning}
@@ -457,24 +432,6 @@ export function CarViewer() {
       </div>
 
       <div className="car-studio__panel">
-        <div className="car-studio__row">
-          <span className="car-studio__label">{t.vehicle.viewerFinish}</span>
-          <span className="car-studio__value">{label(finish)}</span>
-        </div>
-        <div className="car-studio__swatches">
-          {FINISHES.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`car-studio__swatch${item.id === finish.id ? " is-active" : ""}`}
-              style={{ background: item.color }}
-              aria-label={label(item)}
-              aria-pressed={item.id === finish.id}
-              onClick={() => setFinish(item)}
-            />
-          ))}
-        </div>
-
         <div className="car-studio__toggles">
           {[
             { key: "far", text: t.vehicle.viewerHeadlights, on: headlights, set: setHeadlights },
