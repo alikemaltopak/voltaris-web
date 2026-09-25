@@ -31,6 +31,12 @@ LAYERS = {
     "Ayna": ((0.06, 0.62, 0.58), 0.35, 0.08),
     "Panel": ((0.30, 0.95, 0.90), 1.2, 0.35),
     "Logo": ((1.0, 0.42, 0.34), 2.6, 0.80),
+    # The powertrain is the point of an x-ray, so it is the brightest thing
+    # in it: warm for the pack, white-hot for the motors.
+    "Batarya_Hucre": ((1.0, 0.72, 0.22), 4.0, 0.98),
+    "Batarya_Kutu": ((1.0, 0.60, 0.18), 1.6, 0.42),
+    "Batarya_Fan": ((1.0, 0.75, 0.30), 2.4, 0.90),
+    "Motor": ((1.0, 0.86, 0.45), 5.0, 0.98),
     "Sasi": ((0.25, 1.0, 0.82), 3.4, 0.92),
     "RollCage": ((0.12, 1.0, 0.88), 3.8, 0.95),
     "Tekerlek": ((0.10, 0.80, 0.90), 0.9, 0.30),

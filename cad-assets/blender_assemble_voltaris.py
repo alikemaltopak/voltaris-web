@@ -87,6 +87,10 @@ INTERIOR = {
     "Koltuk": ((0.020, 0.021, 0.024, 1), 0.0, 0.88),
     "Kokpit": ((0.035, 0.037, 0.042, 1), 0.25, 0.55),
     "Direksiyon": ((0.028, 0.030, 0.034, 1), 0.15, 0.62),
+    "Batarya_Kutu": ((0.055, 0.058, 0.065, 1), 0.80, 0.38),
+    "Batarya_Hucre": ((0.32, 0.33, 0.35, 1), 0.65, 0.30),
+    "Batarya_Fan": ((0.02, 0.021, 0.024, 1), 0.30, 0.55),
+    "Motor": ((0.035, 0.037, 0.042, 1), 0.85, 0.30),
 }
 # The two lit panels in front of the driver.
 DISPLAYS = {
@@ -117,6 +121,22 @@ LAMPS = [
     ("Stop", "Stop", -2.80, (0.0, 0.62), (1.16, 0.085)),
 ]
 LAMP_PROUD = 0.004  # metres the lens stands off the paint
+
+# --- Powertrain ----------------------------------------------------------
+# Sized from the team's own photographs and CAD screenshots, not from a STEP
+# file: the pack is 18650 cells standing on end (18 mm across, 65 mm tall) in
+# a fan-cooled box, and the workshop video puts it in the raised rear subframe
+# behind the seat. Counted off the photograph as 21 by 12; the real figure
+# should replace this once the box's own CAD arrives.
+CELL_D, CELL_H, CELL_PITCH = 0.018, 0.065, 0.0205
+CELLS_X, CELLS_Y = 21, 12
+PACK_WALL = 0.006
+PACK_AT = (-1.15, 0.0, 0.255)
+
+# Two in-wheel motors on the rear axle, as the photograph of the pair shows.
+# The rear wheels sit at x = -1.00, y = +/-0.71, and the hub is coaxial.
+MOTOR_AT_X, MOTOR_AT_Y, MOTOR_AT_Z = -1.00, 0.71, 0.286
+MOTOR_D, MOTOR_W = 0.235, 0.105
 
 # Livery. The mark was lifted from the last frame of the home page's assembly
 # animation, which is the only copy of it in the project.
@@ -549,6 +569,77 @@ def one_decal(body, name, filename, side, x0, x1, z0, z1):
     return obj
 
 
+def battery_pack():
+    """The pack as it is built: a cell array inside a fan-cooled box."""
+    made = []
+    span_x = CELLS_X * CELL_PITCH
+    span_y = CELLS_Y * CELL_PITCH
+    box = (span_x + 2 * PACK_WALL, span_y + 2 * PACK_WALL, CELL_H + 2 * PACK_WALL)
+
+    bpy.ops.mesh.primitive_cube_add(size=1, location=PACK_AT)
+    shell = bpy.context.object
+    shell.name = shell.data.name = "Batarya_Kutu"
+    shell.scale = box
+    bake(shell)
+    shell.data.materials.append(material("Batarya_Kutu"))
+    made.append(shell)
+
+    # One cylinder per cell, joined into a single object so the pack costs one
+    # draw call rather than two hundred and fifty.
+    cells = []
+    for i in range(CELLS_X):
+        for j in range(CELLS_Y):
+            bpy.ops.mesh.primitive_cylinder_add(
+                radius=CELL_D / 2,
+                depth=CELL_H,
+                vertices=10,
+                location=(
+                    PACK_AT[0] - span_x / 2 + (i + 0.5) * CELL_PITCH,
+                    PACK_AT[1] - span_y / 2 + (j + 0.5) * CELL_PITCH,
+                    PACK_AT[2],
+                ),
+            )
+            cells.append(bpy.context.object)
+    select_only(cells[0])
+    for c in cells[1:]:
+        c.select_set(True)
+    bpy.ops.object.join()
+    array = bpy.context.object
+    array.name = array.data.name = "Batarya_Hucre"
+    array.data.materials.clear()
+    array.data.materials.append(material("Batarya_Hucre"))
+    made.append(array)
+
+    # Two fans on one long face, as in the CAD screenshots.
+    for k, offset in enumerate((-0.055, 0.055)):
+        bpy.ops.mesh.primitive_cylinder_add(
+            radius=0.028, depth=0.016, vertices=16,
+            location=(PACK_AT[0] + offset, PACK_AT[1] - box[1] / 2, PACK_AT[2]),
+            rotation=(math.radians(90), 0, 0),
+        )
+        fan = bpy.context.object
+        fan.name = fan.data.name = f"Batarya_Fan_{k + 1:02d}"
+        fan.data.materials.append(material("Batarya_Fan"))
+        made.append(fan)
+    return made
+
+
+def hub_motors():
+    """In-wheel motors on the rear axle."""
+    made = []
+    for k, side in enumerate((1, -1)):
+        bpy.ops.mesh.primitive_cylinder_add(
+            radius=MOTOR_D / 2, depth=MOTOR_W, vertices=28,
+            location=(MOTOR_AT_X, side * MOTOR_AT_Y, MOTOR_AT_Z),
+            rotation=(math.radians(90), 0, 0),
+        )
+        motor = bpy.context.object
+        motor.name = motor.data.name = f"Motor_{k + 1:02d}"
+        motor.data.materials.append(material("Motor"))
+        made.append(motor)
+    return made
+
+
 def add_lamps(body):
     """Lay the headlights and tail bar onto the bodywork."""
     made = []
@@ -667,6 +758,7 @@ def main():
     # After the centring, not before: the interior is laid out by hand against
     # the finished car's coordinates, so it must not be shifted again.
     everything += add_interior()
+    everything += battery_pack() + hub_motors()
     everything += add_decals(next(o for o in everything if o.name == "Govde"))
 
     lo, hi = world_bounds(everything)
