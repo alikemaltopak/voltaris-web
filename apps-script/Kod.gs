@@ -325,6 +325,54 @@ function tekSayfayaTasi() {
   console.log(tasinan + ' başvuru taşındı, ' + atlanan + ' test satırı bırakıldı.');
 }
 
+/**
+ * Bozuk kodlamayla yapıştırılmış bir kopyanın bıraktığı sayfayı onarır. Bir
+ * kez, elle çalıştırılır; tekrar çalıştırmak zararsızdır.
+ *
+ * O kopya Türkçe harfleri Mac Roman olarak okumuştu ("Başvurular" →
+ * "Ba≈üvurular", "Bölüm" → "B√∂l√ºm"), ama sütunları aynı sırayla açmıştı.
+ * Sayfa, başlığı ASCII olduğu için bozulmadan kalan "Komite" sütunundan
+ * tanınır. Doğru adlı bir sayfa yoksa bozuk olan onun adını alır; varsa —
+ * dağıtımdan sonra gelen bir başvuru onu açmışsa — bozuk olanın satırları
+ * ona taşınıp bozuk sayfa silinir. Başlık satırı her durumda yeniden yazılır.
+ */
+function bozukBasliklariDuzelt() {
+  const kitap = SpreadsheetApp.getActiveSpreadsheet();
+  const dogru = SUTUNLAR.map(function (s) { return s[1]; });
+  const bozuklar = kitap.getSheets().filter(function (s) {
+    return s.getName() !== BASVURU_SAYFASI && s.getLastColumn() >= 2 &&
+      s.getRange(1, 2, 1, 1).getValues()[0][0] === KOMITE_BASLIGI;
+  });
+
+  var hedef = kitap.getSheetByName(BASVURU_SAYFASI);
+  var tasinan = 0;
+  bozuklar.forEach(function (bozuk) {
+    if (!hedef) {
+      bozuk.setName(BASVURU_SAYFASI);
+      hedef = bozuk;
+      return;
+    }
+    const tablo = bozuk.getDataRange().getValues();
+    for (var r = 1; r < tablo.length; r++) {
+      // Sütun sırası aynı, yalnızca adları bozuk: konuma göre eşle. Sonradan
+      // açılan sütunların (CV) adı ASCII, olduğu gibi kalır.
+      const degerler = {};
+      tablo[0].forEach(function (baslik, i) {
+        if (tablo[r][i] !== '') degerler[i < dogru.length ? dogru[i] : baslik] = tablo[r][i];
+      });
+      if (!degerler['Ad Soyad'] && !degerler['E-posta']) continue;
+      const tel = degerler['Telefon'];
+      if (tel !== undefined && String(tel).charAt(0) !== "'") degerler['Telefon'] = "'" + String(tel);
+      satirEkle(hedef, degerler);
+      tasinan++;
+    }
+    kitap.deleteSheet(bozuk);
+  });
+
+  if (hedef) hedef.getRange(1, 1, 1, dogru.length).setValues([dogru]).setFontWeight('bold');
+  console.log(bozuklar.length + ' bozuk sayfa onarıldı, ' + tasinan + ' satır birleştirildi.');
+}
+
 /** Sitenin gönderdiği kimliği ya da adı ("elektrik", "Electrical") Türkçe ada çevirir. */
 function komiteAdi(deger) {
   if (!deger) return '';
