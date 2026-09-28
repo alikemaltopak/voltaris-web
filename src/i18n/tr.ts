@@ -366,6 +366,8 @@ const tr = {
   footer: {
     tagline: "İzmir Yüksek Teknoloji Enstitüsü Elektromobil Takımı",
     rights: "Tüm hakları saklıdır.",
+    follow: "Bizi takip et",
+    write: "Bize yaz",
   },
 };
 

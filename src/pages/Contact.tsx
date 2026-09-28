@@ -2,9 +2,9 @@ import { useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { PageHero } from "../components/PageHero";
+import { INSTAGRAM_URL } from "../data/social";
 import { sendContactMessage } from "../lib/formEndpoint";
 
-const INSTAGRAM_URL = "https://www.instagram.com/voltaris.official/";
 
 type PackageKey = "platinum" | "gold" | "silver" | "bronze" | "supporter" | "general";
 const PACKAGE_KEYS: PackageKey[] = ["platinum", "gold", "silver", "bronze", "supporter", "general"];

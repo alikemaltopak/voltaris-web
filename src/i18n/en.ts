@@ -362,6 +362,8 @@ const en: Dictionary = {
   footer: {
     tagline: "Electromobile Team of Izmir Institute of High Technology",
     rights: "All rights reserved.",
+    follow: "Follow us",
+    write: "Write to us",
   },
 };
 
