@@ -4,6 +4,9 @@ export type Theme = "dark" | "light";
 
 const STORAGE_KEY = "voltaris-theme";
 
+/** Page background of each theme (--bg in index.css), for the browser chrome. */
+const THEME_COLOR: Record<Theme, string> = { dark: "#08090b", light: "#f2f3f5" };
+
 type ThemeContextValue = {
   theme: Theme;
   toggleTheme: () => void;
@@ -23,6 +26,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    // A theme picked by hand overrides the OS preference the meta tags are
+    // keyed on, so point both at the chosen one.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+      meta.setAttribute("content", THEME_COLOR[theme]);
+    });
     try {
       window.localStorage.setItem(STORAGE_KEY, theme);
     } catch {

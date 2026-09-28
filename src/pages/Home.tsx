@@ -94,7 +94,7 @@ export function Home() {
       <section className="section about">
         <div className="container about__grid about__grid--solo">
           <Reveal>
-            <SectionHeading kicker="Voltaris" title={t.home.aboutTitle} />
+            <SectionHeading kicker="VOLTARIS" title={t.home.aboutTitle} />
             <p className="about__text">{t.home.aboutText}</p>
             <ul className="about__points">
               {t.home.aboutPoints.map((point) => (

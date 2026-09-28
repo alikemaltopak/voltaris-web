@@ -14,7 +14,7 @@ export function Team() {
 
       <section className="section">
         <div className="container">
-          <SectionHeading kicker="Voltaris" title={t.team.introTitle} />
+          <SectionHeading kicker="VOLTARIS" title={t.team.introTitle} />
           <p className="lead-text">{t.team.introText}</p>
         </div>
       </section>

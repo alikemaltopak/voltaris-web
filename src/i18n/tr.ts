@@ -43,7 +43,7 @@ const tr = {
     partners: [
       { id: "iyte", name: "İzmir Yüksek Teknoloji Enstitüsü", role: "Kurulduğumuz üniversite" },
       { id: "teknofest", name: "TEKNOFEST", role: "Yarıştığımız festival" },
-      { id: "tubitak", name: "TÜBİTAK", role: "Efficiency Challenge düzenleyicisi" },
+      { id: "tubitak", name: "TÜBİTAK", role: "EFFICIENCY CHALLENGE düzenleyicisi" },
     ],
     joinTitle: "Takıma Katılmak İster misin?",
     joinText:
@@ -162,12 +162,12 @@ const tr = {
       saving: "Kaydediliyor…",
       filePreparing: "Hazırlanıyor…",
       required: "Bu alan zorunlu.",
-      note: "* Verdiğin bilgiler yalnızca takım içi değerlendirme için kullanılır, kimseyle paylaşılmaz.",
       invalidEmail: "Geçerli bir e-posta adresi yaz (ör. ad@gmail.com ya da ad@std.iyte.edu.tr).",
       invalidPhone: "Geçerli bir telefon numarası yaz (ör. 0532 123 45 67).",
       update: "Başvurumu Güncelle",
       updateNotice: "Bu e-posta adresiyle daha önce başvurmuşsun. Gönderirsen önceki başvurunun yerine geçer.",
       updateSuccess: "Başvurun güncellendi. Değerlendirme sonrası e-posta ile döneceğiz.",
+      note: "* Verdiğin bilgiler yalnızca takım içi değerlendirme için kullanılır, kimseyle paylaşılmaz.",
       success: "Başvurun bize ulaştı. Değerlendirme sonrası e-posta ile döneceğiz.",
       error: "Başvuru gönderilemedi. İnternet bağlantını kontrol edip tekrar dene; sorun sürerse voltaris.official@gmail.com adresine yazabilirsin.",
       otherPlaceholder: "Kısaca yaz",

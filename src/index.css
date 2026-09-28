@@ -1,6 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
+  /* Motion tokens. The built-in CSS easings are too soft to feel intentional;
+     these are the strong ease-out for anything entering or answering a press,
+     and the ease-in-out for things moving across the screen. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
   --bg: #08090b;
   --bg-alt: #0c0e11;
   --surface: #101216;
@@ -166,6 +172,21 @@ ul {
 }
 
 /* Buttons */
+/* Touch baseline. The grey flash iOS and Android paint over anything tapped
+   is the loudest "this is a web page" tell, and it fights the press states
+   below; manipulation drops the double-tap-to-zoom wait on taps. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+a,
+button,
+[role="button"],
+[role="radio"] {
+  touch-action: manipulation;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -178,8 +199,23 @@ ul {
   font-size: 15px;
   border: 1px solid var(--accent);
   cursor: pointer;
-  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+    transform 0.14s var(--ease-out);
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Answer the press the moment the finger lands, not when it lifts. */
+.btn:active,
+.mono-toggle:active,
+.footer-link:active,
+.social-links__slot:active,
+.car-studio__chip:active,
+.car-studio__view:active,
+.package-modal__close:active,
+.part-card__close:active {
+  transform: scale(0.97);
 }
 
 .btn--primary {
@@ -187,9 +223,14 @@ ul {
   color: var(--accent-ink);
 }
 
-.btn--primary:hover {
-  background: transparent;
-  color: var(--accent);
+/* Hover styles below are for a mouse only. A tap latches :hover on a touch
+   screen until the next tap elsewhere, which left the primary button stuck
+   hollow after it had been pressed. */
+@media (hover: hover) and (pointer: fine) {
+  .btn--primary:hover {
+    background: transparent;
+    color: var(--accent);
+  }
 }
 
 .btn--ghost {
@@ -197,9 +238,11 @@ ul {
   color: var(--accent);
 }
 
-.btn--ghost:hover {
-  background: var(--accent);
-  color: var(--accent-ink);
+@media (hover: hover) and (pointer: fine) {
+  .btn--ghost:hover {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
 }
 
 .btn--sm {
@@ -219,8 +262,10 @@ ul {
   gap: 8px;
 }
 
-.link-arrow:hover {
-  color: var(--accent-dim);
+@media (hover: hover) and (pointer: fine) {
+  .link-arrow:hover {
+    color: var(--accent-dim);
+  }
 }
 
 .note {
@@ -296,8 +341,10 @@ ul {
   transition: opacity 0.25s ease, border-color 0.25s ease;
 }
 
-.navbar__link:hover {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .navbar__link:hover {
+    opacity: 1;
+  }
 }
 
 .navbar__link--active {
@@ -360,8 +407,19 @@ ul {
   transition: opacity 0.25s ease;
 }
 
-.mono-toggle:hover {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .mono-toggle:hover {
+    opacity: 1;
+  }
+}
+
+/* 28px is fine under a mouse, too small under a thumb. */
+@media (pointer: coarse) {
+  .mono-toggle,
+  .car-studio__chip,
+  .car-studio__view {
+    min-height: 40px;
+  }
 }
 
 .lang-toggle__active {
@@ -384,21 +442,22 @@ ul {
     top: 0;
     left: 0;
     right: 0;
-    padding-top: 0;
+    padding-top: 78px;
     flex-direction: column;
     gap: 0;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
-    max-height: 0;
-    overflow: hidden;
+    /* Wiped down from the top rather than grown in height: clip and opacity
+       don't make the page lay itself out again on every frame. Closed, it
+       takes no taps, so its padding no longer covers the hamburger. */
+    clip-path: inset(0 0 100% 0);
     opacity: 0;
     pointer-events: none;
-    transition: max-height 0.25s ease, opacity 0.2s ease, padding-top 0.25s ease;
+    transition: clip-path 0.26s var(--ease-out), opacity 0.18s ease;
   }
 
   .navbar__links--open {
-    padding-top: 78px;
-    max-height: 520px;
+    clip-path: inset(0 0 0 0);
     opacity: 1;
     pointer-events: auto;
   }
@@ -418,6 +477,39 @@ ul {
 
   .nav-toggle {
     display: flex;
+  }
+
+  /* On a desktop the links (flex: 1) push the actions to the right. Here the
+     links are lifted out into the fixed dropdown, so the actions have to push
+     themselves, or they sit against the brand in the middle of the bar. */
+  .navbar__actions {
+    margin-left: auto;
+  }
+}
+
+/* On a phone the brand, two toggles and the hamburger took 385px of the
+   358 inside the margins, and pushed the hamburger into the right margin,
+   flush against the screen edge. Tighter gaps fit them without giving up
+   the 32px margin the page content lines up on. */
+@media (max-width: 560px) {
+  .navbar__inner {
+    gap: 12px;
+  }
+
+  .navbar__actions {
+    gap: 8px;
+  }
+
+  .mono-toggle {
+    padding: 6px 10px;
+  }
+}
+
+/* Small Android phones (360px) are still 21px short; the brand's wide
+   tracking gives it back. */
+@media (max-width: 380px) {
+  .navbar__brand {
+    letter-spacing: 0.2em;
   }
 }
 
@@ -631,13 +723,12 @@ ul {
   background: var(--surface);
   border: 1px solid var(--border);
   padding: 36px 32px 32px;
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.25, 1), border-color 0.45s ease,
-    background 0.45s ease;
+  transition: transform 0.3s var(--ease-out), border-color 0.3s ease, background 0.3s ease;
 }
 
 /* Touch devices keep :hover latched after a tap, which leaves cards floating
    8px above the page until you tap something else. Pointer devices only. */
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .stat-card:hover,
   .department-card:hover,
   .member-card:hover,
@@ -655,8 +746,10 @@ ul {
   padding: 28px 20px;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px);
+@media (hover: hover) and (pointer: fine) {
+  .stat-card:hover {
+    transform: translateY(-4px);
+  }
 }
 
 .stat-card__value {
@@ -1037,7 +1130,7 @@ ul {
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
   pointer-events: none;
-  animation: part-card-in 0.32s ease-out;
+  animation: part-card-in 0.22s var(--ease-out);
 }
 
 /* Corner brackets, the way a HUD frames what it has locked on to. */
@@ -1218,8 +1311,10 @@ ul {
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-.car-studio__swatch:hover {
-  transform: scale(1.08);
+@media (hover: hover) and (pointer: fine) {
+  .car-studio__swatch:hover {
+    transform: scale(1.08);
+  }
 }
 
 .car-studio__swatch.is-active {
@@ -1305,10 +1400,12 @@ ul {
   opacity: 0.8;
 }
 
-.car-studio__chip:hover,
-.car-studio__view:hover {
-  color: rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.24);
+@media (hover: hover) and (pointer: fine) {
+  .car-studio__chip:hover,
+  .car-studio__view:hover {
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.24);
+  }
 }
 
 .car-studio__chip.is-on,
@@ -1551,7 +1648,7 @@ ul {
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .sponsor-logo:hover .sponsor-logo__mark {
     filter: none;
     opacity: 1;
@@ -1667,14 +1764,14 @@ button.tier-card:focus-visible {
   color: var(--text);
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   button.tier-card:hover .tier-card__cta {
-    letter-spacing: 0.14em;
+    transform: translateX(4px);
   }
 }
 
 .tier-card__cta {
-  transition: letter-spacing 0.3s ease;
+  transition: transform 0.25s var(--ease-out);
 }
 
 /* ---- Package detail card ------------------------------------------------ */
@@ -1757,11 +1854,13 @@ button.tier-card:focus-visible {
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 
-.package-modal__close:hover,
-.package-modal__close:focus-visible {
-  border-color: var(--tier-color);
-  color: var(--text);
-  outline: none;
+@media (hover: hover) and (pointer: fine) {
+  .package-modal__close:hover,
+  .package-modal__close:focus-visible {
+    border-color: var(--tier-color);
+    color: var(--text);
+    outline: none;
+  }
 }
 
 .package-modal__title-row {
@@ -1963,7 +2062,8 @@ button.tier-card:focus-visible {
   padding: 12px 14px;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  /* iOS zooms into any field under 16px on focus, and never zooms back. */
+  font-size: 1rem;
   resize: vertical;
 }
 
@@ -2118,8 +2218,10 @@ button.tier-card:focus-visible {
   text-decoration: underline;
 }
 
-.file-field__remove:hover {
-  color: var(--accent);
+@media (hover: hover) and (pointer: fine) {
+  .file-field__remove:hover {
+    color: var(--accent);
+  }
 }
 
 .file-field--invalid .btn {
@@ -2178,7 +2280,7 @@ button.tier-card:focus-visible {
     transform 0.12s ease;
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .option-pill:hover {
     border-color: var(--accent);
     color: var(--text);
@@ -2224,7 +2326,7 @@ button.tier-card:focus-visible {
     transform 0.12s ease;
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .scale-pill:hover {
     border-color: var(--accent);
     color: var(--text);
@@ -2293,8 +2395,10 @@ button.tier-card:focus-visible {
   margin-bottom: 6px;
 }
 
-.contact-info a:hover {
-  color: var(--accent);
+@media (hover: hover) and (pointer: fine) {
+  .contact-info a:hover {
+    color: var(--accent);
+  }
 }
 
 .social-links {
@@ -2315,9 +2419,11 @@ button.tier-card:focus-visible {
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 
-a.social-links__slot:hover {
-  border-color: var(--accent);
-  color: var(--text);
+@media (hover: hover) and (pointer: fine) {
+  a.social-links__slot:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
 }
 
 /* Application form page */
@@ -2409,7 +2515,7 @@ a.social-links__slot:hover {
 
 /* No 8px float here — it makes choosing a committee feel mushy and shifts the
    questions that mount underneath. */
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .komite-card--choice:hover {
     transform: none;
     border-color: var(--accent-dim);
@@ -2524,9 +2630,11 @@ a.social-links__slot:hover {
   height: 76px;
 }
 
-.partners__item:hover .partners__logo {
-  opacity: 1;
-  filter: drop-shadow(0 0 14px var(--accent-glow));
+@media (hover: hover) and (pointer: fine) {
+  .partners__item:hover .partners__logo {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px var(--accent-glow));
+  }
 }
 
 :root[data-theme="light"] .partners__logo {
@@ -2534,9 +2642,11 @@ a.social-links__slot:hover {
   opacity: 0.72;
 }
 
-:root[data-theme="light"] .partners__item:hover .partners__logo {
-  filter: brightness(0);
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme="light"] .partners__item:hover .partners__logo {
+    filter: brightness(0);
+    opacity: 1;
+  }
 }
 
 .partners__role {
@@ -2629,11 +2739,17 @@ a.social-links__slot:hover {
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.footer-link:hover,
 .footer-link:focus-visible {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent-glow), 0 8px 28px -12px var(--accent-glow);
-  transform: translateY(-2px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .footer-link:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-glow), 0 8px 28px -12px var(--accent-glow);
+    transform: translateY(-2px);
+  }
 }
 
 .footer-link__icon {
@@ -2689,10 +2805,15 @@ a.social-links__slot:hover {
   transition: color 0.25s ease, transform 0.25s ease;
 }
 
-.footer-link:hover .footer-link__arrow,
 .footer-link:focus-visible .footer-link__arrow {
   color: var(--accent);
-  transform: translate(2px, -2px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .footer-link:hover .footer-link__arrow {
+    color: var(--accent);
+    transform: translate(2px, -2px);
+  }
 }
 
 .footer__base {
@@ -2774,12 +2895,27 @@ a.social-links__slot:hover {
     padding: 64px 0;
   }
 
+  /* minmax(0, 1fr): a plain 1fr won't shrink below its longest word, and
+     "Elektroniği" in a 160px card pushed the team page 6px off the screen. */
   .stats__grid,
-  .departments__grid,
   .members__grid,
   .timeline,
   .tiers__grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Department names run to four words; two across leaves them one word
+     per line. */
+  .departments__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stat-card,
+  .department-card,
+  .member-card,
+  .timeline__step,
+  .tier-card {
+    padding: 26px 20px 24px;
   }
 
   .sponsor-band {
