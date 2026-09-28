@@ -42,6 +42,12 @@ const en: Dictionary = {
     missionText:
       "To keep a safe, energy-efficient electromobile — designed, built and tested entirely by students — running on the track every year. And to pass the knowledge and experience we gain on to the next generation.",
     chassisTitle: "Voltaris electromobile assembly animation",
+    partnersKicker: "The institutions we move with",
+    partners: [
+      { id: "iyte", name: "Izmir Institute of Technology", role: "Our home university" },
+      { id: "teknofest", name: "TEKNOFEST", role: "The festival we race at" },
+      { id: "tubitak", name: "TÜBİTAK", role: "Organiser of the Efficiency Challenge" },
+    ],
     joinTitle: "Want to Join the Team?",
     joinText:
       "If you'd like to bring your skills in engineering, design, technical software, or organization to the team, we'd love to hear from you.",

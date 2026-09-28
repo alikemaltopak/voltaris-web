@@ -39,6 +39,12 @@ const tr = {
     missionText:
       "Tamamen öğrencilerin tasarladığı, ürettiği ve test ettiği; güvenli ve enerji verimli bir elektromobili her yıl pistte çalışır halde tutmak. Edindiğimiz bilgi ve tecrübeyi bir sonraki jenerasyona miras bırakmak.",
     chassisTitle: "Voltaris elektromobil montaj animasyonu",
+    partnersKicker: "Birlikte yol aldığımız kurumlar",
+    partners: [
+      { id: "iyte", name: "İzmir Yüksek Teknoloji Enstitüsü", role: "Kurulduğumuz üniversite" },
+      { id: "teknofest", name: "TEKNOFEST", role: "Yarıştığımız festival" },
+      { id: "tubitak", name: "TÜBİTAK", role: "Efficiency Challenge düzenleyicisi" },
+    ],
     joinTitle: "Takıma Katılmak İster misin?",
     joinText:
       "Mühendislik, tasarım, teknik yazılım ve organizasyon alanlarında yeteneklerini takıma katmak istiyorsan seni aramızda görmek isteriz.",

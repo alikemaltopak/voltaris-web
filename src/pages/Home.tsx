@@ -14,6 +14,14 @@ import { gsap } from "../lib/gsapSetup";
 const HERO_FRAMES_DARK = "ev-assembly-v9";
 const HERO_FRAMES_LIGHT = "ev-assembly-light-v1";
 
+/** Single-colour (white) versions of the official logos, taken from each
+ *  institution's own website; the light theme darkens them in CSS. */
+const PARTNER_LOGOS: Record<string, string> = {
+  iyte: "/logos/iyte.png",
+  teknofest: "/logos/teknofest.png",
+  tubitak: "/logos/tubitak.svg",
+};
+
 export function Home() {
   const { t } = useLanguage();
   const { theme } = useTheme();
@@ -61,6 +69,26 @@ export function Home() {
           </Link>
         </div>
         <span className="hero__scroll-hint">{t.home.scrollHint}</span>
+      </section>
+
+      <section className="partners" aria-label={t.home.partnersKicker}>
+        <Reveal className="container partners__inner" stagger=".partners__item">
+          <p className="partners__kicker">{t.home.partnersKicker}</p>
+          <ul className="partners__list">
+            {t.home.partners.map((partner) => (
+              <li className="partners__item" key={partner.id}>
+                <img
+                  className={`partners__logo partners__logo--${partner.id}`}
+                  src={PARTNER_LOGOS[partner.id]}
+                  alt={partner.name}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span className="partners__role">{partner.role}</span>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
       </section>
 
       <section className="section about">

@@ -2458,6 +2458,110 @@ a.social-links__slot:hover {
 }
 
 /* Footer */
+/* Institutions strip under the hero: the logos in one colour, so three
+   very different brand palettes sit together as a single quiet row. */
+.partners {
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-alt);
+  padding: 44px 0 40px;
+}
+
+.partners__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.partners__kicker {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.partners__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 28px clamp(40px, 8vw, 110px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.partners__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.partners__logo {
+  display: block;
+  width: auto;
+  opacity: 0.78;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* Heights balanced by eye: a wide wordmark reads larger than a tall badge
+   at the same height. */
+.partners__logo--iyte {
+  height: 58px;
+}
+
+.partners__logo--teknofest {
+  height: 72px;
+}
+
+.partners__logo--tubitak {
+  height: 76px;
+}
+
+.partners__item:hover .partners__logo {
+  opacity: 1;
+  filter: drop-shadow(0 0 14px var(--accent-glow));
+}
+
+:root[data-theme="light"] .partners__logo {
+  filter: brightness(0);
+  opacity: 0.72;
+}
+
+:root[data-theme="light"] .partners__item:hover .partners__logo {
+  filter: brightness(0);
+  opacity: 1;
+}
+
+.partners__role {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .partners__logo--iyte {
+    height: 46px;
+  }
+
+  .partners__logo--teknofest {
+    height: 58px;
+  }
+
+  .partners__logo--tubitak {
+    height: 60px;
+  }
+}
+
 .footer {
   position: relative;
   z-index: 2;
