@@ -165,7 +165,6 @@ const en: Dictionary = {
       update: "Update My Application",
       updateNotice: "You've already applied with this email address. Sending again replaces your earlier application.",
       updateSuccess: "Your application has been updated. We'll get back to you by email once we've reviewed it.",
-      note: "* What you share is used only for our internal review and is not passed on to anyone.",
       success: "We've received your application. We'll get back to you by email once we've reviewed it.",
       error: "We couldn't send your application. Check your connection and try again; if it keeps failing, email voltaris.official@gmail.com.",
       otherPlaceholder: "Tell us briefly",

@@ -162,7 +162,6 @@ const tr = {
       update: "Başvurumu Güncelle",
       updateNotice: "Bu e-posta adresiyle daha önce başvurmuşsun. Gönderirsen önceki başvurunun yerine geçer.",
       updateSuccess: "Başvurun güncellendi. Değerlendirme sonrası e-posta ile döneceğiz.",
-      note: "* Verdiğin bilgiler yalnızca takım içi değerlendirme için kullanılır, kimseyle paylaşılmaz.",
       success: "Başvurun bize ulaştı. Değerlendirme sonrası e-posta ile döneceğiz.",
       error: "Başvuru gönderilemedi. İnternet bağlantını kontrol edip tekrar dene; sorun sürerse voltaris.official@gmail.com adresine yazabilirsin.",
       otherPlaceholder: "Kısaca yaz",
