@@ -18,8 +18,6 @@
   --accent-glow: rgba(34, 211, 238, 0.28);
   --spark: #cff9ff;
 
-  --pencil: #6b7280;
-  --pencil-strong: #e8ecf1;
 
   --radius: 0px;
   --radius-sm: 2px;
@@ -61,8 +59,6 @@
   --accent-glow: rgba(14, 116, 144, 0.18);
   --spark: #0891b2;
 
-  --pencil: #98a0a9;
-  --pencil-strong: #0e1216;
 
   --tier-gold: #b08a1e;
   --tier-silver: #7f8791;
@@ -996,6 +992,7 @@ ul {
    The stage stays black in both themes — it is a photographic studio, and a
    light background would wash the car out and kill the lamp glow. */
 .car-studio {
+  position: relative;
   border: 1px solid var(--border);
   background: #06070a;
   overflow: hidden;
@@ -1014,6 +1011,156 @@ ul {
 
 .car-studio__stage canvas:active {
   cursor: grabbing;
+}
+
+.car-studio__stage.is-pointing canvas {
+  cursor: pointer;
+}
+
+/* The part readout: a pane of the hologram itself, so it takes the scheme
+   colour, the raster lines and the glow rather than looking like a tooltip. */
+.part-card {
+  --holo: 63, 224, 196;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: min(300px, calc(100% - 36px));
+  padding: 18px 20px 16px;
+  color: rgb(var(--holo));
+  background:
+    repeating-linear-gradient(0deg, rgba(var(--holo), 0.05) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg, rgba(var(--holo), 0.13), rgba(6, 14, 16, 0.72) 55%);
+  border: 1px solid rgba(var(--holo), 0.55);
+  box-shadow:
+    0 0 22px rgba(var(--holo), 0.22),
+    inset 0 0 26px rgba(var(--holo), 0.1);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  pointer-events: none;
+  animation: part-card-in 0.32s ease-out;
+}
+
+/* Corner brackets, the way a HUD frames what it has locked on to. */
+.part-card::before,
+.part-card::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(var(--holo));
+}
+
+.part-card::before {
+  top: -4px;
+  left: -4px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.part-card::after {
+  right: -4px;
+  bottom: -4px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.part-card__tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  opacity: 0.7;
+}
+
+.part-card__name {
+  margin: 6px 0 8px;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  color: #e6fffa;
+  text-shadow: 0 0 12px rgba(var(--holo), 0.75);
+}
+
+.part-card__role {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgba(214, 255, 247, 0.86);
+}
+
+.part-card__specs {
+  margin: 12px 0 0;
+  border-top: 1px solid rgba(var(--holo), 0.3);
+}
+
+.part-card__specs div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(var(--holo), 0.2);
+  font-size: 0.76rem;
+}
+
+.part-card__specs dt {
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+
+.part-card__specs dd {
+  margin: 0;
+  text-align: right;
+  color: #e6fffa;
+}
+
+.part-card__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 2px 6px;
+  font-size: 18px;
+  line-height: 1;
+  color: rgb(var(--holo));
+  background: none;
+  border: 0;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+@keyframes part-card-in {
+  0% {
+    opacity: 0;
+    transform: translateX(10px);
+    filter: brightness(2.2);
+  }
+  40% {
+    opacity: 0.6;
+  }
+  55% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* On a phone the stage is too small to share: the readout drops out of it
+   and sits between the car and the controls instead. */
+@media (max-width: 720px) {
+  .part-card {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: auto;
+    margin: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .part-card {
+    animation: none;
+  }
 }
 
 .car-studio__hint {
@@ -1215,91 +1362,6 @@ ul {
   .chassis-viewer {
     height: 360px;
   }
-}
-
-/* Scroll-driven sketch reveal */
-.sketch-sec {
-  padding: 0 0 40px;
-}
-
-.sketch-head {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 44px;
-}
-
-.sketch-stage {
-  position: relative;
-  width: 100%;
-}
-
-.sketch-stage svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
-}
-
-.sk {
-  fill: none;
-  stroke: var(--pencil);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: stroke 0.5s ease;
-}
-
-.sk-main {
-  stroke-width: 1.5;
-  stroke: var(--pencil-strong);
-}
-
-.sk-thin {
-  stroke-width: 1;
-  opacity: 0.6;
-}
-
-.sk-hatch {
-  stroke-width: 0.9;
-  opacity: 0.3;
-}
-
-.sk-accent {
-  stroke-width: 1.4;
-  stroke: var(--accent);
-  opacity: 0.9;
-}
-
-.sk-dim {
-  stroke-width: 0.7;
-  stroke: var(--pencil);
-  opacity: 0.45;
-}
-
-#arac .sk {
-  stroke-width: 34;
-}
-
-#arac .sk-main {
-  stroke-width: 52;
-}
-
-#arac .sk-thin {
-  stroke-width: 38;
-}
-
-#arac .sk-hatch {
-  stroke-width: 30;
-}
-
-.sk-txt {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  fill: var(--text-muted);
-  opacity: 0;
 }
 
 .cizim-not {

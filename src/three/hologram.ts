@@ -24,7 +24,17 @@ export interface HologramLook {
   tint?: THREE.ColorRepresentation;
   /** How strongly the scanning band lights this part (default 0.9). */
   scan?: number;
+  /** Brightness of the contour lines drawn across the surface (default 0: none). */
+  grid?: number;
 }
+
+/**
+ * Spacing of the contour lines, in metres. They are slices through the car,
+ * one set along its length and one up its height, so they wrap every curve of
+ * the panel they are drawn on and stay evenly spaced however the mesh
+ * underneath happens to be triangulated.
+ */
+const GRID_STEP = 0.045;
 
 /**
  * One clock shared by every hologram material, so the scan crosses the whole
@@ -37,11 +47,13 @@ const VERTEX = /* glsl */ `
   varying vec3 vToEye;
   varying float vAlong;
   varying float vHeight;
+  varying float vAcross;
   void main() {
     // Model space, not world: the scan belongs to the car and turns with it
     // on the turntable instead of sweeping a fixed plane of the room.
     vAlong = position.x;
     vHeight = position.y;
+    vAcross = position.z;
     vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
     vNormal = normalize(normalMatrix * normal);
     vToEye = normalize(-viewPosition.xyz);
@@ -57,10 +69,23 @@ const FRAGMENT = /* glsl */ `
   uniform float uGain;
   uniform float uTime;
   uniform float uScan;
+  uniform float uGrid;
+  uniform float uGridStep;
   varying vec3 vNormal;
   varying vec3 vToEye;
   varying float vAlong;
   varying float vHeight;
+  varying float vAcross;
+
+  // A line one pixel wide wherever v crosses a multiple of the step, however
+  // near or far the surface is: fwidth measures how fast v changes across a
+  // pixel, so the line never thickens up close or turns to mush far away.
+  float contour(float v) {
+    float f = v / uGridStep;
+    float d = abs(fract(f - 0.5) - 0.5) / max(fwidth(f), 1e-4);
+    return 1.0 - min(d, 1.0);
+  }
+
   void main() {
     // Backfaces arrive with the normal pointing away; abs() treats both sides
     // alike, which is what lets the far wall of a panel glow too.
@@ -76,7 +101,15 @@ const FRAGMENT = /* glsl */ `
     // Faint horizontal striations, like the raster of a projected image.
     float lines = 0.86 + 0.14 * sin(vHeight * 260.0);
 
-    float strength = ((uBase + uRim * edge) * lines + (band + wake) * uScan) * uGain;
+    // Slices along the length, up the height and across the width. Where a
+    // panel runs parallel to one set its lines go sparse, and the other two
+    // carry it.
+    float grid = 0.0;
+    if (uGrid > 0.0) {
+      grid = max(max(contour(vAlong), contour(vHeight)), contour(vAcross) * 0.6) * uGrid;
+    }
+
+    float strength = ((uBase + uRim * edge) * lines + grid + (band + wake) * uScan) * uGain;
     gl_FragColor = vec4(uColor * strength, strength);
   }
 `;
@@ -96,6 +129,8 @@ export function makeHologramMaterial(
       uGain: { value: gain },
       uTime: SCAN_CLOCK,
       uScan: { value: look.scan ?? 0.9 },
+      uGrid: { value: look.grid ?? 0 },
+      uGridStep: { value: GRID_STEP },
     },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
@@ -115,7 +150,7 @@ export function makeHologramMaterial(
  * the car it lives in reads as a frame with a bag over it.
  */
 export const LOOKS: Record<string, HologramLook> = {
-  Govde: { base: 0.10, rim: 0.95, falloff: 2.0 },
+  Govde: { base: 0.10, rim: 0.95, falloff: 2.0, grid: 0.3 },
   Cam: { base: 0.09, rim: 0.8, falloff: 2.0 },
   Ayna: { base: 0.20, rim: 0.85, falloff: 1.9 },
   Panel: { base: 0.5, rim: 0.5, falloff: 1.6 },

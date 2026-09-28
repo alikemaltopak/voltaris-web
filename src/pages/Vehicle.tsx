@@ -2,7 +2,6 @@ import { useLanguage } from "../context/LanguageContext";
 import { SectionHeading } from "../components/SectionHeading";
 import { PageHero } from "../components/PageHero";
 import { PlaceholderBox } from "../components/PlaceholderBox";
-import { CarSketchReveal } from "../components/CarSketchReveal";
 import { CarViewer } from "../components/CarViewer";
 import { Reveal } from "../components/Reveal";
 
@@ -12,8 +11,6 @@ export function Vehicle() {
   return (
     <>
       <PageHero title={t.vehicle.heroSubtitle} subtitle={t.vehicle.heroTagline} />
-
-      <CarSketchReveal eyebrow={t.vehicle.sketchEyebrow} note={t.vehicle.sketchNote} />
 
       <section className="section">
         <div className="container vehicle__grid">

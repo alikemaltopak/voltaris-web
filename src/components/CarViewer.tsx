@@ -1,7 +1,8 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import {
+  Bvh,
   Environment,
   Lightformer,
   MeshReflectorMaterial,
@@ -21,6 +22,7 @@ import {
   makeHologramMaterial,
   makeWireMaterial,
 } from "../three/hologram";
+import { PART_ORDER, partInfo, partKeyOf, type PartKey } from "../data/vehicleParts";
 
 const MODEL_URL = "/models/voltaris-arac.glb";
 // The view behind the studio until someone drops in their own picture.
@@ -29,6 +31,9 @@ const DEFAULT_BACKDROP: string | null = null;
 // One scheme colour for the whole x-ray. Parts that need to stand out — the
 // pack, the motors, the cabling — carry their own tint in the look table.
 const SCHEME = "#3fe0c4";
+// How bright each wireframe line is. The lattice is dense, and additive lines
+// pile up where they crowd, so each one is kept faint.
+const WIRE_GAIN = 0.34;
 
 interface ViewPreset {
   tr: string;
@@ -274,69 +279,117 @@ interface CarProps {
   homeKey: number;
   /** Overall brightness of the x-ray. */
   glow: number;
+  /** The part being pointed at or picked; it lights up, the rest dim. */
+  active: PartKey | null;
+  onHover: (part: PartKey | null) => void;
+  onPick: (part: PartKey | null) => void;
 }
 
-function Car({ spinning, homeKey, glow }: CarProps) {
+// How the pointed-at part and everything else read while one is active.
+const ACTIVE_GAIN = 2.3;
+const REST_GAIN = 0.45;
+
+/** Of everything under the pointer, the part that should answer (see PART_ORDER). */
+function partUnder(event: ThreeEvent<PointerEvent | MouseEvent>): PartKey | null {
+  let best: PartKey | null = null;
+  for (const hit of event.intersections) {
+    const key = partKeyOf(hit.object.name);
+    if (key && (best === null || PART_ORDER.indexOf(key) < PART_ORDER.indexOf(best))) best = key;
+  }
+  return best;
+}
+
+// Wire copies and outlines sit on top of their source mesh; picking them too
+// would only double the raycasting for the same answer.
+const notPickable = () => {};
+
+type HologramParts = {
+  surfaces: { key: PartKey | null; material: THREE.ShaderMaterial }[];
+  wires: { key: PartKey | null; material: THREE.MeshBasicMaterial }[];
+  edges: { key: PartKey | null; material: THREE.LineBasicMaterial }[];
+  scheme: THREE.Color;
+};
+
+// useGLTF hands back the same scene object every time the model is mounted,
+// so the dressing is kept with it: done twice, the second pass would put new
+// materials on the meshes while the first pass's list went on receiving the
+// brightness, and add a second set of outlines on top of the first. React
+// runs a memo twice in development and remounts the car on every visit to
+// the page, so both happen.
+const dressed = new WeakMap<THREE.Object3D, HologramParts>();
+
+/**
+ * Every mesh gets its own x-ray material, keyed on the object's name rather
+ * than the material's: the painted model shares one material across parts
+ * that need to read at quite different brightnesses here.
+ */
+function dressAsHologram(scene: THREE.Object3D): HologramParts {
+  const done = dressed.get(scene);
+  if (done) return done;
+  const made: { key: PartKey | null; material: THREE.ShaderMaterial }[] = [];
+  const wires: { key: PartKey | null; material: THREE.MeshBasicMaterial }[] = [];
+  const edges: { key: PartKey | null; material: THREE.LineBasicMaterial }[] = [];
+  const outlined: THREE.Mesh[] = [];
+  const scheme = new THREE.Color(SCHEME);
+  scene.traverse((child) => {
+    if (!(child instanceof THREE.Mesh)) return;
+    child.castShadow = false;
+    child.receiveShadow = false;
+    // The model ships its own coarse copies of the outer panels for this.
+    // Wiring the full shell draws 16k triangles of line, which is not a
+    // lattice but a fill.
+    if (child.name.startsWith(WIRE_PREFIX)) {
+      const wire = makeWireMaterial(scheme, WIRE_GAIN);
+      child.material = wire;
+      child.renderOrder = 1;
+      child.raycast = notPickable;
+      wires.push({ key: partKeyOf(child.name), material: wire });
+      return;
+    }
+    const material = makeHologramMaterial(scheme, lookFor(child.name), 1);
+    child.material = material;
+    made.push({ key: partKeyOf(child.name), material });
+    if (EDGE_ON.some((key) => child.name.startsWith(key))) outlined.push(child);
+  });
+
+  // Outlines are added after the walk, so the traversal never visits the
+  // children it is creating. Each shares nothing but the source's shape.
+  for (const mesh of outlined) {
+    const lines = new THREE.LineSegments(
+      new THREE.EdgesGeometry(mesh.geometry, EDGE_ANGLE),
+      makeEdgeMaterial(scheme, 0.55),
+    );
+    lines.name = `${mesh.name}_kenar`;
+    lines.renderOrder = 2;
+    lines.raycast = notPickable;
+    mesh.add(lines);
+    edges.push({ key: partKeyOf(mesh.name), material: lines.material as THREE.LineBasicMaterial });
+  }
+  const parts = { surfaces: made, wires, edges, scheme };
+  dressed.set(scene, parts);
+  return parts;
+}
+
+function Car({ spinning, homeKey, glow, active, onHover, onPick }: CarProps) {
   const { scene } = useGLTF(MODEL_URL);
   const group = useRef<THREE.Group>(null);
   const homing = useRef(false);
 
-  // Every mesh gets its own x-ray material, keyed on the object's name rather
-  // than the material's: the painted model shares one material across parts
-  // that need to read at quite different brightnesses here.
-  const parts = useMemo(() => {
-    const made: { name: string; material: THREE.ShaderMaterial }[] = [];
-    const wires: THREE.MeshBasicMaterial[] = [];
-    const edges: THREE.LineBasicMaterial[] = [];
-    const outlined: THREE.Mesh[] = [];
-    const scheme = new THREE.Color(SCHEME);
-    scene.traverse((child) => {
-      if (!(child instanceof THREE.Mesh)) return;
-      child.castShadow = false;
-      child.receiveShadow = false;
-      // The model ships its own coarse copies of the outer panels for this.
-      // Wiring the full shell draws 16k triangles of line, which is not a
-      // lattice but a fill.
-      if (child.name.startsWith(WIRE_PREFIX)) {
-        const wire = makeWireMaterial(scheme, 0.34);
-        child.material = wire;
-        child.renderOrder = 1;
-        wires.push(wire);
-        return;
-      }
-      const material = makeHologramMaterial(scheme, lookFor(child.name), 1);
-      child.material = material;
-      made.push({ name: child.name, material });
-      if (EDGE_ON.some((key) => child.name.startsWith(key))) outlined.push(child);
-    });
-
-    // Outlines are added after the walk, so the traversal never visits the
-    // children it is creating. Each shares nothing but the source's shape.
-    for (const mesh of outlined) {
-      const lines = new THREE.LineSegments(
-        new THREE.EdgesGeometry(mesh.geometry, EDGE_ANGLE),
-        makeEdgeMaterial(scheme, 0.55),
-      );
-      lines.name = `${mesh.name}_kenar`;
-      lines.renderOrder = 2;
-      mesh.add(lines);
-      edges.push(lines.material as THREE.LineBasicMaterial);
-    }
-    return { surfaces: made, wires, edges, scheme };
-    // Built once per model; colour and brightness are pushed in below.
-  }, [scene]); // eslint-disable-line react-hooks/exhaustive-deps
+  const parts = useMemo(() => dressAsHologram(scene), [scene]);
 
   useEffect(() => {
-    for (const { material } of parts.surfaces) material.uniforms.uGain.value = glow;
+    const gain = (key: PartKey | null) =>
+      glow * (active === null ? 1 : key === active ? ACTIVE_GAIN : REST_GAIN);
+    for (const { key, material } of parts.surfaces) material.uniforms.uGain.value = gain(key);
     // The wires ride the same slider, a little under the surfaces so they
     // stay a texture on the shell rather than a cage around it.
-    for (const wire of parts.wires) {
-      wire.color.copy(parts.scheme).multiplyScalar(0.34 * glow);
+    for (const { key, material } of parts.wires) {
+      material.color.copy(parts.scheme).multiplyScalar(WIRE_GAIN * gain(key));
     }
-    for (const edge of parts.edges) {
-      edge.color.copy(parts.scheme).multiplyScalar(0.55 * glow);
+    for (const { key, material } of parts.edges) {
+      material.color.copy(parts.scheme).multiplyScalar(0.55 * gain(key));
     }
-  }, [parts, glow]);
+  }, [parts, glow, active]);
 
   useEffect(() => {
     if (homeKey > 0) homing.current = true;
@@ -346,7 +399,8 @@ function Car({ spinning, homeKey, glow }: CarProps) {
     SCAN_CLOCK.value += delta;
     const car = group.current;
     if (!car) return;
-    if (spinning) {
+    // Hold still while a part is being read, or it turns out from under the pointer.
+    if (spinning && !active) {
       car.rotation.y += delta * 0.2;
       homing.current = false;
       return;
@@ -364,10 +418,56 @@ function Car({ spinning, homeKey, glow }: CarProps) {
     }
   });
 
+  // Hover is for a mouse; on a touch screen a tap picks the part instead,
+  // since a finger dragging to turn the car would otherwise flick through them.
   return (
-    <group ref={group}>
-      <primitive object={scene} />
+    <group
+      ref={group}
+      onPointerMove={(event) => {
+        event.stopPropagation();
+        if (event.pointerType === "mouse") onHover(partUnder(event));
+      }}
+      onPointerLeave={() => onHover(null)}
+      onClick={(event) => {
+        event.stopPropagation();
+        onPick(partUnder(event));
+      }}
+    >
+      <Bvh firstHitOnly={false}>
+        <primitive object={scene} />
+      </Bvh>
     </group>
+  );
+}
+
+/** The hologram readout beside the car for the part being pointed at. */
+function PartCard({ part, lang, onClose }: { part: PartKey; lang: "tr" | "en"; onClose?: () => void }) {
+  const info = partInfo(part, lang);
+  return (
+    // Keyed on the part, so each new part plays the flicker-in again.
+    <aside className="part-card" key={part} aria-live="polite">
+      <span className="part-card__tag">
+        {lang === "tr" ? "PARÇA" : "PART"} {String(PART_ORDER.indexOf(part) + 1).padStart(2, "0")} /{" "}
+        {String(PART_ORDER.length).padStart(2, "0")}
+      </span>
+      <h3 className="part-card__name">{info.name}</h3>
+      <p className="part-card__role">{info.role}</p>
+      {info.specs.length > 0 && (
+        <dl className="part-card__specs">
+          {info.specs.map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {onClose && (
+        <button type="button" className="part-card__close" onClick={onClose} aria-label={lang === "tr" ? "Kapat" : "Close"}>
+          ×
+        </button>
+      )}
+    </aside>
   );
 }
 
@@ -401,6 +501,9 @@ export function CarViewer() {
   const [nudge, setNudge] = useState(0);
   const [lights, setLights] = useState(1);
   const [backdrop, setBackdrop] = useState<string | null>(DEFAULT_BACKDROP);
+  const [hovered, setHovered] = useState<PartKey | null>(null);
+  const [picked, setPicked] = useState<PartKey | null>(null);
+  const active = hovered ?? picked;
 
   // Object URLs are handed out by the browser and have to be handed back.
   useEffect(() => () => {
@@ -429,8 +532,17 @@ export function CarViewer() {
 
   return (
     <div className="car-studio">
-      <div className="car-studio__stage" onPointerDown={() => setSpinning(false)}>
-        <Canvas shadows dpr={[1, 1.75]} camera={{ position: VIEWS.onCeyrek.at, fov: 40 }} gl={{ antialias: true }}>
+      <div
+        className={`car-studio__stage${hovered ? " is-pointing" : ""}`}
+        onPointerDown={() => setSpinning(false)}
+      >
+        <Canvas
+          shadows
+          dpr={[1, 1.75]}
+          camera={{ position: VIEWS.onCeyrek.at, fov: 40 }}
+          gl={{ antialias: true }}
+          onPointerMissed={() => setPicked(null)}
+        >
           <color attach="background" args={["#06070a"]} />
           <Suspense fallback={null}>
             {/* The environment is built from light panels rather than a drei
@@ -451,6 +563,9 @@ export function CarViewer() {
               spinning={spinning}
               homeKey={nudge}
               glow={lights}
+              active={active}
+              onHover={setHovered}
+              onPick={setPicked}
             />
             <Studio lights={lights} imageUrl={backdrop} />
           </Suspense>
@@ -470,6 +585,10 @@ export function CarViewer() {
         </Canvas>
         <span className="car-studio__hint">{t.vehicle.viewerHint}</span>
       </div>
+
+      {/* Outside the stage so a phone can let it flow below the car; on a
+          wider screen it is placed over the stage's top corner. */}
+      {active && <PartCard part={active} lang={lang} onClose={picked ? () => setPicked(null) : undefined} />}
 
       <div className="car-studio__panel">
         <div className="car-studio__toggles">
