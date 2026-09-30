@@ -1,7 +1,49 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "../lib/gsapSetup";
 
-const PRELOAD_CHUNK = 10;
+/** Frames downloading at once. */
+const PARALLEL = 6;
+
+/** Smaller copies of every set, as <folder>-800 and <folder>-1200 (made by
+ *  cad-assets/make_hero_frame_sizes.py); the folder itself is 1600px. */
+const SMALLER_WIDTHS = [800, 1200];
+
+/**
+ * The smallest frame set that still fills the canvas at this screen's pixel
+ * ratio. The box is the one index.css gives `.hero-assembly canvas`: 58% of
+ * the screen tall at 16:9, no wider than the page or 1360px. A phone needs
+ * about 780px and a 1x laptop about 1000px, where the full set is 1600px.
+ */
+function sizedFolder(folder: string): string {
+  const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
+  const boxWidth = Math.min(window.innerWidth, 1360, (window.innerHeight * 0.58 * 16) / 9);
+  // A tenth under is invisible once drawn; it keeps a 1x laptop off the 1600s.
+  const fit = SMALLER_WIDTHS.find((width) => width >= boxWidth * dpr * 0.9);
+  return fit ? `${folder}-${fit}` : folder;
+}
+
+/**
+ * Every step once, coarse before fine: first every 16th, then the ones
+ * between those, and so on down to every step. Downloading in scroll order
+ * left the far end of the sequence empty for a fast scroll, which stalled on
+ * the last frame that had arrived; this way the whole range is covered early
+ * and only gets smoother, since draw() falls back to the nearest loaded frame.
+ */
+function loadOrder(count: number, first: number): number[] {
+  const order = [first];
+  const seen = new Set(order);
+  const add = (step: number) => {
+    if (!seen.has(step)) {
+      seen.add(step);
+      order.push(step);
+    }
+  };
+  for (const stride of [16, 8, 4, 2, 1]) {
+    for (let step = 0; step < count; step += stride) add(step);
+    add(count - 1);
+  }
+  return order;
+}
 
 /** Pinned scroll distances (px): the bare chassis holds still, the car builds
  *  up, then the revealed elements settle in. */
@@ -41,11 +83,13 @@ export function HeroAssembly({ framesFolder, frameCount, triggerRef, revealRef }
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const frameRef = useRef(0);
   const [ready, setReady] = useState(false);
+  // Picked once per set: switching sizes on a resize would download it again.
+  const folder = useMemo(() => sizedFolder(framesFolder), [framesFolder]);
 
   // Scroll position 0 is the first source frame (the bare chassis), the end of
   // the scroll is the last (the finished, badged car).
   const sourceIndex = (step: number) => step;
-  const framePath = (i: number) => `/frames/${framesFolder}/frame_${String(i + 1).padStart(4, "0")}.webp`;
+  const framePath = (i: number) => `/frames/${folder}/frame_${String(i + 1).padStart(4, "0")}.webp`;
 
   /** Nearest step that actually has a decoded frame, so a stale bundle asking
    *  for frames that no longer exist still paints something sensible. */
@@ -126,22 +170,18 @@ export function HeroAssembly({ framesFolder, frameCount, triggerRef, revealRef }
       setReady(true);
       draw(at);
 
-      for (let start = 0; start < frameCount; start += PRELOAD_CHUNK) {
-        if (cancelled) return;
-        const end = Math.min(start + PRELOAD_CHUNK, frameCount);
-        await Promise.all(
-          Array.from({ length: end - start }, (_, k) => start + k)
-            .filter((step) => !images[step])
-            .map(loadStep),
-        );
-      }
+      const queue = loadOrder(frameCount, first).filter((step) => !images[step]);
+      const worker = async () => {
+        while (!cancelled && queue.length > 0) await loadStep(queue.shift()!);
+      };
+      await Promise.all(Array.from({ length: PARALLEL }, worker));
     }
 
     loadAll();
     return () => {
       cancelled = true;
     };
-  }, [framesFolder, frameCount]);
+  }, [folder, frameCount]);
 
   useLayoutEffect(() => {
     const hero = triggerRef.current;
