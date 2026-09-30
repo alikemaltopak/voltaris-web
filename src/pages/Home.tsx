@@ -6,6 +6,7 @@ import { SectionHeading } from "../components/SectionHeading";
 import { HeroTitle } from "../components/HeroTitle";
 import { Reveal } from "../components/Reveal";
 import { HeroAssembly } from "../components/HeroAssembly";
+import { Announcements } from "../components/Announcements";
 import { gsap } from "../lib/gsapSetup";
 
 /** The car is rendered light-bodied on a dark stage and black-bodied on a
@@ -90,6 +91,8 @@ export function Home() {
           </ul>
         </Reveal>
       </section>
+
+      <Announcements />
 
       <section className="section about">
         <div className="container about__grid about__grid--solo">

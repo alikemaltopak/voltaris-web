@@ -48,6 +48,55 @@ const en: Dictionary = {
       { id: "teknofest", name: "TEKNOFEST", role: "The festival we race at" },
       { id: "tubitak", name: "TÜBİTAK", role: "Organiser of the Efficiency Challenge" },
     ],
+    news: {
+      label: "Announcements",
+      instagramAll: "All posts",
+      featured: {
+        tag: "Recruitment",
+        badge: "New",
+        date: "September 2026",
+        title: "Applications are open.",
+        titleAccent: "Take your seat.",
+        text: "We're looking for teammates to join us this season. Apply to any of our three committees — no prior experience required, just a willingness to learn.",
+        committees: [
+          {
+            name: "Mechanical",
+            units: "Chassis & Roll Cage · Brakes & Steering · Powertrain & Body",
+            note: "We especially need a body designer right now",
+          },
+          {
+            name: "Electrical",
+            units: "Vehicle Control · Embedded Software · Battery & BMS",
+            note: "Print your own boards on our workshop's PCB machine",
+          },
+          {
+            name: "Support",
+            units: "Social Media & Web · Sponsorship · R&D & Documentation",
+            note: "A year of Claude Pro for full-year members",
+          },
+        ],
+        apply: "Apply",
+        instagram: "View on Instagram",
+        carouselLabel: "Recruitment post",
+        prev: "Previous image",
+        next: "Next image",
+        slideAlts: [
+          "Applications are open — Voltaris recruitment cover image",
+          "Mechanical committee: Chassis and Roll Cage, Brakes and Steering, Powertrain and Body",
+          "Electrical committee: Vehicle Control, Embedded Software, Battery and BMS",
+          "Support committee: Social Media and Web, Sponsorship, R&D and Documentation",
+        ],
+      },
+      earlierLabel: "Earlier",
+      earlier: [
+        {
+          tag: "Story",
+          date: "September 2026",
+          title: "New team members wanted",
+          text: "The TEKNOFEST 2027 teaser we shared on our Instagram story before applications opened.",
+        },
+      ],
+    },
     joinTitle: "Want to Join the Team?",
     joinText:
       "If you'd like to bring your skills in engineering, design, technical software, or organization to the team, we'd love to hear from you.",

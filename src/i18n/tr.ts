@@ -45,6 +45,55 @@ const tr = {
       { id: "teknofest", name: "TEKNOFEST", role: "Yarıştığımız festival" },
       { id: "tubitak", name: "TÜBİTAK", role: "EFFICIENCY CHALLENGE düzenleyicisi" },
     ],
+    news: {
+      label: "Duyurular",
+      instagramAll: "Tüm paylaşımlar",
+      featured: {
+        tag: "Başvuru",
+        badge: "Yeni",
+        date: "Eylül 2026",
+        title: "Başvurular açıldı.",
+        titleAccent: "Yerini al.",
+        text: "Yeni dönemde aramıza katılacak takım arkadaşları arıyoruz. Üç komitemizden istediğine başvurabilirsin; ön bilgi şartı yok, öğrenmeye açık olman yeterli.",
+        committees: [
+          {
+            name: "Mekanik",
+            units: "Şasi & Roll Cage · Fren & Direksiyon · Powertrain & Kabuk",
+            note: "Şu an özellikle kabuk tasarımcısı arıyoruz",
+          },
+          {
+            name: "Elektrik",
+            units: "AKS · Gömülü Yazılım · Batarya & BYS",
+            note: "Atölyedeki PCB makinesiyle kendi kartını bas",
+          },
+          {
+            name: "Destek",
+            units: "Sosyal Medya & Web · Sponsorluk · Ar-Ge & Doküman",
+            note: "Yıllık üyelere 1 yıllık Claude Pro",
+          },
+        ],
+        apply: "Başvur",
+        instagram: "Instagram'da gör",
+        carouselLabel: "Başvuru gönderisi",
+        prev: "Önceki görsel",
+        next: "Sonraki görsel",
+        slideAlts: [
+          "Başvurular açıldı, yerini al — Voltaris ekip alımı kapak görseli",
+          "Mekanik komitesi: Şasi ve Roll Cage, Fren ve Direksiyon, Powertrain ve Kabuk",
+          "Elektrik komitesi: AKS, Gömülü Yazılım, Batarya ve BYS",
+          "Destek komitesi: Sosyal Medya ve Web, Sponsorluk, Ar-Ge ve Doküman",
+        ],
+      },
+      earlierLabel: "Önceki duyurular",
+      earlier: [
+        {
+          tag: "Hikâye",
+          date: "Eylül 2026",
+          title: "Yeni takım üyeleri aranıyor",
+          text: "Başvurular açılmadan önce Instagram hikâyemizde paylaştığımız TEKNOFEST 2027 tanıtım videosu.",
+        },
+      ],
+    },
     joinTitle: "Takıma Katılmak İster misin?",
     joinText:
       "Mühendislik, tasarım, teknik yazılım ve organizasyon alanlarında yeteneklerini takıma katmak istiyorsan seni aramızda görmek isteriz.",

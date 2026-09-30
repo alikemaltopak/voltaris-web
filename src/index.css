@@ -2983,3 +2983,434 @@ button.tier-card:focus-visible {
 .form-field__control--other {
   margin-top: 12px;
 }
+
+/* Announcements — the latest post as a card (carousel beside its summary),
+   then older items as a quiet list. The post images keep their own art
+   direction; the frame around them is the site's own lines and mono type. */
+.news__label {
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 40px;
+}
+
+.news__handle {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+/* An account name is not a word to capitalise, and a Turkish uppercase
+   would also turn its i into İ. */
+.news__handle-name {
+  text-transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .news__handle:hover {
+    color: var(--accent);
+  }
+}
+
+.news-post {
+  display: grid;
+  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+
+.news-carousel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  outline: none;
+}
+
+.news-carousel:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.news-carousel__track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  background: #05070a;
+}
+
+.news-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.news-carousel__slide {
+  flex: 0 0 100%;
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.news-carousel__slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.news-carousel__bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 14px 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.news-carousel__count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.news-carousel__count b {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.news-carousel__dots {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+}
+
+.news-carousel__dot {
+  flex: 1;
+  height: 2px;
+  background: var(--border-strong);
+  transition: background 0.35s var(--ease-out);
+}
+
+.news-carousel__dot.is-past {
+  background: var(--accent-dim);
+}
+
+.news-carousel__dot.is-active {
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.news-carousel__arrows {
+  display: flex;
+  gap: 6px;
+}
+
+.news-carousel__arrow {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease,
+    transform 0.14s var(--ease-out);
+}
+
+.news-carousel__arrow:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.news-carousel__arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .news-carousel__arrow:not(:disabled):hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.news-post__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 48px clamp(28px, 4vw, 56px);
+}
+
+.news-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 22px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.news-meta__badge {
+  padding: 4px 8px 3px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 500;
+}
+
+.news-meta__tag {
+  color: var(--accent);
+}
+
+.news-meta__date {
+  color: var(--text-dim);
+}
+
+.news-meta__tag + .news-meta__date::before {
+  content: "/";
+  margin-right: 16px;
+  color: var(--border-strong);
+}
+
+.news-post__title {
+  font-size: clamp(2rem, 4.2vw, 3.1rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin-bottom: 18px;
+}
+
+.news-post__title em {
+  font-style: normal;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+.news-post__text {
+  font-size: 1.02rem;
+  max-width: 520px;
+  margin-bottom: 26px;
+}
+
+.news-committees {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 30px;
+  border-top: 1px solid var(--border);
+}
+
+.news-committee {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  width: 100%;
+  padding: 15px 0 15px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.news-committee::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.news-committee.is-active::before {
+  transform: scaleY(1);
+}
+
+.news-committee__num {
+  padding-left: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6rem;
+  color: var(--text-dim);
+  transition: color 0.2s ease;
+}
+
+.news-committee__main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.news-committee__name {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.6rem;
+  color: var(--text);
+  transition: color 0.2s ease, transform 0.3s var(--ease-out);
+}
+
+.news-committee__units {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.news-committee__note {
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: color 0.2s ease;
+}
+
+.news-committee.is-active .news-committee__num,
+.news-committee.is-active .news-committee__name,
+.news-committee.is-active .news-committee__note {
+  color: var(--accent);
+}
+
+.news-committee:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .news-committee:hover .news-committee__name {
+    transform: translateX(4px);
+  }
+
+  .news-committee:hover .news-committee__num {
+    color: var(--accent);
+  }
+}
+
+.news-post__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.news__earlier {
+  margin-top: 56px;
+}
+
+.news__earlier-label {
+  margin: 0 0 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.news-item {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.news-item + .news-item {
+  border-top: 0;
+}
+
+.news-item__media {
+  border: 1px solid var(--border);
+  background: #05070a;
+}
+
+.news-item__video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+}
+
+.news-item__body .news-meta {
+  margin-bottom: 12px;
+}
+
+.news-item__title {
+  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+  margin-bottom: 10px;
+}
+
+.news-item__text {
+  max-width: 560px;
+  margin-bottom: 14px;
+}
+
+/* Stacked, a full-width 4:5 post would be taller than a tablet screen,
+   so the card narrows to roughly the width the feed shows it at. */
+@media (max-width: 1100px) {
+  .news-post {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .news-carousel {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .news-post__body {
+    padding: 36px 24px 32px;
+  }
+}
+
+@media (max-width: 560px) {
+  .news__label {
+    margin-bottom: 28px;
+  }
+
+  .news__handle-prefix {
+    display: none;
+  }
+
+  /* Bleed the post to the screen edges on a phone, the way the feed it
+     came from shows it; the text below stays on the container's margin. */
+  .news-post {
+    max-width: none;
+    margin: 0 -32px;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .news-post__body {
+    padding: 30px 32px 28px;
+  }
+
+  .news-post__actions .btn {
+    flex: 1 1 0;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .news-item {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+}
