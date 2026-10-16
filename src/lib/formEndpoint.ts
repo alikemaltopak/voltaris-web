@@ -1,6 +1,6 @@
 /**
- * The one Apps Script web app behind every form on the site (applications and
- * the contact form). See apps-script/Kod.gs for what it does with each.
+ * The Apps Script web app behind the site's contact form. See
+ * apps-script/Kod.gs for what it does with a message.
  *
  * Everything here hangs on the request staying a CORS "simple request", which
  * the browser sends without asking first. Apps Script web apps cannot answer
@@ -15,7 +15,7 @@
  *    An upload percentage broke every form on the site this way.
  */
 
-/** A reply the script sent on purpose; `code` says which (e.g. "tekrar_basvuru"). */
+/** A reply the script sent on purpose; `code` says which. */
 export class FormEndpointError extends Error {
   readonly code?: string;
 
@@ -51,9 +51,8 @@ export async function postToFormEndpoint(payload: Record<string, unknown>): Prom
       // script.googleusercontent.com to hand back the result — and that
       // second hop intermittently answers 404. Having landed there means the
       // script already ran and the row is written; every such 404 we tested
-      // had its row in the sheet. Reporting failure here told applicants who
-      // had applied that they hadn't, and the ones who tried again were
-      // entered twice.
+      // had its row in the sheet. Reporting failure here told senders their
+      // message had failed, and the ones who tried again were entered twice.
       if (xhr.responseURL.startsWith(DELIVERY_HOST)) return resolve(DELIVERED);
       reject(new Error(`Sunucu ${xhr.status} döndü.`));
     };
@@ -65,25 +64,6 @@ export async function postToFormEndpoint(payload: Record<string, unknown>): Prom
 
   const result = JSON.parse(raw) as { durum?: string; mesaj?: string; kod?: string };
   if (result.durum !== "ok") throw new FormEndpointError(result.mesaj || "Gönderim kaydedilemedi.", result.kod);
-}
-
-/**
- * Has this email already applied? Asked while the applicant is still filling
- * in the form, so the button can read "update" before they press it. A plain
- * GET is a simple request too. Any failure answers "no": the script still
- * refuses a second application and says so, and the form recovers from that.
- */
-export async function hasApplied(email: string): Promise<boolean> {
-  const endpoint = import.meta.env.VITE_BASVURU_ENDPOINT;
-  const key = import.meta.env.VITE_BASVURU_ANAHTARI;
-  if (!endpoint || !key) return false;
-  try {
-    const url = `${endpoint}?${new URLSearchParams({ eposta: email.trim(), anahtar: key })}`;
-    const result = (await (await fetch(url)).json()) as { durum?: string; mesaj?: string };
-    return result.durum === "ok" && result.mesaj === "var";
-  } catch {
-    return false;
-  }
 }
 
 type ContactMessage = {

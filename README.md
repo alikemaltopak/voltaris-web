@@ -28,7 +28,7 @@ src/
   context/         Dil (TR/EN) context'i
   i18n/            tr.ts / en.ts çeviri sözlükleri
   components/      Navbar, Footer, kart, modal, ElectricField, CarSketchReveal, Reveal
-  pages/           Ana Sayfa, Takım, Araç, Başvurular, Sponsorlar, İletişim
+  pages/           Ana Sayfa, Takım, Araç, Sponsorlar, İletişim
 ```
 
 ## Tasarım dili
@@ -58,19 +58,14 @@ Bu özellikler de kullanıcının paylaştığı referans tasarımdan birebir uy
 Tüm animasyonlar `prefers-reduced-motion: reduce` tercihine saygı gösterir (o modda
 devre dışı kalır / doğrudan son haliyle görünür).
 
-## Başvurular sayfası
+## İletişim formu ve Apps Script
 
-`/basvurular` sayfasında tek bir form var: ortak sorular, ortada komite seçimi
-(Mekanik / Elektrik / Destek) ve seçilen komitenin kendi soruları.
-
-Gönderilen başvurular bir **Google Apps Script** uç noktasına gidiyor; script
-başvuruyu komitesine ait e-tablo sayfasına satır olarak ekliyor, yüklenen CV'yi
-Drive'a kaydedip satıra bağlantısını koyuyor. Kurulum ve işleyiş:
-[`apps-script/KURULUM.md`](apps-script/KURULUM.md).
+Başvurular kapandığı için `/basvurular` sayfası kaldırıldı; eski bağlantılar ana
+sayfaya yönlenir. İletişim formu hâlâ aynı **Google Apps Script** uç noktasına
+gidiyor. Kurulum: [`apps-script/KURULUM.md`](apps-script/KURULUM.md).
 
 Çalışması için iki ortam değişkeni gerekir (`.env.example`'a bak):
-`VITE_BASVURU_ENDPOINT` ve `VITE_BASVURU_ANAHTARI`. Tanımlı değilse form doğrulama
-yapar ama gönderimde hata mesajı gösterir.
+`VITE_BASVURU_ENDPOINT` ve `VITE_BASVURU_ANAHTARI`.
 
 ## İçeriği güncelleme
 

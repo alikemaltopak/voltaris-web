@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from "../data/social";
 import { Reveal } from "./Reveal";
@@ -156,9 +155,6 @@ function PostCarousel() {
         </ol>
 
         <div className="news-post__actions">
-          <Link to="/basvurular" className="btn btn--primary">
-            {copy.apply}
-          </Link>
           <a className="btn btn--ghost" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
             {copy.instagram} ↗
           </a>

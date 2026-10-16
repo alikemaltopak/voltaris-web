@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./context/LanguageContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { Navbar } from "./components/Navbar";
@@ -9,7 +9,6 @@ import { CustomCursor } from "./components/CustomCursor";
 import { Home } from "./pages/Home";
 import { Team } from "./pages/Team";
 import { Vehicle } from "./pages/Vehicle";
-import { Applications } from "./pages/Applications";
 import { Sponsors } from "./pages/Sponsors";
 import { Contact } from "./pages/Contact";
 
@@ -25,7 +24,8 @@ function Layout() {
           <Route path="/" element={<Home />} />
           <Route path="/takim" element={<Team />} />
           <Route path="/arac" element={<Vehicle />} />
-          <Route path="/basvurular" element={<Applications />} />
+          {/* Applications are closed; old links from Instagram land on the home page. */}
+          <Route path="/basvurular" element={<Navigate to="/" replace />} />
           <Route path="/sponsorlar" element={<Sponsors />} />
           <Route path="/iletisim" element={<Contact />} />
         </Routes>

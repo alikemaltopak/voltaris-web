@@ -12,7 +12,6 @@ export function Navbar() {
     { to: "/", label: t.nav.home },
     { to: "/takim", label: t.nav.team },
     { to: "/arac", label: t.nav.vehicle },
-    { to: "/basvurular", label: t.nav.applications },
     { to: "/sponsorlar", label: t.nav.sponsors },
     { to: "/iletisim", label: t.nav.contact },
   ];

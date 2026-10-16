@@ -127,7 +127,7 @@ export function Home() {
         <Reveal className="container join__inner">
           <h2>{t.home.joinTitle}</h2>
           <p>{t.home.joinText}</p>
-          <Link to="/basvurular" className="btn btn--primary">
+          <Link to="/iletisim" className="btn btn--primary">
             {t.home.joinCta}
           </Link>
         </Reveal>

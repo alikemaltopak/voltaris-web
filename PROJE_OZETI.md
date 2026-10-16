@@ -1,12 +1,12 @@
 # Voltaris — İYTE Elektromobil Takımı Web Sitesi
 
 **Klasör:** `~/Desktop/ev-takim-sitesi`
-**Ne:** İzmir Yüksek Teknoloji Enstitüsü Voltaris Elektromobil Takımı için, kaydırma odaklı (scroll-driven) 3D/animasyonlu, TR/EN dil desteğine sahip tanıtım + başvuru sitesi.
+**Ne:** İzmir Yüksek Teknoloji Enstitüsü Voltaris Elektromobil Takımı için, kaydırma odaklı (scroll-driven) 3D/animasyonlu, TR/EN dil desteğine sahip tanıtım sitesi.
 
 ## Teknoloji yığını
 
 - **React 19 + TypeScript + Vite** — proje iskeleti
-- **React Router** — çok sayfalı yapı (Ana Sayfa, Takım, Araç, Başvurular, Sponsorlar, İletişim)
+- **React Router** — çok sayfalı yapı (Ana Sayfa, Takım, Araç, Sponsorlar, İletişim)
 - **GSAP + ScrollTrigger** — kaydırma-tetiklemeli tüm animasyonlar (pin + scrub)
 - **Lenis** — sitenin tamamında yumuşak (inertia'lı) kaydırma
 - **three.js + @react-three/fiber + @react-three/drei** — ana sayfadaki eski canlı 3D şasi görüntüleyicisi için (şu an kullanılmıyor ama kod duruyor, bkz. aşağı)
@@ -18,7 +18,6 @@
 | Ana Sayfa | `/` | Hero (VOLTARIS başlığı), montaj animasyonu, "Biz Kimiz", araç/sponsor teaser kartları, katılım çağrısı |
 | Takım | `/takim` | Departmanlar, üye kartları (placeholder) |
 | Araç | `/arac` | Kaydırdıkça çizilen 2D eskiz, teknik özellik tablosu, geliştirme süreci, galeri (placeholder) |
-| Başvurular | `/basvurular` | 3 komite kartı (Mekanik/Elektrik/Destek), her biri kendi başvuru penceresi (modal form) açıyor |
 | Sponsorlar | `/sponsorlar` | Sponsorluk paketleri, mevcut sponsor logoları (placeholder) |
 | İletişim | `/iletisim` | İletişim formu (demo, sunucuya veri göndermiyor) |
 
