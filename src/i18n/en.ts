@@ -366,6 +366,7 @@ const en: Dictionary = {
     rights: "All rights reserved.",
     follow: "Follow us",
     write: "Write to us",
+    panel: "Member sign-in",
   },
 };
 

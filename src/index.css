@@ -2422,6 +2422,28 @@ button.tier-card:focus-visible {
   margin: 32px auto 0;
   padding: 18px 32px 0;
   border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.footer__panel {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer__panel:focus-visible {
+  color: var(--text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .footer__panel:hover {
+    color: var(--text);
+  }
 }
 
 .footer__base p {
@@ -2447,6 +2469,7 @@ button.tier-card:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .footer-link,
+  .footer__panel,
   .footer-link__arrow {
     transition: none;
   }

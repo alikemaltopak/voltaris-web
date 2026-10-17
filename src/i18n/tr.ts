@@ -370,6 +370,7 @@ const tr = {
     rights: "Tüm hakları saklıdır.",
     follow: "Bizi takip et",
     write: "Bize yaz",
+    panel: "Üye girişi",
   },
 };
 

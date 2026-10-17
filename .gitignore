@@ -36,3 +36,10 @@ __pycache__/
 # Ortam değişkenleri
 .env
 .env.local
+
+# Takım paneli: takım arşivinin indeksi ve Claude'daki kayıtların dökümü gizli kalmalı
+# (depo herkese açık). İkisi de Firestore'a paneldeki yönetici ekranından yüklenir.
+panel/kaynak/*
+!panel/kaynak/OKU.md
+indeks.json
+data-export/

@@ -63,6 +63,10 @@ export function Footer() {
         <p>
           © {year} Voltaris. {t.footer.rights}
         </p>
+        {/* a plain link: the panel is its own page outside the React router */}
+        <a className="footer__panel" href="/panel/">
+          {t.footer.panel}
+        </a>
       </div>
     </footer>
   );

@@ -1,0 +1,1806 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Voltaris Hayalet Araç</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a plain workshop board. One header, five flat tabs. The Araç tab is the work surface:
+   3D viewport + item list on the left, the open item's guided steps on the right.
+   Orange = real/hazır (the colour of the technical-control stickers), slate blue = ghost/to do. */
+:root{
+  --bg:#F3F4F6; --surface:#FFFFFF; --sunk:#F7F8FA; --line:#DDE1E7; --line-2:#ECEEF2;
+  --ink:#1A202B; --ink-2:#4B5565; --ink-3:#7A8494;
+  --accent:#1E5BB8; --accent-soft:#E7EEF9; --on-accent:#FFFFFF; --link:#1A62D6;
+  --real:#DD6421; --real-soft:#FCEBDD; --holo:#5D7AA6; --lock:#AEB6C2;
+  --ok:#2C8452; --ok-soft:#E3F2E9; --bad:#C23E2C; --bad-soft:#FBE8E5; --warn:#A86A12; --warn-soft:#FBF0DC;
+  --mile:#C23E2C; --stage:#12161D; --stage-ink:#D9E0EA;
+  --m:#8A5A12; --e:#1E5BB8; --o:#6A4CA8;
+  --f-body:'IBM Plex Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --f-disp:var(--f-body);
+  --f-mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#13161B; --surface:#1A1E25; --sunk:#161A20; --line:#2B313B; --line-2:#232831;
+  --ink:#E6E9EF; --ink-2:#AAB2BF; --ink-3:#7E8897;
+  --accent:#6FA0EC; --accent-soft:#1D2A3E; --on-accent:#0D1726; --link:#7FB2FF;
+  --real:#F08443; --real-soft:#3A2618; --holo:#8AA3CC; --lock:#4D5664;
+  --ok:#5CC08A; --ok-soft:#183324; --bad:#F07A68; --bad-soft:#3A1E1A; --warn:#E0A84A; --warn-soft:#352A15;
+  --mile:#F07A68; --stage:#0E1116; --stage-ink:#D9E0EA;
+  --m:#E0B46A; --e:#7FAEF0; --o:#B79CEB; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#13161B; --surface:#1A1E25; --sunk:#161A20; --line:#2B313B; --line-2:#232831;
+  --ink:#E6E9EF; --ink-2:#AAB2BF; --ink-3:#7E8897;
+  --accent:#6FA0EC; --accent-soft:#1D2A3E; --on-accent:#0D1726; --link:#7FB2FF;
+  --real:#F08443; --real-soft:#3A2618; --holo:#8AA3CC; --lock:#4D5664;
+  --ok:#5CC08A; --ok-soft:#183324; --bad:#F07A68; --bad-soft:#3A1E1A; --warn:#E0A84A; --warn-soft:#352A15;
+  --mile:#F07A68; --stage:#0E1116; --stage-ink:#D9E0EA;
+  --m:#E0B46A; --e:#7FAEF0; --o:#B79CEB; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:14.5px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:14px 32px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--link)}
+.rfoto{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.rfoto .sub-h small{font-weight:400;color:var(--ink-3);font-size:12px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.gal-it{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:0;overflow:hidden;cursor:zoom-in;text-align:left;display:flex;flex-direction:column;color:var(--ink)}
+.gal-it:hover{border-color:var(--link)}
+.gal-it .im{aspect-ratio:1;background:var(--sunk);display:block}
+.gal-it img{width:100%;height:100%;object-fit:cover;display:block}
+.gal-it small{font-size:11.5px;color:var(--ink-2);padding:5px 7px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+h1,h2,h3{text-wrap:balance}
+.wrap{max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px}
+.brand h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.brand h1 span{color:var(--ink-3);font-weight:500}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.real-pct{font-size:13.5px;color:var(--ink-2)}
+.real-pct b{color:var(--real);font-size:16px;font-variant-numeric:tabular-nums}
+.real-pct i{font-style:normal}
+.me{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.me img{width:26px;height:26px;border-radius:50%}
+.sel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-height:36px;color:var(--ink);max-width:100%}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 12px;color:var(--ink);font-size:13.5px;cursor:pointer;min-height:36px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.small{min-height:30px;padding:3px 10px;font-size:12.5px}
+.btn.added,.btn.added:disabled{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600;opacity:1;cursor:default}
+.btn.added svg{width:12px;height:12px}
+.mref{font-family:var(--f-mono);font-size:11px;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:6px;cursor:pointer;min-height:22px;vertical-align:1px}
+.mref:hover{border-color:var(--accent)}
+.rbtn.later{border:1.5px dashed var(--holo);color:var(--holo)}
+.rdet summary .mono{margin-left:auto}
+.rfields{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:8px 12px;margin:6px 0 4px}
+.rfl{display:flex;flex-direction:column;gap:3px;font-size:13px;min-width:0;border-left:2px solid transparent;padding-left:6px}
+.rfl.is-ok{border-left-color:var(--ok)}
+.rfl.wide{grid-column:1/-1}
+.rfl textarea.inp{min-height:70px}
+.rfrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.rfrow .inp{width:100%;min-width:0}
+.rfrow .rsrc{width:124px;font-size:12.5px}
+.prov{font-size:11.5px;color:var(--ink-3)}
+.prov .btn.link{font-size:11.5px;min-height:0;padding:0}
+.okv{color:var(--ok);font-weight:600;display:inline-flex;align-items:center;gap:3px}
+.okv svg{width:11px;height:11px}
+.rgrp{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--ink-2);margin-top:6px;border-bottom:1px solid var(--line-2);padding-bottom:2px}
+.secv{white-space:pre-wrap;font-size:13px}
+.rfl small{color:var(--ink-3);font-size:11.5px;margin-left:5px}
+.rfl .inp{flex:0 0 auto;width:100%}
+.rt{border-top:1px solid var(--line-2);padding-top:12px;margin-top:12px}
+.rt h3{font-size:15px}
+.rtbl{min-width:620px;table-layout:fixed}
+.rtbl{min-width:900px} .rtbl th:nth-child(1){width:24%} .rtbl th:nth-child(2){width:14%} .rtbl th:nth-child(3){width:20%} .rtbl th:nth-child(4){width:10%} .rtbl th:nth-child(5){width:11%} .rtbl th:nth-child(6){width:11%} .rtbl th:nth-child(7){width:10%}
+.miss{color:var(--ink-3);font-style:italic}
+.rlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.rflow{display:flex;flex-direction:column;gap:8px}
+.rinfo{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.rinfo>b{font-size:12px;color:var(--ink-3);display:block;margin-bottom:2px;font-weight:600}
+.req.is-next .rtext{font-weight:600}
+details.howto-d summary{font-weight:600;color:var(--ink)}
+.now>.inp,.rflow>.inp,.sect>.inp,.ask>.inp{flex:0 0 auto}
+.photos{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ph-it{position:relative;display:inline-flex}
+.ph-img{width:72px;height:72px;border:1px solid var(--line);border-radius:8px;padding:0;overflow:hidden;cursor:zoom-in;background:var(--sunk)}
+.ph-img img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-it .xbtn{position:absolute;top:-8px;right:-8px;width:22px;height:22px;min-height:0;border-radius:50%;background:var(--surface);border:1px solid var(--line);font-size:14px;line-height:1;padding:0}
+.ph-add{cursor:pointer}
+.ph-add.is-busy{opacity:.7;cursor:progress}
+.btn.link{border:0;background:none;padding:0 2px;min-height:28px;color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.count{background:var(--bad);color:#fff;border-radius:10px;font-size:11px;font-weight:700;padding:0 6px;min-width:18px;text-align:center}
+
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px 9px;font-weight:600;font-size:14px;color:var(--ink-3);cursor:pointer;min-height:44px;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.notice{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:9px 14px;font-size:13.5px;color:var(--ink-2)}
+.notice.warn{border-color:var(--warn);background:var(--warn-soft);color:var(--ink)}
+.guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:10px 18px;align-items:start;background:var(--accent-soft);border-radius:var(--r);padding:12px 16px}
+.guide div{font-size:13.5px;color:var(--ink);display:flex;gap:9px}
+.guide b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+@media (max-width:820px){.guide{grid-template-columns:minmax(0,1fr)}}
+
+.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.view{display:flex;flex-direction:column;gap:14px}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px;margin-bottom:10px}
+.head h2,.head h3{margin:0;font-size:16px;font-weight:600}
+.eyebrow{font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.note,.head .note{font-size:12.5px;color:var(--ink-3)}
+.hscroll{overflow-x:auto;padding-bottom:2px}
+.bar{height:4px;border-radius:2px;background:var(--line-2);overflow:hidden}
+.bar>span{display:block;height:100%;border-radius:2px;transition:width .5s ease}
+.msg{font-size:13px;color:var(--ink-2)}
+.msg.err{color:var(--bad)}
+.when{font-size:12px;color:var(--ink-3)}
+.empty{font-size:13px;color:var(--ink-3);padding:6px 0}
+.mono{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.help{margin:0;font-size:13px;color:var(--ink-2);line-height:1.5;max-width:68ch}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.inp{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-height:36px;color:var(--ink);flex:1 1 140px;min-width:0}
+textarea.inp{min-height:64px;resize:vertical;width:100%}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:20px;padding:2px 9px;white-space:nowrap;border:1px solid transparent}
+.pill i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.st-done{background:var(--real-soft);color:var(--real)} .st-part{background:var(--real-soft);color:var(--real)}
+.st-holo{background:var(--accent-soft);color:var(--holo)} .st-lock{background:var(--line-2);color:var(--ink-3)}
+.btag{font-size:11.5px;font-weight:600;white-space:nowrap}
+.b-M{color:var(--m)} .b-E{color:var(--e)} .b-O{color:var(--o)}
+
+/* araç tab */
+.arac{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-areas:"stage card" "list card";gap:14px;align-items:start}
+.arac>.stage-wrap{grid-area:stage;min-width:0} .arac>.card{grid-area:card;min-width:0} .arac>.list{grid-area:list;min-width:0}
+@media (max-width:1000px){.arac{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "card" "list"}}
+.stage-wrap{display:flex;flex-direction:column;gap:8px}
+.stage{position:relative;overflow:hidden;height:min(52vh,460px);min-height:300px;border-radius:var(--r);background:var(--stage)}
+.stage canvas{display:block;position:relative;z-index:1;width:100%;height:100%;cursor:grab;touch-action:none}
+.stage canvas.pointing{cursor:pointer}
+.stage-bg{position:absolute;inset:0;background:var(--stage);pointer-events:none}
+.stage-hud{position:absolute;inset:0;z-index:2;pointer-events:none;padding:10px}
+.views{display:flex;flex-wrap:wrap;gap:4px;pointer-events:auto}
+.views button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:4px 9px;font-size:12px;color:var(--stage-ink);cursor:pointer;min-height:30px}
+.views button[aria-pressed="true"]{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.4)}
+.loading{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;color:var(--stage-ink);font-size:13px;pointer-events:none}
+.tip{position:absolute;z-index:3;pointer-events:none;background:rgba(10,12,16,.92);color:#fff;border-radius:6px;padding:4px 8px;font-size:12px;white-space:nowrap;transform:translate(-50%,-130%)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:16px;height:10px;border-radius:3px;flex:none;display:inline-block}
+.sw-real{background:var(--real)} .sw-part{background:var(--real-soft);border:1.5px solid var(--real)}
+.sw-holo{border:1.5px dashed var(--holo)} .sw-lock{border:1.5px dashed var(--lock)}
+
+/* item card */
+.card{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.switch{display:flex;gap:6px;align-items:center}
+.switch select{flex:1;min-width:0}
+.switch .btn{min-width:38px;justify-content:center;font-size:16px}
+.card h2{margin:0;font-size:24px;font-weight:700;line-height:1.15;letter-spacing:-.01em}
+.card-top{display:flex;flex-direction:column;gap:8px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px;color:var(--ink-2)}
+.owner{display:inline-flex;align-items:center;gap:6px}
+.owner img{width:20px;height:20px;border-radius:50%}
+.prog{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-3)}
+.prog .bar{flex:1;height:6px}
+.now{border:1.5px solid var(--accent);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px}
+.now h3{margin:0;font-size:16px;font-weight:600}
+.now .lead{margin:0;font-size:13px;color:var(--ink-2)}
+.done-steps{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
+.done-steps li{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);padding:4px 0}
+.done-steps li .tick{width:18px;height:18px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.done-steps li .tick svg{width:11px;height:11px}
+.done-steps li span{flex:1;min-width:0}
+.later{font-size:12.5px;color:var(--ink-3);margin:0}
+.q{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+.q>span{font-size:14px;flex:1 1 200px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none;background:var(--surface)}
+.seg button{background:none;border:0;border-left:1px solid var(--line);padding:5px 12px;font-size:13px;cursor:pointer;min-height:36px;color:var(--ink-2)}
+.seg button:first-child{border-left:0}
+.seg button:hover{background:var(--sunk)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.seg button.yes[aria-pressed="true"]{background:var(--ok);color:#fff}
+.seg button.no[aria-pressed="true"]{background:var(--bad);color:#fff}
+.seg button:disabled{cursor:not-allowed;opacity:.6}
+.found{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.found li{display:flex;align-items:center;gap:8px;font-size:13px;background:var(--sunk);border-radius:6px;padding:5px 8px;min-width:0}
+.found li a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xbtn{background:none;border:0;color:var(--ink-3);cursor:pointer;font-size:16px;padding:0 4px;min-height:28px}
+.stages{display:flex;flex-wrap:wrap;gap:6px}
+.stages button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;min-height:36px;color:var(--ink-2)}
+.stages button.past{color:var(--ink);border-color:var(--real)}
+.stages button[aria-pressed="true"]{background:var(--real);border-color:var(--real);color:#fff;font-weight:600}
+.stages button:disabled{opacity:.55;cursor:not-allowed}
+.sect{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line-2);padding-top:12px}
+.sect>h3{margin:0;font-size:15px;font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.reqs{list-style:none;margin:0;padding:0}
+.req{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-2)}
+.req:last-child{border-bottom:0}
+.rbtn{width:24px;height:24px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface);padding:0;border:1.5px solid var(--lock);margin-top:1px}
+.rbtn.ok{background:var(--ok);border-color:var(--ok)}
+.rbtn.bad{background:var(--bad-soft);border-color:var(--bad)}
+.rbtn svg{width:13px;height:13px}
+.rbtn:disabled{cursor:not-allowed;opacity:.6}
+.rtext{background:none;border:0;padding:0;text-align:left;cursor:pointer;flex:1;min-width:0;font-size:14px;line-height:1.4;color:var(--ink)}
+.rtext small{display:block;color:var(--ink-3);font-size:12px;margin-top:1px}
+.rtext .more{color:var(--accent)}
+.kind{font-size:11px;font-weight:600;border-radius:4px;padding:1px 6px;flex:none;margin-top:2px}
+.k-A{color:var(--accent);background:var(--accent-soft)} .k-R{color:var(--warn);background:var(--warn-soft)}
+.rhint{margin:0 0 8px 34px;background:var(--sunk);border-radius:8px;padding:10px 12px;font-size:13.5px;line-height:1.55;color:var(--ink);list-style:none}
+.rhint>b{font-size:12px;color:var(--ink-3);display:block;margin-bottom:2px;font-weight:600}
+@media (max-width:520px){.rhint{margin-left:0}}
+
+.howto{background:var(--sunk);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.howto p{margin:0;color:var(--ink-2)}
+.howto b{color:var(--ink);font-weight:600}
+.howto ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;color:var(--ink)}
+.howto li::marker{color:var(--ink-3);font-variant-numeric:tabular-nums}
+.q>span small{display:block;font-size:12px;color:var(--ink-3);margin-top:1px}
+.jobs{display:flex;flex-direction:column;gap:6px}
+.job{display:flex;align-items:flex-start;gap:9px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--ink);font-size:14px;line-height:1.35}
+.job i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--lock);flex:none;margin-top:2px}
+.job[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.job[aria-pressed="true"] i{border:5px solid var(--accent)}
+.job:disabled{cursor:not-allowed;opacity:.6}
+.ask{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.ask ul{margin:0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:2px}
+.ask details summary{cursor:pointer;font-size:12.5px;color:var(--accent)}
+.ask pre{white-space:pre-wrap;font-family:var(--f-body);font-size:12.5px;background:var(--sunk);border-radius:6px;padding:8px 10px;margin:6px 0 0;max-height:260px;overflow:auto}
+.kw{font-size:12.5px;border:1px solid var(--line);border-radius:14px;padding:2px 10px;background:var(--surface);cursor:pointer;color:var(--ink-2);min-height:28px}
+.kw:hover{border-color:var(--accent);color:var(--accent)}
+.sub-h{font-size:13px;font-weight:600;color:var(--ink-2);margin:4px 0 0}
+
+/* şartname quotes, figures */
+.srcbtn{font-family:var(--f-mono);font-size:11.5px;color:var(--accent);background:none;border:1px solid var(--line);border-radius:5px;padding:1px 6px;cursor:pointer;flex:none;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:24px;margin-top:1px}
+.srcbtn:hover{border-color:var(--accent)}
+.srcbtn.warn{color:var(--bad);border-color:var(--bad)}
+@media (max-width:520px){.req>.srcbtn,.req>.kind{display:none}}
+.quote{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.qblk{border-left:3px solid var(--line);background:var(--surface);padding:8px 11px;border-radius:0 8px 8px 0;font-size:13.5px;color:var(--ink);line-height:1.55}
+.qblk.warn{border-left-color:var(--bad);background:var(--bad-soft)}
+.qhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;margin-bottom:4px}
+.qhead b{font-size:12px;font-weight:600;color:var(--ink-3)}
+.qblk p{margin:0 0 4px}
+.qblk .more{color:var(--ink-3);font-size:12px}
+.pen{font-family:var(--f-mono);font-size:12px;white-space:nowrap;flex:none}
+.qblk .pen{white-space:normal}
+.pen-dq{color:var(--bad)} .pen-s{color:var(--warn)}
+details.cz{border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+details.cz summary{cursor:pointer;font-size:13.5px;color:var(--ink-2);min-height:30px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+details.cz summary b{color:var(--bad);font-weight:600}
+.cezas{list-style:none;margin:6px 0 2px;padding:0;display:flex;flex-direction:column;gap:4px}
+.cezas li{display:flex;gap:10px;align-items:baseline;font-size:13px;border-top:1px solid var(--line-2);padding-top:5px}
+.cezas li span{flex:1;min-width:0}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.thumb{display:flex;flex-direction:column;gap:4px;background:none;border:1px solid var(--line);border-radius:8px;padding:6px;cursor:pointer;text-align:left;color:var(--ink);min-width:0}
+.thumb:hover{border-color:var(--accent)}
+.thumb span.im{display:flex;align-items:center;justify-content:center;height:92px;background:#fff;border-radius:5px;overflow:hidden}
+.thumb img{max-width:100%;max-height:92px;object-fit:contain;display:block}
+.thumb small{font-size:11.5px;line-height:1.3;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+figure.sfig{margin:6px 0 14px;display:flex;flex-direction:column;gap:6px;max-width:760px}
+figure.sfig button{border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px;cursor:zoom-in;display:block}
+figure.sfig img{display:block;max-width:100%;height:auto;margin:0 auto}
+figure.sfig figcaption{font-size:13px;color:var(--ink-2)}
+.qblk figure.sfig{max-width:420px;margin:6px 0 4px}
+dialog.lb{border:0;border-radius:12px;padding:0;max-width:min(960px,94vw);width:100%;background:var(--surface);color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.35)}
+dialog.lb::backdrop{background:rgba(12,15,20,.6)}
+.lb-in{display:flex;flex-direction:column;gap:10px;padding:14px}
+.lb-img{background:#fff;border-radius:8px;padding:10px;overflow:auto;max-height:70vh;display:flex;justify-content:center}
+.lb-img img{max-width:100%;height:auto;display:block}
+.lb-in h3{margin:0;font-size:16px}
+.lb-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+
+/* teknik kontrol plate */
+.plate{padding:18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:center}
+@media (max-width:900px){.plate{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.plate{padding:12px 8px}.plate-side{padding:0 8px}.plate-face{padding:6.5%}}
+.plate-face{position:relative;width:min(100%,480px);aspect-ratio:1;justify-self:center;border-radius:50%;background:#1C2B52;padding:7.5%;container-type:inline-size}
+.plate-ring{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.plate-in{position:relative;width:100%;height:100%;border-radius:50%;background:#FBFBFC;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5cqw;padding-top:4cqw}
+.trow{display:flex;justify-content:center;gap:1.6cqw}
+.tile{width:13.6cqw;aspect-ratio:.88;border-radius:1.4cqw;border:.45cqw dashed #EBA27A;background:#fff;color:#D9733D;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5cqw;padding:.8cqw .1cqw;cursor:pointer;font-weight:700;font-size:clamp(5px,1.75cqw,9.5px);line-height:1.05;text-transform:uppercase;text-align:center;letter-spacing:-.035em;overflow:hidden;overflow-wrap:anywhere}
+.tile svg{width:5.6cqw;height:5.6cqw;flex:none}
+.tile.part{background:#FDE6D5;border-style:solid}
+.tile.done{background:#F26B2A;border:.45cqw solid #DA5418;color:#fff}
+.tile[aria-pressed="true"]{outline:.55cqw solid #1C2B52;outline-offset:.35cqw}
+.green{margin-top:1.6cqw;width:48cqw;display:flex;align-items:center;justify-content:center;gap:1.8cqw;padding:1.5cqw 2.2cqw;border-radius:1.4cqw;border:.45cqw dashed #7CC59A;color:#3C9A5C;background:#fff;font-weight:700;font-size:clamp(6.5px,2.1cqw,11.5px);text-transform:uppercase;line-height:1.1;text-align:center}
+.green svg{width:6cqw;height:6cqw;flex:none}
+.green.on{background:#34B45F;border:.45cqw solid #26964C;color:#fff}
+.green small{display:block;font-size:.85em;opacity:.85}
+.plate-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.plate-side h3{margin:0;font-size:20px;font-weight:700}
+.srcs{display:flex;flex-wrap:wrap;gap:5px}
+.linkrow{display:flex;align-items:center;gap:10px;padding:6px 4px;border:0;background:none;width:100%;text-align:left;cursor:pointer;border-radius:6px;min-height:36px;color:var(--ink)}
+.linkrow:hover{background:var(--sunk)}
+.linkrow .bar{flex:1;min-width:40px}
+.linkrow b{font-weight:500;font-size:13.5px;width:170px;flex:none}
+.linkrow em{font-style:normal;font-size:12px;color:var(--ink-3);width:76px;text-align:right;flex:none}
+@media (max-width:520px){.linkrow b{width:auto;flex:1}.linkrow .bar{display:none}}
+
+/* item list */
+.list{padding:14px 16px}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:3px 12px;font-size:13px;cursor:pointer;color:var(--ink-2);min-height:32px}
+.fchip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:600}
+.tbl{width:100%;border-collapse:collapse;min-width:520px}
+.tbl th{font-weight:600;font-size:12px;color:var(--ink-3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:8px;border-bottom:1px solid var(--line-2);font-size:13.5px;vertical-align:middle}
+.tbl tr{cursor:pointer}
+.tbl tr.sel td{background:var(--accent-soft)}
+.tbl tr:hover td{background:var(--sunk)}
+.tbl tr.sel:hover td{background:var(--accent-soft)}
+.namebtn{background:none;border:0;padding:0;cursor:pointer;font-weight:600;font-size:14px;text-align:left;color:var(--ink)}
+.tbl small{display:block;color:var(--ink-3);font-size:12px;font-weight:400}
+@media (max-width:600px){.tbl{min-width:0}.tbl th:nth-child(n+3),.tbl td:nth-child(n+3){display:none}}
+
+/* takvim */
+.levels,.tl,.units,.feed{padding:14px 18px}
+.lv-row{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:12px;min-width:1050px}
+.lv{display:flex;flex-direction:column;gap:4px}
+.lv-top{display:flex;align-items:center;gap:8px}
+.node{width:28px;height:28px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.n-on{background:var(--accent);color:var(--on-accent)} .n-ok{background:var(--real);color:#fff} .n-off{border:1.5px dashed var(--lock);color:var(--ink-3)}
+.lv-line{flex:1;height:1px;background:var(--line)}
+.lv h3{margin:0;font-size:14px;font-weight:600;line-height:1.25}
+.lv .need{font-size:12px;color:var(--ink-3);line-height:1.35}
+.tl-grid{position:relative;min-width:1180px}
+.tl-months,.tl-miles,.tl-lane{display:grid;grid-template-columns:150px minmax(0,1fr)}
+.tl-mrow{position:relative;height:22px;border-bottom:1px solid var(--line)}
+.tl-m{position:absolute;top:0;font-family:var(--f-mono);font-size:11px;color:var(--ink-3);padding-left:5px;border-left:1px solid var(--line);height:100%}
+.tl-mlrow{position:relative;height:64px}
+.mile{position:absolute;bottom:2px;transform:translateX(-6px);display:flex;align-items:flex-end;gap:5px;background:none;border:0;padding:0;cursor:pointer;color:var(--ink);text-align:left}
+.mile i{width:10px;height:10px;flex:none;transform:rotate(45deg);background:var(--mile);margin-bottom:2px}
+.mile span{font-size:11.5px;line-height:1.15;white-space:nowrap;color:var(--ink-2)}
+.mile.t1{bottom:22px} .mile.t2{bottom:42px}
+.tl-lane{border-top:1px solid var(--line-2)}
+.tl-lname{position:sticky;left:0;z-index:2;background:var(--surface);padding:8px 10px 8px 0;font-weight:600;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.tl-lname small{font-weight:400;font-size:11.5px;color:var(--ink-3)}
+.tl-track{position:relative}
+.tl-vline{position:absolute;top:0;bottom:0;width:1px;background:var(--line-2);pointer-events:none}
+.tl-mline{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--mile);opacity:.35;pointer-events:none}
+.tl-today{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);pointer-events:none;z-index:1}
+.tl-bar{position:absolute;height:26px;border-radius:6px;border:1.5px dashed var(--holo);background:var(--surface);overflow:hidden;cursor:pointer;padding:0;text-align:left;display:flex;align-items:center;min-width:8px;color:var(--ink)}
+.tl-bar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--real-soft)}
+.tl-bar .lbl{position:relative;padding:0 7px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.tl-bar.part{border-style:solid;border-color:var(--real)}
+.tl-bar.done{border:1.5px solid var(--real);background:var(--real)} .tl-bar.done .lbl{color:#fff;font-weight:600}
+.tl-bar.cal{border:1.5px solid var(--line);background:var(--sunk)}
+.tl-bar.pend{border:1.5px dashed var(--line);background:var(--sunk)} .tl-bar.pend .lbl{color:var(--ink-3)}
+.tl-bar.mine{box-shadow:inset 0 0 0 1px var(--accent)}
+.tl-bar[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.tl-detail{margin-top:12px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;background:var(--sunk);border-radius:var(--r);padding:12px 14px}
+@media (max-width:760px){.tl-detail{grid-template-columns:minmax(0,1fr)}}
+.tl-detail h3{margin:0 0 4px;font-size:17px}
+.tl-detail p{margin:4px 0 0;font-size:13.5px;color:var(--ink-2);max-width:65ch}
+.tl-detail .dates{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+
+/* birimler */
+.lower{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:1000px){.lower{grid-template-columns:minmax(0,1fr)}}
+.unit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.unit-grid{grid-template-columns:minmax(0,1fr)}}
+.unit{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.unit.mine{border-color:var(--accent)}
+.unit h3{margin:0;font-size:15px;display:flex;justify-content:space-between;gap:8px}
+.unit h3 em{font-style:normal;font-family:var(--f-mono);font-size:13px;color:var(--real)}
+.unit .bar{height:6px}
+.phases{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;text-align:center}
+.phases div{background:var(--sunk);border-radius:6px;padding:5px 2px}
+.phases b{display:block;font-size:17px}
+.phases small{font-size:11px;color:var(--ink-3)}
+.unit .lab{font-size:12px;font-weight:600;color:var(--ink-3)}
+.unit ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.unit li{font-size:13px;line-height:1.35}
+.unit li button{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-align:left;font:inherit}
+.unit li span{color:var(--ink-3)}
+.unit .last{font-size:12px;color:var(--ink-3)}
+.feed ol{list-style:none;margin:0;padding:0}
+.feed li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-2);font-size:13.5px;align-items:flex-start}
+.feed li:last-child{border-bottom:0}
+.feed img{width:26px;height:26px;border-radius:50%;flex:none}
+
+/* şartname tab */
+.sart-bar{padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.sart-bar .inp{flex:1 1 260px;max-width:520px}
+.ver{font-size:12.5px;color:var(--ink-3)}
+.sart{display:grid;grid-template-columns:minmax(220px,290px) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:860px){.sart{grid-template-columns:minmax(0,1fr)}}
+.toc{padding:10px 8px;display:flex;flex-direction:column;gap:6px}
+@media (min-width:861px){.toc{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
+@media (max-width:860px){.toc .secs{max-height:240px;overflow:auto}}
+.docs{display:flex;flex-wrap:wrap;gap:4px;padding:0 4px 8px;border-bottom:1px solid var(--line-2)}
+.docs .fchip{padding:2px 9px;font-size:12.5px;min-height:30px}
+.secs button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:5px 8px;font-size:13px;color:var(--ink-2);cursor:pointer;line-height:1.3}
+.secs button:hover{background:var(--sunk)}
+.secs button[aria-current="true"]{background:var(--accent-soft);color:var(--ink)}
+.secs .d1{font-weight:600;color:var(--ink);margin-top:3px}
+.secs .d2{padding-left:16px} .secs .d3,.secs .d4{padding-left:28px;font-size:12.5px}
+.secs i{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--ink-3);margin-right:6px}
+.reader{padding:16px 20px 18px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.reader h2{margin:0;font-size:22px;line-height:1.2}
+.rmeta{font-size:12.5px;color:var(--ink-3)}
+.rule p{margin:0 0 8px;font-size:15px;line-height:1.6;max-width:76ch}
+.rule p.sub{padding-left:18px}
+.rule p.hit{background:var(--real-soft);box-shadow:inset 3px 0 0 var(--real);padding:4px 8px;border-radius:0 6px 6px 0}
+.rule p.found{box-shadow:inset 3px 0 0 var(--accent);background:var(--accent-soft);padding:4px 8px}
+.rule mark,.res mark{background:var(--accent-soft);color:inherit;border-radius:2px;padding:0 1px;box-shadow:inset 0 -2px 0 var(--accent)}
+.tw{overflow-x:auto;margin:4px 0 12px}
+.rule table,.ctbl{border-collapse:collapse;font-size:13px;width:100%}
+.rule table{min-width:520px}
+.rule td{border:1px solid var(--line);padding:4px 7px;vertical-align:top}
+.rule tr:first-child td{font-weight:600;background:var(--sunk)}
+.ctbl{min-width:760px}
+.ctbl th{font-weight:600;font-size:12px;color:var(--ink-3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.ctbl td{padding:7px 8px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.ctbl td.g{font-size:11.5px;font-weight:600;color:var(--ink-3)}
+.results{display:flex;flex-direction:column;gap:6px}
+.res{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 11px;text-align:left;cursor:pointer;color:var(--ink);font-size:13.5px;line-height:1.45}
+.res:hover{border-color:var(--accent)}
+.res b{font-weight:600}
+.res small{display:block;color:var(--ink-2);margin-top:2px}
+.ozet{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+@media (max-width:900px){.ozet{grid-template-columns:minmax(0,1fr)}}
+.oz{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;display:flex;flex-direction:column;gap:6px}
+.oz b.big{font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.oz p{margin:0;font-size:13px;color:var(--ink-2)}
+.backrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.gal h3{margin:8px 0 6px;font-size:14px;color:var(--ink-2);font-weight:600}
+
+/* chat drawer */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);z-index:20;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px);box-shadow:-12px 0 40px rgba(0,0,0,.18)}
+.dr-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.dr-head h2{margin:0;font-size:17px}
+.chans{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line);overflow-x:auto}
+.chan{background:none;border:1px solid var(--line);border-radius:14px;padding:3px 10px;font-size:13px;white-space:nowrap;cursor:pointer;color:var(--ink-2);display:inline-flex;gap:6px;align-items:center;min-height:32px}
+.chan[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.msgs{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+.m{display:flex;gap:9px;align-items:flex-start}
+.m img{width:28px;height:28px;border-radius:50%;flex:none}
+.m-body{min-width:0;flex:1}
+.m-meta{font-size:12px;color:var(--ink-3)}
+.m-meta b{color:var(--ink);font-weight:600;margin-right:6px}
+.m-text{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.m-item{display:inline-block;margin-top:3px;background:var(--accent-soft);border:0;border-radius:5px;padding:1px 7px;font-size:12px;cursor:pointer;color:var(--accent)}
+.compose{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.compose .row{flex-wrap:nowrap}
+.compose textarea{flex:1;min-height:42px;max-height:140px;resize:none}
+.attach{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%) translateY(20px);opacity:0;transition:all .3s ease;background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 16px;font-size:14px;max-width:min(92vw,520px);pointer-events:none;z-index:30}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast b{color:var(--real)}
+@media (prefers-reduced-motion:reduce){.bar>span,.toast{transition:none}}
+/* tıklanabilen yazılar link mavisi */
+.namebtn,.rtext,.linkrow b,.btn.link,.srcbtn,.mref,.m-item,.kw,.res b,summary,.ask details summary,details.cz summary,details.howto-d summary{color:var(--link)}
+.namebtn:hover,.rtext:hover,.linkrow:hover b,.btn.link:hover,summary:hover,.res:hover b{text-decoration:underline;text-underline-offset:2px}
+.rtext small{color:var(--ink-3)}
+summary{cursor:pointer}
+.ix{display:flex;flex-direction:column;gap:6px;margin:8px 0 6px;padding:8px 0;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
+.ix-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ix>.inp{flex:0 0 auto}
+.ix-res{display:flex;flex-direction:column;gap:4px}
+.ix-r{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--line-2)}
+.ix-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ix-t a{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ix-t small{font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ixd{color:var(--ink-2)} .ixd.ok{color:var(--ok);font-weight:600}
+.ix-tm ul{margin:4px 0 0;padding-left:18px;font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+.ix-tm b{font-weight:500;word-break:break-word}
+/* giriş kapısı: üye listesinde olmayan paneli hiç görmez */
+.gate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:var(--bg)}
+.gate[hidden],.wrap[hidden]{display:none}
+.gate-in{width:min(420px,100%);display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:28px 24px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.gate h1{margin:0;font-size:20px}.gate h1 span{color:var(--ink-3);font-weight:500}
+.gate p{margin:0;font-size:14px;line-height:1.5;color:var(--ink-2)}
+.gate a{font-size:13px;color:var(--link)}
+/* yönetim: üye listesi */
+.ynt{width:min(860px,calc(100% - 32px));max-height:calc(100% - 32px);padding:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)}
+.ynt::backdrop{background:rgba(10,14,22,.55)}
+.ynt-in{display:flex;flex-direction:column;gap:12px;padding:18px}
+.ynt-h{display:flex;justify-content:space-between;align-items:center;gap:8px}.ynt-h h2{margin:0;font-size:18px}
+.ynt-ekle{display:flex;flex-wrap:wrap;gap:8px}.ynt-ekle .inp{flex:1 1 180px;min-width:0}
+.ynt-tbl td{vertical-align:middle}.ynt-tbl .sel{max-width:170px}
+.ynt-aktar{display:flex;flex-direction:column;gap:8px}.ynt-aktar .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate" aria-live="polite">
+  <div class="gate-in">
+    <h1>Voltaris <span>· Hayalet Araç</span></h1>
+    <p id="gateMsg">Oturum kontrol ediliyor…</p>
+    <button class="btn primary" type="button" id="gateBtn" hidden>Google ile giriş yap</button>
+    <button class="btn" type="button" id="gateOut" hidden>Başka hesapla gir</button>
+    <a href="/">← Voltaris ana sayfa</a>
+  </div>
+</div>
+
+<div class="wrap" id="wrap" hidden>
+  <header class="top">
+    <div class="brand"><h1>Voltaris <span>· Hayalet Araç</span></h1></div>
+    <div class="meta">
+      <div class="real-pct" id="realPct"><b>%0</b> hazır</div>
+      <label class="me" for="myBirim">Birimim</label>
+      <select class="sel" id="myBirim"><option value="">Seçilmedi</option><option value="M">Mekanik</option><option value="E">Elektrik-Elektronik</option><option value="O">Organizasyon ve Sosyal Medya</option></select>
+      <div class="me" id="me" hidden></div>
+      <button class="btn" id="yonetimBtn" type="button" hidden>Üyeler</button>
+      <button class="btn" id="chatBtn" type="button" aria-expanded="false">Sohbet <span class="count" id="chatCount" hidden></span></button>
+      <button class="btn" id="cikisBtn" type="button" hidden>Çıkış</button>
+    </div>
+  </header>
+
+  <section class="guide" id="guide" hidden aria-label="Panel nasıl kullanılır">
+    <div><b>1</b><span>Sağ üstten <strong>birimini</strong> seç. Liste senin birimine göre süzülür.</span></div>
+    <div><b>2</b><span>Araçta bir parçaya ya da listedeki bir <strong>kaleme</strong> dokun.</span></div>
+    <div><b>3</b><span>Kalem sayfası sana <strong>sıradaki soruyu</strong> sorar. Cevapladıkça parça hayaletten gerçeğe döner.</span></div>
+    <button class="btn small" type="button" id="guideX">Anladım</button>
+  </section>
+
+  <div class="notice" id="notice">Takımın kayıtları yükleniyor…</div>
+
+  <nav class="tabs" role="tablist" aria-label="Görünüm">
+    <button class="tab" role="tab" id="t-arac" data-tab="arac" aria-selected="true">Araç</button>
+    <button class="tab" role="tab" id="t-kontrol" data-tab="kontrol" aria-selected="false">Teknik kontrol</button>
+    <button class="tab" role="tab" id="t-sart" data-tab="sart" aria-selected="false">Şartname</button>
+    <button class="tab" role="tab" id="t-takvim" data-tab="takvim" aria-selected="false">Takvim</button>
+    <button class="tab" role="tab" id="t-birim" data-tab="birim" aria-selected="false">Birimler</button>
+    <button class="tab" role="tab" id="t-rapor" data-tab="rapor" aria-selected="false">Rapor</button>
+  </nav>
+
+  <section id="v-arac" class="view" role="tabpanel" aria-labelledby="t-arac">
+    <div class="arac">
+      <div class="stage-wrap">
+        <section class="stage" aria-label="Aracın 3B modeli">
+          <div class="stage-bg"></div>
+          <canvas id="gl" role="img" aria-label="Voltaris aracının 3B modeli. Bir parçaya dokununca o kalem açılır."></canvas>
+          <div class="loading" id="loading">Model yükleniyor…</div>
+          <div class="tip" id="tip" hidden></div>
+          <div class="stage-hud">
+            <div class="views" id="views">
+              <button type="button" data-v="on" aria-pressed="true">Ön</button>
+              <button type="button" data-v="yan" aria-pressed="false">Yan</button>
+              <button type="button" data-v="arka" aria-pressed="false">Arka</button>
+              <button type="button" data-v="ust" aria-pressed="false">Üst</button>
+              <button type="button" id="xray" aria-pressed="false">Kabuk saydam</button>
+            </div>
+          </div>
+        </section>
+        <p class="legend">
+          <span><i class="sw sw-real"></i>Hazır</span>
+          <span><i class="sw sw-part"></i>Üzerinde çalışılıyor</span>
+          <span><i class="sw sw-holo"></i>Bakılmadı</span>
+          <span><i class="sw sw-lock"></i>Önce başka kalem bitmeli</span>
+        </p>
+      </div>
+      <section class="box card" id="card" aria-live="polite"></section>
+      <section class="box list" aria-labelledby="listTitle">
+        <div class="head"><h2 id="listTitle">Kalemler</h2>
+          <div class="filters" id="filters">
+            <button class="fchip" type="button" data-f="mine" aria-pressed="false">Birimim</button>
+            <button class="fchip" type="button" data-f="all" aria-pressed="true">Tümü</button>
+            <button class="fchip" type="button" data-f="M" aria-pressed="false">Mekanik</button>
+            <button class="fchip" type="button" data-f="E" aria-pressed="false">Elektrik</button>
+            <button class="fchip" type="button" data-f="O" aria-pressed="false">Organizasyon</button>
+          </div>
+        </div>
+        <div class="hscroll"><table class="tbl" id="tbl"></table></div>
+      </section>
+    </div>
+  </section>
+
+  <section id="v-kontrol" class="view" role="tabpanel" aria-labelledby="t-kontrol" hidden>
+    <section class="box plate" aria-labelledby="plateTitle">
+      <div class="plate-face" role="group" aria-labelledby="plateTitle">
+        <svg class="plate-ring" viewBox="0 0 100 100" aria-hidden="true">
+          <defs><path id="arcTop" d="M 6 50 A 44 44 0 1 1 94 50"/><path id="arcBot" d="M 3.2 50 A 46.8 46.8 0 0 0 96.8 50"/></defs>
+          <text font-family="IBM Plex Sans, Arial, sans-serif" font-weight="700" font-size="4.7" letter-spacing=".45" fill="#fff"><textPath href="#arcTop" startOffset="27%" text-anchor="middle">ELEKTROMOBİL <tspan fill="#FF7A3D">2026</tspan></textPath></text>
+          <text font-family="IBM Plex Sans, Arial, sans-serif" font-weight="700" font-size="4.7" letter-spacing=".45" fill="#fff"><textPath href="#arcTop" startOffset="73%" text-anchor="middle">TEKNİK KONTROL</textPath></text>
+          <text font-family="IBM Plex Sans, Arial, sans-serif" font-weight="600" font-size="3.3" letter-spacing="1" fill="#8FA3CF"><textPath href="#arcBot" startOffset="50%" text-anchor="middle">VOLTARİS · İYTE ELEKTROMOBİL</textPath></text>
+        </svg>
+        <div class="plate-in">
+          <span id="plateTitle" style="position:absolute;left:-9999px">Teknik kontrol plakası</span>
+          <div id="tiles" style="display:flex;flex-direction:column;gap:1.6cqw"></div>
+          <div class="green" id="green"></div>
+        </div>
+      </div>
+      <div class="plate-side" id="plateSide"></div>
+    </section>
+  </section>
+
+  <section id="v-sart" class="view" role="tabpanel" aria-labelledby="t-sart" hidden>
+    <section class="box sart-bar" aria-label="Şartname araçları">
+      <input class="inp" id="sartQ" type="search" maxlength="60" placeholder="Şartnamede ara: sigorta, 150 V, kapı, balast…" aria-label="Şartnamede ara">
+      <label class="me" for="sartYil">Kitapçık</label><select class="sel" id="sartYil"></select>
+      <span class="ver" id="sartVer">yükleniyor…</span>
+    </section>
+    <div class="sart">
+      <nav class="box toc" id="toc" aria-label="Bölümler ve maddeler"></nav>
+      <section class="box reader" id="reader" aria-live="polite"></section>
+    </div>
+  </section>
+
+  <section id="v-rapor" class="view" role="tabpanel" aria-labelledby="t-rapor" hidden>
+    <section class="box" id="raporBox" style="padding:14px 18px"></section>
+  </section>
+
+  <section id="v-takvim" class="view" role="tabpanel" aria-labelledby="t-takvim" hidden>
+    <section class="box levels" aria-labelledby="lvTitle">
+      <div class="head"><h2 id="lvTitle">Seviyeler</h2><span class="note">Tarihler 2026 takviminden tahmin · Bölüm 1, madde 7</span></div>
+      <div class="hscroll"><div class="lv-row" id="levels"></div></div>
+    </section>
+    <section class="box tl" aria-labelledby="tlTitle">
+      <div class="head"><h2 id="tlTitle">Sezon takvimi</h2><span class="note">Ekim 2026 – Ekim 2027 · kırmızı işaretler TEKNOFEST tarihleri (tahmini) · mavi çizgi bugün</span></div>
+      <div class="hscroll"><div class="tl-grid" id="timeline"></div></div>
+      <div class="tl-detail" id="tlDetail"></div>
+    </section>
+  </section>
+
+  <section id="v-birim" class="view" role="tabpanel" aria-labelledby="t-birim" hidden>
+    <div class="lower">
+      <section class="box units" aria-labelledby="unitsTitle">
+        <div class="head"><h2 id="unitsTitle">Birimler nerede</h2><span class="note">Kalemlerin aşamasına göre</span></div>
+        <div class="unit-grid" id="units"></div>
+      </section>
+      <section class="box feed" aria-labelledby="feedTitle">
+        <div class="head"><h2 id="feedTitle">Son hareketler</h2></div>
+        <ol id="feed"></ol>
+      </section>
+    </div>
+  </section>
+</div>
+
+<aside class="drawer" id="drawer" hidden aria-labelledby="chatTitle">
+  <div class="dr-head"><h2 id="chatTitle">Sohbet</h2><button class="btn small" id="chatClose" type="button">Kapat</button></div>
+  <div class="chans" id="chans"></div>
+  <div class="msgs" id="msgs" aria-live="polite"></div>
+  <form class="compose" id="compose">
+    <div class="attach" id="attach" hidden></div>
+    <div class="row">
+      <label for="chatText" style="position:absolute;left:-9999px">Mesaj</label>
+      <textarea class="inp" id="chatText" maxlength="1000" placeholder="Mesaj yaz… (Enter gönderir, Shift+Enter yeni satır)"></textarea>
+      <button class="btn primary" type="submit" id="chatSend">Gönder</button>
+    </div>
+  </form>
+</aside>
+
+<dialog class="lb" id="figDlg" aria-labelledby="figTitle">
+  <div class="lb-in">
+    <div class="lb-img"><img id="figImg" alt=""></div>
+    <h3 id="figTitle"></h3>
+    <div class="lb-row"><span class="when" id="figMeta"></span>
+      <span class="row"><button class="btn small" type="button" id="figOpen">Maddeyi oku</button><button class="btn small" type="button" id="figClose">Kapat</button></span></div>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as fb from './firebase.js';
+import { yonetimiAc } from './yonetim.js';
+
+/*__ITEMS__*/
+const BIRIM = { M:'Mekanik Birim', E:'Elektrik-Elektronik Birimi', O:'Organizasyon ve Sosyal Medya' };
+const BIRIM_TAG = { M:'Mekanik', E:'Elektrik', O:'Organizasyon' };
+const CHANNELS = [ {id:'genel', n:'Genel'}, {id:'M', n:'Mekanik'}, {id:'E', n:'Elektrik-Elektronik'}, {id:'O', n:'Organizasyon'} ];
+// The decision flow ends in these stages. weights drive how "real" the part looks.
+const PHASES = [
+  {id:'tespit', n:'Tespit', w:0}, {id:'arastirma', n:'Tarama', w:.1}, {id:'tasarim', n:'Tasarım', w:.3},
+  {id:'dok', n:'Doküman', w:.45}, {id:'uretim', n:'Üretim', w:.6}, {id:'test', n:'Test', w:.8}, {id:'hazir', n:'Hazır', w:1} ];
+const STAGES = PHASES.slice(2);
+const phaseIdx = id => PHASES.findIndex(p=>p.id===id);
+
+const LEVELS = [
+  { n:0, name:'Hazırlık', when:'Ekim – Nisan', need:'Atölye turu, tarama, üretim', set:null },
+  { n:1, name:'Alt Sistem Videosu', when:'~ 3 Mayıs', need:'Güç aktarımı, batarya+BMS, şasi, kontrol çalışır', set:['motor','surucu','batarya','bms','sasi','aks'] },
+  { n:2, name:'Teknik Tasarım Raporu', when:'~ 12 Mayıs', need:'Tasarım donmuş, araç TTR ile birebir', set:'all' },
+  { n:3, name:'Teknik Onay Videoları', when:'~ 7 Ağustos', need:'Araç nihai halde, tüm kalemler', set:'all' },
+  { n:4, name:'Dinamik Sürüş + Fren', when:'Yarış haftası · 2. gün', need:'Slalom, geri sürüş, 10° rampa', set:['fren','direksiyon','motor','surucu','aks','surus'] },
+  { n:5, name:'Detaylı Kontrol → ETİKET', when:'Yarış haftası', need:'Tüm kalemler, 3 hak', set:'all' },
+  { n:6, name:'Final · 3 tur', when:'20 dakikada', need:'Etiketli araç', set:null },
+];
+const LANES = [
+  { id:'mek', b:'M', name:'Mekanik · ana hat', sub:'Mekanik Birim', bars:[
+    { n:'Tasarım dondurma', a:'2026-10-20', b:'2026-12-05', bz:['sasi','rollcage','kabuk'], d:'Mevcut araçta neyin kalacağına, neyin revize edileceğine karar: tam CAD montajı, elektrik şeması, bileşen yerleşimi. TTR\'deki tasarım araçla birebir olmalı.' },
+    { n:'Şasi revizyonu', a:'2026-12-01', b:'2027-01-20', bz:['sasi'], d:'Batarya kutusu, motor ve koltuk bağlantı noktaları burada kesinleşir.' },
+    { n:'Roll cage', a:'2027-01-10', b:'2027-02-15', bz:['rollcage'], d:'Gerekirse revize; 1 kN analiz TTR için.' },
+    { n:'Fren, süspansiyon, direksiyon', a:'2027-02-01', b:'2027-03-20', bz:['fren','direksiyon'], d:'Bu adımdan sonra araç kendi tekerleri üzerinde itilebilir.' },
+    { n:'Motor montajı', a:'2027-03-01', b:'2027-03-31', bz:['motor'], d:'Arkada tek motor kararıyla aktarma montajı.' },
+    { n:'Koltuk, kemer, perde', a:'2027-03-15', b:'2027-04-15', bz:['koltuk'], d:'FIA koltuk ve kemerler siparişten gelmiş olmalı.' },
+    { n:'Kabuk, kapı, cam montajı', a:'2027-06-01', b:'2027-07-15', bz:['kabuk','kapi','aydinlatma'], d:'Kabuk hattından gelen parçalar araca; aynalar, farlar, stoplar.' } ]},
+  { id:'bat', b:'E', name:'Batarya hattı', sub:'Elektrik-Elektronik', bars:[
+    { n:'Hücre testi ve seçim', a:'2026-11-15', b:'2027-01-05', bz:['batarya'], d:'Uzun tedarik süreli kalem: sipariş tarihleri kritik yol.' },
+    { n:'Modül ve paket', a:'2027-01-05', b:'2027-02-28', bz:['batarya'], d:'Kaynak veya vidalı birleşim, ≤150 V, sigorta ve service disconnect.' },
+    { n:'BMS ile masada', a:'2027-03-01', b:'2027-03-31', bz:['bms'], d:'Sıcaklık sensörleri, uyarı ve kesme, dengeleme, SoC.' },
+    { n:'Araca montaj', a:'2027-04-01', b:'2027-04-15', bz:['batarya'], d:'Yanmaz kutu ve güvenlik perdesiyle.' } ]},
+  { id:'ele', b:'E', name:'Elektronik hattı', sub:'Elektrik-Elektronik', bars:[
+    { n:'Kart revizyonları', a:'2026-11-01', b:'2027-01-31', bz:['surucu','bms','aks'], d:'Elimizdeki kartlar elden geçer.' },
+    { n:'Masa testleri', a:'2027-02-01', b:'2027-03-15', bz:['surucu'], d:'Kartlar araca girmeden önce motorla masada test edilir.' },
+    { n:'YŞB ve izolasyon izleme', a:'2027-02-01', b:'2027-04-15', bz:['ysb','izolasyon'], d:'Eksikse diskalifiye eden iki sistem.' },
+    { n:'Elektrik montajı', a:'2027-04-01', b:'2027-04-25', bz:['elguv'], d:'Kablaj, acil stoplar, sigortalar takılmadan yüksek gerilim verilmez.' },
+    { n:'İlk enerji, kabuksuz sürüş', a:'2027-04-20', b:'2027-04-30', bz:['motor','surucu','aks'], d:'Önce alçak, sonra yüksek gerilim. Alt Sistem Videosu buradan sonra.' } ]},
+  { id:'kab', b:'M', name:'Kabuk hattı', sub:'Mekanik Birim', bars:[
+    { n:'Kalıp', a:'2027-02-15', b:'2027-04-15', bz:['kabuk'], d:'Kesin şasi ve roll cage ölçülerini bekler (iç plan).' },
+    { n:'Laminasyon ve kesim', a:'2027-04-15', b:'2027-05-31', bz:['kabuk','kapi'], d:'Kapı açıklıkları, erişim kapakları, cam yuvaları.' } ]},
+  { id:'yaz', b:'E', name:'Yazılım', sub:'Elektrik-Elektronik', bars:[
+    { n:'AKS algoritması', a:'2026-11-15', b:'2027-03-31', bz:['aks'], d:'Fonksiyonlar ve blok şema TTR\'ye girer.' },
+    { n:'Telemetri, hız göstergesi', a:'2027-01-15', b:'2027-04-30', bz:['telemetri'], d:'Hız telemetriden gösterilmezse harici gösterge ve ceza süresi.' } ]},
+  { id:'tst', b:null, name:'Test ve video', sub:'Tüm birimler', bars:[
+    { n:'Alt sistem videosu', a:'2027-04-25', b:'2027-05-03', bz:['video'], d:'En fazla 7 dk, kesintisiz çekim (B2 10.1).' },
+    { n:'Sürüş, fren, tahliye testleri', a:'2027-07-15', b:'2027-08-03', bz:['fren','direksiyon','surus'], d:'Slalom ve geri sürüş, 10° rampa, 10 sn tahliye.' },
+    { n:'Teknik onay videoları', a:'2027-07-25', b:'2027-08-07', bz:['video'], d:'Üç video; araç nihai halde olmalı (B2 11).' } ]},
+  { id:'org', b:'O', name:'Organizasyon ve destek', sub:'Org. ve Sosyal Medya · Destek komitesi', bars:[
+    { n:'Üye alımı', a:'2026-10-12', b:'2026-10-20', d:'Yeni üyeler bu hafta.' },
+    { n:'Sponsorluk görüşmeleri', a:'2026-11-01', b:'2027-03-31', d:'TÜBİTAK desteği ancak Haziran\'da geliyor; o zamana kadar parçalar sponsorla.' },
+    { n:'FIA koltuk, tulum, kemer', a:'2026-12-01', b:'2027-01-31', bz:['koltuk','surus'], d:'Sürücü koltuğu ve tulum FIA sertifikalı olmalı.' },
+    { n:'KYS başvurusu', a:'2027-02-15', b:'2027-03-23', d:'Tüm üyeler davetini onaylamalı.' },
+    { n:'Sürücü lisansı', a:'2027-02-01', b:'2027-04-30', bz:['surus'], d:'Sürücü ve yedek sürücü için sporcu lisansı.' },
+    { n:'TTR yazımı', a:'2027-03-15', b:'2027-05-12', bz:['ttr'], d:'3000 puan; Bölüm_6 biçim kuralları.' },
+    { n:'Görsel tasarım raporu', a:'2027-06-15', b:'2027-08-07', bz:['logo'], d:'En fazla 20 sayfa, teknik onay videolarıyla aynı gün.' },
+    { n:'Alan evrakı, yola çıkış', a:'2027-08-15', b:'2027-08-31', d:'Alan Evrak Klasörü, kimlikler, lisanslar.' } ]},
+  { id:'akd', b:null, name:'Akademik takvim', sub:'Sınav haftaları', bars:[
+    { n:'Vize ve final haftaları eklenecek', a:'2026-10-14', b:'2027-06-30', pend:true, d:'Akademik takvim yüklenince sınav haftaları buraya işlenecek.' } ]},
+];
+const MILES = [
+  { d:'2027-03-23', n:'Başvuru' }, { d:'2027-05-03', n:'Alt sistem videosu' }, { d:'2027-05-12', n:'TTR', tier:1 },
+  { d:'2027-06-05', n:'Sonuçlar' }, { d:'2027-06-12', n:'Taahhütname · üye değişikliği', tier:1 },
+  { d:'2027-08-07', n:'Teknik onay videoları' }, { d:'2027-08-14', n:'Onay sonuçları', tier:1 },
+  { d:'2027-09-01', n:'Yarış haftası (Ağu–Eyl)', tier:2 }, { d:'2027-09-30', n:'TEKNOFEST', tier:1 },
+];
+
+/* ---------- state ---------- */
+const byId = id => ITEMS.find(x=>x.id===id);
+const recs = {};      // items/<id>
+const checks = {};    // checks/<id>  -> {s:{index:0|1|2}, by, at}
+let logRows = [];
+let db=null, user=null, assets=null, myId=null, myBirim='', canWrite=null, mode='loading';
+let selected='sasi', xray=false, selBar='mek:0', filter='all', tab='arac', chatOpen=false, chan='genel', attachItem=null;
+let driveState = {}; const openReq = new Set(); let selEt = 'dinamik';   // per item: {loading, results, msg, err}
+const chat = {}; const unread = {};
+const exists = { items:new Set(), checks:new Set(), rapor:new Set() };
+const rapor = {};    // rapor/<itemId> -> {v:{alan:değer}}
+
+const rec = id => recs[id] || {};
+function reqState(it,i){ return checks[it.id]?.s?.[i] ?? 0; }
+// a madde that can only be checked on the finished car does not hold the item back
+function deferred(it,i){ const f=checks[it.id]?.f?.[i]; const v=f&&typeof f==='object'?f.v:undefined; if(v==='sonra') return true; if(v) return false; return reqState(it,i)===0 && (REQ_SON[it.id]||[]).includes(i); }
+const reqOk = (it,i) => reqState(it,i)===2 || deferred(it,i);
+function checkRatio(it){ const n=it.reqs.length; return n? it.reqs.filter((_,i)=>reqOk(it,i)).length/n : 1; }
+function allChecksOk(it){ return it.reqs.every((_,i)=>reqOk(it,i)); }
+// An item's state comes from its öncüller (şartname maddeleri); each one runs its own durum tespiti.
+function reqProg(it,i){ if(reqOk(it,i)) return 1; const f=flowOf(it,i), s=reqState(it,i);
+  if(!f.v) return s===1 ? .1 : 0;
+  if(f.v==='evet') return f.olc===false ? .5 : .85;
+  return ({tasarim:.35, uretim:.6, test:.8})[f.asama] ?? (f.db ? .2 : .1); }
+function progress(it){ const n=it.reqs.length; return n ? it.reqs.reduce((a,_,i)=>a+reqProg(it,i),0)/n : 0; }
+function phaseOf(it){ if(it.reqs.length && it.reqs.every((_,i)=>reqOk(it,i))) return 'hazir'; const p=progress(it);
+  if(p===0) return 'tespit'; if(p<.2) return 'arastirma'; if(p<.45) return 'tasarim'; if(p<.7) return 'uretim'; return 'test'; }
+function isDone(it){ return allChecksOk(it); }
+function depsMet(it){ return it.deps.every(d=>isDone(byId(d))); }
+function stateOf(it){ if(isDone(it)) return 'done'; if(progress(it)>0) return 'part'; return depsMet(it)?'holo':'lock'; }
+const setOf = s => s==='all' ? ITEMS.map(x=>x.id) : (s||[]);
+const avgOf = ids => ids.length ? ids.reduce((s,id)=>s+progress(byId(id)),0)/ids.length : 0;
+const readOnly = () => mode==='loading' || canWrite===false;
+
+/* the next step the flow asks for */
+const nextReq = it => it.reqs.findIndex((_,i)=>!reqOk(it,i));
+function reqNextQ(it,i){ const f=flowOf(it,i), A=it.reqs[i][2]==='A';
+  if(!f.v) return A ? 'araçta karşılanıyor mu?' : 'raporda hazır mı?';
+  if(f.v==='evet') return f.olc==null ? (A?'ölçüldü ya da denendi mi?':'kontrol edildi mi?') : (A?'ölç ya da dene, sonra işaretle':'kontrol ettir, sonra işaretle');
+  if(f.db==null) return 'Database\'e sor ve sonucu işaretle';
+  if(!f.asama) return 'hangi aşamada olduğunu seç';
+  return `aşama: ${RSTAGE(A).find(x=>x[0]===f.asama)?.[1]}; bitince "Uygun" işaretle`; }
+function nextStep(it){
+  if(isDone(it)){ const n=it.reqs.filter((_,i)=>deferred(it,i)).length; return n ? `Tamam; ${n} madde araç bitince bakılacak.` : 'Tamam: bütün öncüller uygun.'; }
+  const i=nextReq(it); return `${it.reqs[i][0]}: ${reqNextQ(it,i)}`;
+}
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const AYLAR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+function ago(iso){ const t=Date.parse(iso); if(!t) return ''; const s=(Date.now()-t)/1000;
+  if(s<60) return 'az önce'; if(s<3600) return Math.floor(s/60)+' dk önce'; if(s<86400) return Math.floor(s/3600)+' sa önce'; if(s<604800) return Math.floor(s/86400)+' gün önce';
+  const d=new Date(t); return d.getDate()+' '+AYLAR[d.getMonth()]; }
+async function people(ids){ ids=[...new Set(ids.filter(Boolean))]; if(!user||!ids.length) return {}; try{ return await user.profiles(ids); }catch(e){ return {}; } }
+const nameOf = (ps,id) => id==='yerel' ? 'bu cihaz' : ((id && ps[id]?.name) || 'Bir ekip üyesi');
+let toastTimer; function toast(html){ const t=$('toast'); t.innerHTML=html; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3600); }
+const stColor = s => s==='done'||s==='part' ? 'var(--real)' : s==='lock' ? 'var(--lock)' : 'var(--holo)';
+const safeUrl = u => { try{ const x=new URL(u); return (x.protocol==='https:'||x.protocol==='http:') ? x.href : null; }catch(e){ return null; } };
+const CHECK = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.2 L5.6 10.2 L11.5 3.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CLOCK = '<svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 4.2V7l2 1.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const CROSS = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 3.5 L10.5 10.5 M10.5 3.5 L3.5 10.5" fill="none" stroke="#FF7A6B" stroke-width="2.2" stroke-linecap="round"/></svg>';
+
+/* ---------- şartname: data, citation lookup ---------- */
+// Kitapçık metinleri yıl yıl ayrı dosyada. 2027 kitapçıkları yayımlanınca buraya { yil:2027, url:'data/sartname-2027.json' } eklenir;
+// kalemlerdeki madde numaraları yeni metinde bulunamazsa panel uyarır.
+const SART_VERS = [ { yil:2026, url:'data/sartname-2026.json', n:'2026 · yürürlükte' } ];
+let SART=null, sartYil=SART_VERS[0].yil, sartErr=null;
+let sv = { mode:'ozet', doc:'B2', n:null, marks:[], q:'', pi:null, back:null, cf:'all' };
+const DOC_SHORT = { B1:'B1 İdari', B2:'B2 Teknik', B3:'B3 TTR', B4:'B4 Görsel', B5:'B5 Kontrol/Final', B6:'B6 Yazım', B7:'B7 Program', LIS:'Lisans' };
+const ROM = ['i','ii','iii','iv','v','vi','vii','viii','ix','x','xi','xii','xiii','xiv','xv','xvi','xvii','xviii','xix','xx'];
+const ABC = 'abcdefghijklmnopqrstuvwxyz'.split('');
+const sdoc = id => SART?.docs.find(d=>d.id===id);
+const ssec = (doc,n) => sdoc(doc)?.secs.find(x=>x.n===n);
+function expandMarks(spec){
+  const out=[]; spec.split(',').map(x=>x.trim()).filter(Boolean).forEach(part=>{
+    const m=part.split('-'); if(m.length===2){ const seq = ROM.includes(m[0])&&ROM.includes(m[1]) ? ROM : ABC; const a=seq.indexOf(m[0]), b=seq.indexOf(m[1]); if(a>=0&&b>=a) out.push(...seq.slice(a,b+1)); }
+    else out.push(part); });
+  return out;
+}
+// "B2 9.2.c,f; Ek 1" -> [{doc:'B2', n:'9.2', marks:['c','f']}, {ceza:true}]
+function parseSrc(src){
+  return String(src).split(/;\s*/).flatMap(tok=>tok.split(/,\s*(?=Ek\b)/)).map(t=>t.trim()).filter(Boolean).map(tok=>{
+    if(/^(B2\s+)?Ek\s*1$/i.test(tok)) return { ceza:true, raw:tok };
+    const m = tok.match(/^(B[1-7]|LIS)\b\s*(.*)$/); if(!m) return { raw:tok, bad:true };
+    const doc=m[1], rest=m[2].trim(); if(!SART) return { raw:tok, doc, wait:true };
+    const d=sdoc(doc); if(!d) return { raw:tok, doc, bad:true };
+    if(!rest) return { raw:tok, doc, n:d.secs[0]?.n, whole:true };
+    const parts=rest.split('.');
+    for(let k=parts.length;k>0;k--){ const n=parts.slice(0,k).join('.'); if(d.secs.some(x=>x.n===n)) return { raw:tok, doc, n, marks: expandMarks(parts.slice(k).join('.')) }; }
+    return { raw:tok, doc, bad:true };
+  });
+}
+const MK = /^([a-zçğıöşü]{1,5})([\)\.])\s/;
+const mkOf = p => typeof p==='string' ? (p.match(MK)||[]) : [];
+// paragraph indexes a citation points at: the lettered item plus its continuation lines and sub-items
+function citeIdx(sec, marks){
+  const P=sec.p, out=new Set();
+  marks.forEach(m=>{
+    let at=-1, dl=')';
+    for(const d of [')','.']){ at=P.findIndex(p=>{ const k=mkOf(p); return k[1]===m && k[2]===d; }); if(at>=0){ dl=d; break; } }
+    if(at<0) return; out.add(at);
+    for(let j=at+1;j<P.length && j<at+9;j++){ const k=mkOf(P[j]); if(k[2]===dl && ((dl===')' && ABC.includes(k[1])) || (dl==='.' && ROM.includes(k[1])))) break; out.add(j); }
+  });
+  return [...out].sort((a,b)=>a-b);
+}
+const isDQ = v => /diskalifiye/i.test(v||'');
+const penCls = v => isDQ(v)?'pen-dq':'pen-s';
+const cezaFor = id => (SART?.ceza||[]).filter(c=>c.em && cezaKalem(c)===id);
+const docLabel = d => `${d.title}${d.ver?' · '+d.ver:''}`;
+function paraText(p){ return typeof p==='string' ? p : (p.tab||[]).map(r=>r.filter(Boolean).join(' · ')).join(' / '); }
+function tableHtml(t, q){ return `<div class="tw"><table>${t.tab.map(r=>`<tr>${r.map(c=>`<td>${hl(c,q)}</td>`).join('')}</tr>`).join('')}</table></div>`; }
+function hl(text, q){
+  text=String(text??''); if(!q) return esc(text);
+  const lo=text.toLocaleLowerCase('tr'), ql=q.toLocaleLowerCase('tr'); if(lo.length!==text.length) return esc(text);
+  let out='', i=0, j; while((j=lo.indexOf(ql,i))>=0){ out+=esc(text.slice(i,j))+'<mark>'+esc(text.slice(j,j+ql.length))+'</mark>'; i=j+ql.length; }
+  return out+esc(text.slice(i));
+}
+const DAYN={G1:'Birinci Gün',G2:'İkinci Gün',G3:'Üçüncü Gün',G4:'Dördüncü Gün',G5:'Beşinci Gün',G6:'Altıncı Gün',G7:'Yedinci Gün'};
+const citeLabel = c => `${c.doc} ${DAYN[c.n]||c.n}${c.marks.length?' ('+c.marks.join(',')+')':''}`;
+const sartBtn = (c, label) => `<button type="button" class="srcbtn" data-sart="${esc(c.doc+'|'+c.n+'|'+(c.marks||[]).join(','))}">${esc(label||'Şartnamede aç')}</button>`;
+// verbatim rule text for one requirement source, shown under the "nasıl yapılır" hint
+function quoteHtml(src, it){
+  if(sartErr) return `<div class="qblk warn">Şartname metni yüklenemedi: ${esc(sartErr)}</div>`;
+  if(!SART) return `<div class="qblk"><span class="more">Şartname metni yükleniyor…</span></div>`;
+  return parseSrc(src).map(c=>{
+    if(c.ceza){ const rows=cezaFor(it.id);
+      return `<div class="qblk"><div class="qhead"><b>Bölüm 2 · Ek 1 Ceza Listesi</b><button type="button" class="srcbtn" data-ceza="1">Listeyi aç</button></div>${rows.length?rows.slice(0,5).map(r=>`<p>${esc(r.b)}: ${esc(r.i)} → <span class="pen ${penCls(r.em)}">${esc(r.em)}</span></p>`).join('')+(rows.length>5?`<span class="more">+${rows.length-5} satır daha: aşağıdaki ceza listesi kutusunda</span>`:''):'<p class="more">Bu kaleme bağlı satır yok.</p>'}</div>`; }
+    if(c.bad) return `<div class="qblk warn"><div class="qhead"><b>${esc(c.raw)}</b></div>Bu madde ${sartYil} kitapçığında bulunamadı. Madde numarası değişmiş olabilir; kalemdeki kaynağı güncellemek gerekiyor.</div>`;
+    const d=sdoc(c.doc), sec=ssec(c.doc,c.n); const idx = c.marks.length ? citeIdx(sec,c.marks) : [];
+    const show = c.marks.length ? idx : sec.p.slice(0,2).map((_,i)=>i);
+    const miss = c.marks.length && !idx.length;
+    return `<div class="qblk ${miss?'warn':''}"><div class="qhead"><b>${esc(d.title.split(' · ')[0])} · ${esc(c.n)} ${esc(sec.t)}</b>${sartBtn(c)}</div>
+      ${miss?`<p>(${esc(c.marks.join(', '))}) bendi bu maddede bulunamadı; maddenin tamamına bak.</p>`:''}
+      ${show.map(i=>{ const p=sec.p[i]; return typeof p==='string'?`<p>${esc(p)}</p>`:tableHtml(p); }).join('')}
+      ${!c.marks.length && sec.p.length>2?'<span class="more">… devamı şartname sekmesinde</span>':''}
+      ${(()=>{ const fs = c.marks.length ? figsMentioned(c.doc, show.map(i=>paraText(sec.p[i]))) : secFigs(c.doc,c.n).slice(0,3); return fs.length?`<div class="thumbs" style="margin-top:6px">${fs.map(thumbHtml).join('')}</div>`:''; })()}</div>`;
+  }).join('');
+}
+// every requirement whose source resolves to this section
+function usersOf(doc,n){ const out=[]; ITEMS.forEach(it=>it.reqs.forEach((q,i)=>{ if(parseSrc(q[1]).some(c=>c.doc===doc && c.n===n && !c.bad)) out.push({it,i,q}); })); return out; }
+function brokenCites(){ const out=[]; ITEMS.forEach(it=>it.reqs.forEach(q=>parseSrc(q[1]).forEach(c=>{ if(c.bad || (c.marks?.length && !c.bad && !citeIdx(ssec(c.doc,c.n),c.marks).length)) out.push({it,q,c}); }))); return out; }
+// figures cut from the PDFs (data/fig/*.webp), attached to the section whose text carries the caption
+const figNum = p => (typeof p==='string' ? (p.match(/^Şekil\s*(\d+(?:\.[a-z0-9])*)\.\s/)||[])[1] : null);
+const secFigs = (doc,n) => (ssec(doc,n)?.figs||[]).map(i=>SART.figs[i]);
+function itemFigs(it){ if(!SART?.figs) return []; const seen=new Set(), out=[];
+  it.reqs.forEach(q=>parseSrc(q[1]).forEach(c=>{ if(c.bad||c.ceza||!c.n) return; secFigs(c.doc,c.n).forEach(f=>{ if(!seen.has(f.i)){ seen.add(f.i); out.push(f); } }); }));
+  return out.slice(0,12); }
+function figsMentioned(doc, texts){ const nums=new Set(); texts.forEach(t=>{ for(const m of String(t).matchAll(/Şekil\s*(\d+)/g)) nums.add(m[1]); });
+  return (SART.figs||[]).filter(f=>f.doc===doc && nums.has(f.n.split('.')[0])); }
+const thumbHtml = f => `<button type="button" class="thumb" data-fig="${f.i}"><span class="im"><img src="${esc(f.f)}" alt="" loading="lazy" width="${f.w}" height="${f.h}"></span><small>${esc(f.cap)}</small></button>`;
+const figHtml = (f, cap) => `<figure class="sfig"><button type="button" data-fig="${f.i}" aria-label="Büyüt: ${esc(f.cap)}"><img src="${esc(f.f)}" alt="${esc(f.cap)}" loading="lazy" width="${f.w}" height="${f.h}"></button><figcaption>${cap||esc(f.cap)} · PDF s. ${f.pg}</figcaption></figure>`;
+let figCur=null;
+// fotoğraflar: test fotoğrafları items/<id>.testFoto; öncül fotoğrafları checks/<id>.f.<i>.foto; görseller fotolar/<id> (firebase.js)
+const FOTO_MAX = 8; const uploading = {};
+// Photos arrive from Firestore as blobs (firebase.js): draw a blank first and swap the image in once it lands.
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+function blobSrc(id){ const u=assets?.cached(id); if(u) return u;
+  assets?.url(id).then(url=>document.querySelectorAll(`img[data-blob="${id}"]`).forEach(im=>{ im.src=url; })).catch(()=>{});
+  return BLANK; }
+const okIds = a => (Array.isArray(a) ? a : []).filter(x=>typeof x==='string' && /^[A-Za-z0-9_-]{16,64}$/.test(x));
+const fotos = r => okIds(r.testFoto);
+const fotoList = (it, slot) => slot==='t' ? fotos(rec(it.id)) : okIds(flowOf(it, +slot).foto);
+const slotName = (it, slot) => slot==='t' ? 'Test fotoğrafı' : it.reqs[+slot][0];
+function photoBlock(it, ro, slot='t'){ const list=fotoList(it,slot), key=it.id+':f'+slot, nm=slotName(it,slot);
+  return `<div class="photos">${list.map((id,k)=>`<span class="ph-it"><button type="button" class="ph-img" data-foto="${esc(id)}" data-fslot="${slot}" aria-label="${esc(nm)}: fotoğraf ${k+1}, büyüt"><img src="${blobSrc(id)}" data-blob="${esc(id)}" alt="${esc(nm)}: fotoğraf ${k+1}" loading="lazy"></button>${ro||!assets?'':`<button type="button" class="xbtn" data-delfoto="${slot}|${k}" aria-label="Fotoğrafı kaldır">×</button>`}</span>`).join('')}
+    ${ro?'':(assets?(list.length<FOTO_MAX?`<label class="btn small ph-add ${uploading[key]?'is-busy':''}">${uploading[key]?'Yükleniyor…':(slot==='t'?'Fotoğraf ekle':'Bu öncüle fotoğraf ekle')}<input type="file" accept="image/*" multiple data-fotoin="${slot}" ${uploading[key]?'disabled':''} hidden></label>`:`<span class="when">En fazla ${FOTO_MAX} fotoğraf.</span>`):`<span class="when">${mode==='db'?'Fotoğraf yüklemek için panelde düzenleme yetkin olmalı.':'Fotoğraf yükleme ortak kayıtla çalışır.'}</span>`)}</div>`; }
+function allPhotos(it){ const out=fotos(rec(it.id)).map(id=>({id, slot:'t'}));
+  it.reqs.forEach((q,i)=>okIds(flowOf(it,i).foto).forEach(id=>out.push({id, slot:String(i)}))); return out; }
+function galleryBlock(it){ const all=allPhotos(it); if(!all.length) return '';
+  return `<section class="sect"><h3>Kaleme eklenen görseller <span class="mono">${all.length}</span></h3><p class="help">Öncüllere ve test kaydına eklenen bütün fotoğraflar. Silmek ya da eklemek için ilgili öncülü aç.</p>
+    <div class="gal">${all.map(x=>`<button type="button" class="gal-it" data-foto="${esc(x.id)}" data-fslot="${x.slot}"><span class="im"><img src="${blobSrc(x.id)}" data-blob="${esc(x.id)}" alt="" loading="lazy"></span><small>${esc(slotName(it,x.slot))}</small></button>`).join('')}</div></section>`; }
+async function shrinkPhoto(file){
+  try{ const bmp=await createImageBitmap(file); const k=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+    const c=document.createElement('canvas'); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k); c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+    const b=await new Promise(res=>c.toBlob(res,'image/jpeg',.82)); if(b) return {blob:b,type:'image/jpeg'}; }catch(e){}
+  return {blob:file, type:['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)?file.type:'image/jpeg'}; }
+const ASSET_ERR = { too_large:'Fotoğraf çok büyük (en fazla 20 MB).', unsupported_type:'Bu dosya türü yüklenemiyor; JPG ya da PNG seç.', quota_or_state:'Panelin dosya alanı dolu.', rate_limited:'Çok hızlı yükleme yapıldı; biraz bekleyip tekrar dene.', not_granted:'Fotoğraf yüklemek için panelde katkı yetkin olmalı.', upstream_auth:'Oturum doğrulanamadı; sayfayı yenile.' };
+async function uploadPhotos(it, files, slot='t'){
+  if(!assets){ toast('Fotoğraf yüklemek için panelde düzenleme yetkin olmalı.'); return; }
+  const key=it.id+':f'+slot; const list=[...fotoList(it,slot)]; let n=0; uploading[key]=true; renderCard();
+  for(const f of [...files].slice(0, FOTO_MAX-list.length)){
+    try{ const {blob,type}=await shrinkPhoto(f); let res;
+      try{ res=await assets.upload(blob,{type}); }catch(e){ if(e?.code==='store_unavailable'){ await new Promise(r=>setTimeout(r,1200)); res=await assets.upload(blob,{type}); } else throw e; }
+      list.push(res.id); n++; }
+    catch(e){ toast(ASSET_ERR[e?.code] || 'Fotoğraf yüklenemedi, tekrar dene.'); if(['rate_limited','quota_or_state','not_granted'].includes(e?.code)) break; }
+  }
+  uploading[key]=false;
+  if(n){ if(slot==='t') patchItem(it.id,{testFoto:list},`Test fotoğrafı eklendi (${n})`); else setFlow(it.id, +slot, {foto:list}, `fotoğraf eklendi (${n})`); toast(`<b>Eklendi:</b> ${n} fotoğraf`); } else renderCard(); }
+function openPhoto(id, slot='t'){ const it=byId(selected); const nm=slotName(it,slot); figCur=null; $('figImg').dataset.blob=id; $('figImg').src=blobSrc(id); $('figImg').alt=nm; $('figTitle').textContent=`${it.name} · ${nm}`; $('figMeta').textContent='';
+  $('figOpen').hidden=true; const dl=$('figDlg'); try{ dl.showModal(); }catch(e){ dl.setAttribute('open',''); } }
+function openFig(i){ const f=SART?.figs?.[i]; if(!f) return; figCur=f; $('figOpen').hidden=false; const d=sdoc(f.doc), sec=ssec(f.doc,f.sec);
+  delete $('figImg').dataset.blob; $('figImg').src=f.f; $('figImg').alt=f.cap; $('figTitle').textContent=f.cap;
+  $('figMeta').textContent=`${d.title.split(' · ')[0]} · ${sec?(sec.n==='0'?'':sec.n+' ')+sec.t:''} · PDF sayfa ${f.pg}`;
+  const dl=$('figDlg'); try{ dl.showModal(); }catch(e){ dl.setAttribute('open',''); } }
+function closeFig(){ const dl=$('figDlg'); try{ dl.close(); }catch(e){ dl.removeAttribute('open'); } }
+$('figClose').addEventListener('click', closeFig);
+$('figDlg').addEventListener('click', e=>{ if(e.target===$('figDlg')) closeFig(); });
+$('figOpen').addEventListener('click', ()=>{ const f=figCur; closeFig(); if(f) openSart(f.doc, f.sec, [], tab==='arac'?selected:undefined); });
+document.addEventListener('click', e=>{ const b=e.target.closest('[data-fig]'); if(b){ e.preventDefault(); openFig(+b.dataset.fig); } });
+
+async function loadSart(y){
+  const v=SART_VERS.find(x=>x.yil===y)||SART_VERS[0]; sartYil=v.yil; SART=null; sartErr=null;
+  try{ const r=await fetch(v.url); if(!r.ok) throw new Error('HTTP '+r.status); SART=await r.json(); (SART.figs=SART.figs||[]).forEach((f,i)=>f.i=i); }
+  catch(e){ sartErr='dosya açılamadı ('+(e.message||e)+')'; }
+  renderCard(); renderPlate(); if(tab==='sart') renderSart();
+}
+
+/* ---------- writes ---------- */
+async function writeDoc(coll, id, patch, set){
+  if(mode!=='db'){ saveLocal(); return true; }
+  try{ await db.doc(coll+'/'+id).update(patch); set.add(id); return true; }
+  catch(err){
+    if(err?.code==='invalid_argument'){ canWrite=false; renderAll(); toast('Bu panelde değişiklik yapma yetkin yok. Üyeliğin kaldırılmış olabilir; bir yöneticiye sor.'); return false; }
+    toast('Kaydedilemedi, bağlantını kontrol edip tekrar dene.'); return false;
+  }
+}
+async function logIt(itemId, text){
+  if(mode!=='db') return;
+  try{ await db.collection('log').add({ by:myId, at:new Date().toISOString(), item:itemId, text }); }catch(e){}
+}
+async function patchItem(id, patch, logText){
+  const before = isDone(byId(id)); const lockedBefore = ITEMS.filter(x=>stateOf(x)==='lock').map(x=>x.id);
+  const full = { ...patch, by:myId, at:new Date().toISOString() };
+  recs[id] = { ...rec(id), ...full };
+  renderAll(); announce(id, before, lockedBefore);
+  const ok = await writeDoc('items', id, full, exists.items);
+  if(ok && logText) logIt(id, logText);
+}
+async function setReq(id, i, v){
+  const it = byId(id); const before = isDone(it); const lockedBefore = ITEMS.filter(x=>stateOf(x)==='lock').map(x=>x.id);
+  const cur = checks[id] || {s:{}};
+  checks[id] = { ...cur, s:{ ...cur.s, [i]:v }, by:myId, at:new Date().toISOString() };
+  renderAll(); announce(id, before, lockedBefore);
+  const ok = await writeDoc('checks', id, { s:{ [i]:v }, by:myId, at:checks[id].at }, exists.checks);
+  if(ok) logIt(id, `Şartname: "${it.reqs[i][0]}" → ${['bakılmadı','eksik','uygun'][v]}`);
+}
+// Every şartname maddesi follows the same pattern as an item:
+// karşılanıyor mu → ölçüldü/denendi mi; değilse Database'e sor → aşamasını seç. The 0/1/2 state is derived.
+function flowOf(it,i){ const f=checks[it.id]?.f?.[i]; return f && typeof f==='object' ? f : {}; }
+function deriveS(f){ if((f.v==='evet' && f.olc===true) || f.asama==='uygun') return 2; if(f.v) return 1; return 0; }
+async function setFlow(id, i, patch, logText){
+  const it = byId(id); const before = isDone(it); const lockedBefore = ITEMS.filter(x=>stateOf(x)==='lock').map(x=>x.id);
+  const cur = checks[id] || {s:{}}; const nf = { ...flowOf(it,i), ...patch }; const v = deriveS(nf); const at = new Date().toISOString();
+  checks[id] = { ...cur, s:{ ...(cur.s||{}), [i]:v }, f:{ ...(cur.f||{}), [i]:nf }, by:myId, at };
+  renderAll(); announce(id, before, lockedBefore);
+  const ok = await writeDoc('checks', id, { s:{ [i]:v }, f:{ [i]:nf }, by:myId, at }, exists.checks);
+  if(ok && logText) logIt(id, `Şartname: "${it.reqs[i][0]}" → ${logText}`);
+}
+const RSTAGE = A => [['tasarim',A?'Tasarım':'Taslak'],['uretim',A?'Üretim':'Yazım'],['test',A?'Test':'Kontrol'],['uygun','Uygun','yes']];
+function reqStatus(it,i){ const f=flowOf(it,i), v=reqState(it,i), A=it.reqs[i][2]==='A';
+  if(deferred(it,i)) return 'Araç bitince bakılacak';
+  if(v===2) return f.asama==='uygun' && f.v!=='evet' ? 'Uygun (yapıldı)' : 'Uygun';
+  if(f.v==='evet') return f.olc===false ? (A?'Var ama ölçülmedi':'Hazır ama kontrol edilmedi') : (A?'Var, ölçülecek':'Hazır, kontrol edilecek');
+  if(f.v){ const st=RSTAGE(A).find(x=>x[0]===f.asama); return `${f.v==='kismen'?'Kısmen':'Yok'}${f.db?' · Database: '+(f.db==='var'?'bulundu':'yok'):''}${st?' · '+st[1]:''}`; }
+  return ['Bakılmadı','Eksik','Uygun'][v]; }
+const rseg = (i, field, opts, val, ro) => `<span class="seg" role="group">${opts.map(([v,l,c])=>`<button type="button" class="${c||''}" data-rf="${i}|${field}" data-val="${esc(JSON.stringify(v))}" aria-pressed="${val===v}" ${ro?'disabled':''}>${l}</button>`).join('')}</span>`;
+const reqCopy = {};
+const jobsFor = (it,i) => (BAK[it.id]?.isler||[]).filter(j=>j.m.includes(i));
+/* ---------- takım arşivi indeksi (VOLTARIS_INDEKS + Teams haritası) ---------- */
+let IDX=null, idxP=null; const ixQ={};
+const nrm = s => String(s||'').toLocaleLowerCase('tr').replace(/[çğıöşüâî]/g,c=>({ç:'c',ğ:'g',ı:'i',ö:'o',ş:'s',ü:'u',â:'a',î:'i'}[c])).replace(/[^a-z0-9]+/g,' ').trim();
+const STOP = new Set('ve veya ile icin bir bu su olan olarak gibi vb son hali eski yeni varsa var yok her tum the of and for to in on with dosya dosyalari klasor notlari notu fotograflari olculeri olcu bilgisi listesi'.split(' '));
+const KOMITE = { sasi:['Sasi ve Roll Cage'], rollcage:['Sasi ve Roll Cage'], koltuk:['Sasi ve Roll Cage','Powertrain ve Kabuk'], fren:['Fren ve Direksiyon'], direksiyon:['Fren ve Direksiyon'],
+  motor:['Powertrain ve Kabuk'], kabuk:['Powertrain ve Kabuk'], kapi:['Powertrain ve Kabuk'], surucu:['Powertrain ve Kabuk','Gomulu Yazilim'], batarya:['Batarya ve BYS'], bms:['Batarya ve BYS'],
+  ysb:['Batarya ve BYS'], izolasyon:['Batarya ve BYS'], aks:['AKS','Gomulu Yazilim'], telemetri:['AKS','Gomulu Yazilim'], elguv:['Batarya ve BYS','AKS'], ttr:['Ar-Ge ve Dokuman'], video:['Ar-Ge ve Dokuman'] };
+function loadIdx(){ if(idxP || mode==='loading') return idxP;
+  idxP = (mode==='db' ? fb.indeksOku() : Promise.reject(0)).then(d=>{
+    IDX = { ver:String(d.ver||''),
+      drive:(d.drive||[]).map(r=>({ n:r[0], f:r[1], p:r[2], k:r[3], e:r[4], d:r[5], g:r[6], mb:r[7], t:r[8], u:safeUrl(r[9]), c:r[10], sn:nrm(r[0]), se:nrm(r[4]), sp:nrm(r[2]), sk:nrm(r[3]) })).filter(r=>r.u),
+      teams:(d.teams||[]).map(r=>({ p:r[0], nf:r[1], mb:r[2], fmt:r[3], feat:r[4], t:r[5], dd:r[6], sp:nrm(r[0]), sf:nrm(r[4]) })) };
+    renderCard(); }).catch(()=>{ IDX={err:true}; renderCard(); });
+  return idxP; }
+function ixTerms(it,i){ const key=it.id+':'+i; const out=new Map(); const add=(t,w)=>{ const n=nrm(t); if(!n) return; if(n.includes(' ')){ if(!out.has(n)||out.get(n)<w) out.set(n,w*1.3); }
+    n.split(' ').forEach(x=>{ if(x.length>=3 && !STOP.has(x) && (!out.has(x)||out.get(x)<w)) out.set(x,w); }); };
+  if(ixQ[key]){ add(ixQ[key],3); return out; }
+  const jobs=jobsFor(it,i); jobs.forEach(j=>j.q.forEach(q=>add(q,3))); (it.q||[]).forEach(q=>add(q,2.5));
+  jobs.forEach(j=>j.ara.forEach(a=>add(a,1))); add(it.reqs[i][0],.8); add(flowOf(it,i).is,1.5); return out; }
+function ixScore(text, terms){ let s=0, hit=0; for(const [t,w] of terms){ if(text.includes(t)){ s+=w; hit++; } } return [s,hit]; }
+function ixSearch(it,i){ if(!IDX||IDX.err) return null; const terms=ixTerms(it,i); if(!terms.size) return {drive:[],teams:[]};
+  const kom=KOMITE[it.id]||[]; const own=ixQ[it.id+':'+i];
+  const scored=IDX.drive.map(r=>{ let s=0, hit=0; for(const [t,w] of terms){ let x=0; if(r.sn.includes(t)) x=3; else if(r.se.includes(t)) x=2; else if(r.sp.includes(t)) x=1.5; else if(r.sk.includes(t)) x=1; if(x){ s+=x*w; hit++; } }
+    if(!hit) return null; if(!own && kom.includes(r.c)) s+=2.5; if(r.d==='kullanışlı') s+=1; if(r.g==='düşük') s-=.5; return {r,s}; }).filter(x=>x && x.s>=(own?2:6)).sort((a,b)=>b.s-a.s);
+  const perDir={}, drive=[]; for(const x of scored){ const d=x.r.p; perDir[d]=(perDir[d]||0)+1; if(perDir[d]<=2) drive.push(x.r); if(drive.length>=8) break; }
+  const teams=IDX.teams.map(r=>{ const [a]=ixScore(r.sp,terms), [b]=ixScore(r.sf,terms); return {r, s:a*1.5+b}; }).filter(x=>x.s>=(own?2:5)).sort((a,b)=>b.s-a.s).slice(0,4).map(x=>x.r);
+  return {drive, teams, n:scored.length}; }
+const ixDate = v => { const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||''); return m?`${m[3]}.${m[2]}.${m[1]}`:''; };
+function ixBlock(it,i,ro,found){ loadIdx(); const key=it.id+':'+i; const res=ixSearch(it,i);
+  let h=`<div class="ix"><div class="ix-h"><span class="sub-h">Takım arşivinde bulunanlar</span><span class="when">${IDX&&!IDX.err?`indeks ${ixDate(IDX.ver)}`:''}</span></div>
+    <input class="inp" data-rix="${i}" maxlength="80" placeholder="Kendi kelimelerinle ara (ör. jant, bağlantı plakası)" value="${esc(ixQ[key]||'')}">`;
+  if(!IDX) return h+'<span class="when">İndeks yükleniyor…</span></div>';
+  if(IDX.err) return h+'<span class="when">İndeks yüklenemedi; Database sorgusunu kopyalayıp kullan.</span></div>';
+  if(!res.drive.length && !res.teams.length) return h+`<span class="when">${ixQ[key]?`"${esc(ixQ[key])}" için`:'Bu öncül için'} arşivde eşleşen dosya yok. Başka kelime dene ya da Database'e sor.</span></div>`;
+  h+=`<div class="ix-res">${res.drive.map(r=>{ const added=found.some(x=>x.u===r.u); return `<div class="ix-r"><div class="ix-t"><a href="${esc(r.u)}" target="_blank" rel="noopener">${esc(r.n)}</a>
+      <small>${esc(r.p)}</small><small>${esc(r.k)}${r.f?' · '+esc(r.f):''}${r.t?' · '+esc(ixDate(r.t)):''} · <span class="ixd ${r.d==='kullanışlı'?'ok':''}">${esc(r.d)}</span></small></div>
+      ${ro?'':(added?`<button class="btn small added" type="button" disabled>${TICK} Eklendi</button>`:`<button class="btn small" type="button" data-rixadd="${i}|${esc(r.u)}" data-rixn="${esc(r.n)}">Ekle</button>`)}</div>`; }).join('')}</div>`;
+  if(res.n>res.drive.length) h+=`<span class="when">${res.n} eşleşmeden en iyi ${res.drive.length} tanesi; daha dar arama için kendi kelimeni yaz.</span>`;
+  if(res.teams.length) h+=`<details class="ix-tm"><summary>Teams'te olabilecek klasörler (${res.teams.length})</summary><ul>${res.teams.map(r=>`<li><b>${esc(r.p)}</b><br><span class="when">${r.nf} dosya · ${esc(r.feat)}${r.t?' · '+esc(ixDate(r.t)):''}</span><br><span class="when">Drive'da: ${esc(r.dd)}</span></li>`).join('')}</ul></details>`;
+  return h+'</div>'; }
+
+function reqFlowHtml(it, i, ro){ const q=it.reqs[i], A=q[2]==='A', f=flowOf(it,i), key=it.id+':'+i;
+  const L = A ? {v:'Araçta karşılanıyor mu?', o:'Ölçüldü ya da denendi mi?', n:'Ölçüm ya da test sonucu: ne ölçüldü, kaç çıktı'} : {v:'Raporda hazır mı?', o:'Başka biri okuyup kontrol etti mi?', n:'Kim kontrol etti, ne düzeltildi'};
+  const eksik = f.v==='kismen' || f.v==='hayir' || (f.v==='evet' && f.olc===false);
+  let h = `<div class="rflow"><span class="sub-h">Durum tespiti</span>
+    <div class="q"><span>1. ${L.v}</span>${rseg(i,'v',[['evet','Evet','yes'],['kismen','Kısmen'],['hayir','Hayır','no'],['sonra','Araç bitince']],f.v ?? (deferred(it,i)?'sonra':undefined),ro)}</div>
+    ${deferred(it,i)?'<p class="help">Bu madde ancak araç tamamlanınca doğrulanabilir. Şimdilik kalemi bekletmiyor; araç bitince buradan Evet ya da Hayır işaretle.</p>':''}`;
+  if(f.v==='evet') h += `<div class="q"><span>2. ${L.o}</span>${rseg(i,'olc',[[true,'Evet','yes'],[false,'Hayır','no']],f.olc,ro)}</div>`;
+  if(eksik){ let k = f.v==='evet' ? 3 : 2; const jobs=jobsFor(it,i); const ds=driveState[key]||{}; const found=Array.isArray(f.found)?f.found:[];
+    h += `<div class="q"><span>${k++}. Ne yapacaksınız?<small>Database sorgusuna eklenir.</small></span></div>
+      <input class="inp" data-ris="${i}" maxlength="300" placeholder="${esc(jobs[0]?'Örnek: '+jobs[0].n.toLocaleLowerCase('tr'):'Örnek: bu maddeyi karşılamak için ne yapılacak')}" value="${esc(f.is||'')}" ${ro?'disabled':''}>
+      <div class="ask"><span class="sub-h">Database'e sor</span>${jobs.length?`<ul>${[...new Set(jobs.flatMap(j=>j.ara))].map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
+        ${ixBlock(it,i,ro,found)}
+        <span class="when">Arşivde yoksa ya da daha ayrıntılı bir soru varsa Database projesine sor:</span>
+        <div class="row"><button class="btn primary small" type="button" data-rq="${i}">Database sorgusunu kopyala</button><span class="when">Database projesindeki sohbete yapıştır.</span></div>
+        <details><summary>Sorguda tam olarak ne yazıyor?</summary><pre>${esc(reqQuery(it,i))}</pre></details>
+        ${reqCopy[key]?`<textarea class="inp" readonly style="min-height:110px" aria-label="Database sorgusu">${esc(reqCopy[key])}</textarea>`:''}
+        ${ds.msg?`<div class="msg ${ds.err?'err':''}">${esc(ds.msg)}</div>`:''}
+      <div class="q"><span>${k++}. Database'de önceki çalışma bulundu mu?</span>${rseg(i,'db',[['var','Var','yes'],['yok','Yok','no']],f.db,ro)}</div>
+      ${found.length?`<ul class="found">${found.map((x,m)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro?'':`<button class="xbtn" type="button" data-rdelfound="${i}|${m}" aria-label="Kaldır">×</button>`}</li>`).join('')}</ul>`:''}
+      ${ro?'':`<div class="row"><input class="inp" data-rft="${i}" placeholder="Bulunan dosyanın adı" maxlength="120"><input class="inp" data-rfu="${i}" placeholder="Linki" maxlength="500">${justAdded[key]&&Date.now()-justAdded[key]<4000?`<button class="btn small added" type="button" data-rfadd="${i}">${TICK} Eklendi</button>`:`<button class="btn small" type="button" data-rfadd="${i}">Ekle</button>`}</div>`}
+      <div class="q"><span>${k}. Şu an hangi aşamada?<small>"Uygun" seçince öncül tamamlanır.</small></span>${rseg(i,'asama',RSTAGE(A),f.asama,ro)}</div>`; }
+  if(f.v) h += `<input class="inp" data-rnot="${i}" maxlength="300" placeholder="${eksik?'Not: eksik olan ya da yapılacak iş':L.n}" value="${esc(f.not||'')}" ${ro?'disabled':''}>`;
+  h += `<div class="rfoto"><span class="sub-h">Fotoğraflar <small>bu öncülle ilgili: montaj yeri, ölçüm, parça</small></span>${photoBlock(it, ro, String(i))}</div>`;
+  return h + '</div>'; }
+function reqQuery(it, i){ const q=it.reqs[i], A=q[2]==='A', f=flowOf(it,i);
+  const metin = SART ? parseSrc(q[1]).filter(c=>!c.bad && !c.ceza && c.n).map(c=>{ const sec=ssec(c.doc,c.n); const idx=c.marks.length?citeIdx(sec,c.marks):[0]; return idx.map(k=>paraText(sec.p[k])).join(' '); }).filter(Boolean).join('\n') : '';
+  const durum = {evet: f.olc===false ? (A?'Araçta var ama ölçülmedi':'Raporda var ama kontrol edilmedi') : 'Karşılanıyor', kismen:'Kısmen karşılanıyor', hayir:'Karşılanmıyor'}[f.v] || 'Henüz kontrol edilmedi';
+  return `Voltaris Database'inde bir şartname maddesi için önceki çalışma arıyorum. Aynı işi baştan yapmamak istiyoruz.
+
+Kalem: ${it.name}
+Madde: ${q[0]} (${q[1]}, ${sartYil} şartnamesi)
+${metin?`Şartnamedeki metin: ${metin}\n`:''}${f.is?`Ne yapacağız: ${f.is}
+`:''}Şu anki durum: ${durum}.${f.not?' Not: '+f.not:''}
+
+Bu maddeyi karşılamak için daha önce yapılmış şunları ara. Birebir aynısı olmasa da benzeri varsa onu da yaz:
+${(jobsFor(it,i).length ? [...new Set(jobsFor(it,i).flatMap(j=>j.ara))] : (A?['Tasarım ve çizimler','Hesaplar','Ölçüm ve test kayıtları, fotoğraflar','Sipariş ya da satın alma bilgileri']:['Rapor taslakları ve önceki TTR bölümleri','Analiz dosyaları ve görseller'])).map(a=>'- '+a).join('\n')}
+Bulduğun her şey için dosyanın adını, nerede durduğunu, tarihini ve bu maddeyi karşılayıp karşılamadığını yaz. Bulamazsan "bulunamadı" yaz, tahmin yürütme. Bu maddeyle ilgisi olmayan dosyaları listeleme.`; }
+function announce(id, before, lockedBefore){
+  const it = byId(id); if(!before && isDone(it)){ pulse(id);
+    const opened = ITEMS.filter(x=>lockedBefore.includes(x.id) && stateOf(x)!=='lock').map(x=>x.name);
+    toast(`<b>${esc(it.name)}</b> artık gerçek.${opened.length?' Kilidi açıldı: '+esc(opened.join(', '))+'.':''}`); }
+}
+
+/* ---------- render: header, notice ---------- */
+function renderHeader(){
+  const r = Math.round(avgOf(ITEMS.map(x=>x.id))*100);
+  $('realPct').innerHTML = `Araç <b>%${r}</b> hazır`;
+  $('myBirim').value = myBirim || '';
+  const n = Object.values(unread).reduce((s,v)=>s+v,0); $('chatCount').hidden = !n; $('chatCount').textContent = n;
+}
+function renderNotice(){
+  const n=$('notice'); n.className='notice';
+  if(mode==='loading'){ n.textContent='Takımın kayıtları yükleniyor…'; n.hidden=false; return; }
+  if(mode==='local'){ n.classList.add('warn'); n.textContent='Ortak kayıt bu görünümde açılamadı: değişikliklerin sadece bu tarayıcıda kalır, ekip görmez ve sohbet çalışmaz.'; n.hidden=false; return; }
+  if(canWrite===false){ n.textContent='Değişiklik yapma yetkin yok: üyeliğin kaldırılmış ya da pasif olabilir. Bir yöneticiye sor.'; n.hidden=false; return; }
+  if(!myBirim){ n.innerHTML='Hoş geldin. Önce sağ üstten <b>birimini seç</b>: liste ve takvim senin birimine göre öne çıkar.'; n.hidden=false; return; }
+  if(!Object.keys(recs).length){ n.innerHTML='Henüz hiçbir kalem tespit edilmedi, araç tamamen hayalet. Atölye turuna başla: aşağıdaki listede her kalem için <b>yapılmış mı</b> sorusunu işaretle.'; n.hidden=false; return; }
+  n.hidden=true;
+}
+
+/* ---------- render: item card (the decision flow) ---------- */
+function segBtns(field, opts, val, dis){
+  return `<span class="seg" role="group">${opts.map(([v,l,cls])=>`<button type="button" class="${cls||''}" data-set="${field}" data-val="${esc(JSON.stringify(v))}" aria-pressed="${val===v}" ${dis?'disabled':''}>${l}</button>`).join('')}</span>`;
+}
+const ST_LABEL = {done:'Hazır', part:'Çalışılıyor', holo:'Bakılmadı', lock:'Bekliyor'};
+const TICK = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.2 L5.6 10.2 L11.5 3.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const openStep = {}; const justAdded = {};   // per item: a finished step the user reopened
+function needScanOf(r){ return r.v==='kismen' || r.v==='yok' || (r.v==='var' && r.cal===false); }
+function activeStep(it){ const r=rec(it.id);
+  if(!(r.v && r.v!=='?') || (r.v==='var' && r.cal==null) || (r.v==='var' && r.cal===true && r.test==null)) return 1;
+  if(needScanOf(r) && (!Number.isInteger(r.is) || r.tas==null || r.dok==null || r.har==null)) return 2;
+  return 3; }
+function stepSummary(it, n){ const r=rec(it.id);
+  if(n===1) return `Durum: ${LABELS.v[r.v]||'bilinmiyor'}${r.v==='var'&&r.cal!=null?', '+LABELS.cal[r.cal]:''}${r.cal===true&&r.test!=null?', '+LABELS.test[r.test]:''}`;
+  if(n===2) return needScanOf(r) ? `Önceki çalışma: ${[r.tas==='var'&&'tasarım',r.dok==='var'&&'doküman',r.har==='var'&&'başlanmış iş'].filter(Boolean).join(', ')||'bir şey bulunamadı'}${(r.found||[]).length?` · ${r.found.length} dosya eklendi`:''}` : 'Önceki çalışma taraması gerekmedi';
+  return ''; }
+async function renderCard(){
+  const it = byId(selected), r = rec(it.id), ph = phaseOf(it), st = stateOf(it), ro = readOnly();
+  const pi = phaseIdx(ph);
+  const ps = await people([r.owner, r.by, checks[it.id]?.by, ...raporIds(it.id)]);
+  if(it.id!==selected) return;
+  const owner = r.owner ? `<span class="owner">${ps[r.owner]?.avatarUrl?`<img src="${esc(ps[r.owner].avatarUrl)}" alt="">`:''}<span>${esc(nameOf(ps,r.owner))}</span></span>` : '<span>Sorumlu yok</span>';
+  const mineOwner = r.owner && r.owner===myId;
+  const deps = it.deps.length ? `<span>Önce: ${it.deps.map(d=>`${esc(byId(d).name)}${isDone(byId(d))?' ✓':''}`).join(', ')}</span>` : '';
+  const b = BAK[it.id];
+  const started = it.reqs.some((_,i)=>flowOf(it,i).v || reqState(it,i)>0);
+  const howto = `<details class="cz howto-d" ${started?'':'open'}><summary>Bu kalem nedir, atölyede neye bakılır</summary><div class="howto" style="margin-top:6px"><p><b>Bu ne?</b> ${esc(b.ne)} <b>Nerede?</b> ${esc(b.nerede)}</p>
+      <span class="sub-h">Atölyede sırayla yap</span>
+      <p class="when">Takımın kontrol listesi, şartnamede bu haliyle yazmıyor. Yanında madde numarası olan adım o öncülü de kontrol eder; numaraya dokununca öncül açılır.</p>
+      <ol>${b.adim.map((a,k)=>`<li>${esc(a)}${(ADIM_M[it.id]?.[k]||[]).map(i=>`<button type="button" class="mref" data-goreq="${i}" title="${esc(it.reqs[i][0])}">${esc(it.reqs[i][1])}</button>`).join('')}</li>`).join('')}</ol>
+      <p><b>Yanına al:</b> ${esc(b.alet)}</p></div></details>`;
+  const nOk = it.reqs.filter((_,i)=>reqState(it,i)===2).length; const nSon = it.reqs.filter((_,i)=>deferred(it,i)).length;
+  const ni = nextReq(it);
+  const reqs = `<ul class="reqs">${it.reqs.map((q,i)=>{ const v=reqState(it,i); const open=openReq.has(it.id+':'+i); const dfr = deferred(it,i);
+      return `<li class="req ${i===ni?'is-next':''}"><button type="button" class="rbtn ${v===2?'ok':v===1?'bad':dfr?'later':''}" data-hint="${i}" aria-label="${esc(q[0])}: ${esc(reqStatus(it,i))}. Durumunu aç">${v===2?CHECK:v===1?CROSS:dfr?CLOCK:''}</button>
+        <button type="button" class="rtext" data-hint="${i}" aria-expanded="${open}">${esc(q[0])}<small>${esc(reqStatus(it,i))} · <span class="more">${open?'kapat':'aç'}</span></small></button><span class="kind k-${q[2]}">${q[2]==='A'?'Araç':'Rapor'}</span>${srcChip(q[1])}</li>
+        ${open?`<li class="rhint">${reqFlowHtml(it,i,ro)}<div class="rinfo"><b>Ne yapılacak</b>${esc(q[3]||'Açıklama eklenmedi.')}<br><span class="when">${q[2]==='A'?'Teknik kontrolde veya videolarda bakılır':'Teknik Tasarım Raporu\'nda anlatılır'} · kaynak ${esc(q[1])}</span><div class="quote">${quoteHtml(q[1], it)}</div></div></li>`:''}`; }).join('')}</ul>`;
+  const figs = itemFigs(it);
+
+  $('card').innerHTML = `
+    <div class="switch"><button class="btn" type="button" id="prevItem" aria-label="Önceki kalem">‹</button>
+      <select class="sel" id="itemSel" aria-label="Kalem seç">${['M','E','O'].map(k=>`<optgroup label="${esc(BIRIM[k])}">${ITEMS.filter(x=>x.birim===k).map(x=>`<option value="${x.id}" ${x.id===it.id?'selected':''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('')}</select>
+      <button class="btn" type="button" id="nextItem" aria-label="Sonraki kalem">›</button></div>
+    <div class="card-top">
+      <h2>${esc(it.name)}</h2>
+      <div class="facts"><span class="pill st-${st}"><i></i>${ST_LABEL[st]}</span><span class="btag b-${it.birim}">${esc(BIRIM[it.birim])}</span>${owner}
+        ${ro?'':`<button class="btn small" type="button" id="ownBtn">${mineOwner?'Bırak':'Üstlen'}</button>`}<button class="btn small" type="button" id="talkBtn">Sohbette sor</button></div>
+      <div class="prog"><span>${PHASES[pi].n} · %${Math.round(progress(it)*100)}</span><span class="bar"><span style="width:${Math.round(progress(it)*100)}%;background:var(--real)"></span></span></div>
+      ${deps?`<div class="facts">${deps}</div>`:''}
+    </div>
+    ${howto}
+    ${ni>=0?`<div class="now"><span class="eyebrow">Sıradaki öncül · ${esc(it.reqs[ni][1])}</span><h3>${esc(it.reqs[ni][0])}</h3><p class="lead">Şimdi: ${esc(reqNextQ(it,ni))}</p>
+      ${openReq.has(it.id+':'+ni)?'':`<button class="btn small primary" type="button" data-hint="${ni}" style="align-self:flex-start">Durum tespitini aç</button>`}</div>`
+      :`<div class="now"><span class="eyebrow">Durum</span><h3>${esc(nextStep(it))}</h3></div>`}
+    <section class="sect"><h3>Öncüller (şartname maddeleri) <span class="mono">${nOk} / ${it.reqs.length} uygun${nSon?` · ${nSon} araç bitince`:''}</span></h3>
+      <p class="help">Durum tespiti her öncülün içinde yapılır: araçta karşılanıyor mu, evetse ölçüldü mü; değilse Database'e sor, bulunanları ekle ve aşamasını seç. Kalemin durumu öncüllerden hesaplanır. Saat işaretliler araç bitince bakılacak, kalemi bekletmez.</p>${reqs}${cezaBlock(it)}</section>
+    <section class="sect"><h3>Test kaydı ve fotoğraflar <span class="mono">${fotos(r).length}</span></h3>
+      <input class="inp" id="testNot" maxlength="300" placeholder="Test kaydı: ne test edildi, sonuç, varsa dosya linki" value="${esc(r.testNot||'')}" ${ro?'disabled':''}>${photoBlock(it, ro)}</section>
+    ${raporBlock(it, ro, ps)}
+    ${figs.length?`<section class="sect"><h3>Şartnamedeki görseller <span class="mono">${figs.length}</span></h3><p class="help">Tasarlarken bunlara bak. Büyütmek için dokun.</p><div class="thumbs">${figs.map(thumbHtml).join('')}</div></section>`:''}
+    <section class="sect"><h3><label for="noteIn">Not</label></h3>
+      <textarea class="inp" id="noteIn" maxlength="1500" placeholder="Bu kalemle ilgili not" ${ro?'disabled':''}>${esc(r.not||'')}</textarea>
+      ${r.at?`<p class="when" style="margin:0">Son değişiklik: ${esc(nameOf(ps,r.by))}, ${ago(r.at)}</p>`:''}</section>
+    ${galleryBlock(it)}`;
+}
+
+/* ---------- rapor verileri ---------- */
+// rapor/<itemId>.f.<alan> = {v, by, at, src, ok:{by,at}|null, h:[önceki değerler]}; eski kayıtlar rapor/<id>.v.<alan> düz metin.
+const rf = (id,key) => { const x=rapor[id]?.f?.[key]; if(x && typeof x==='object') return x; const old=rapor[id]?.v?.[key]; return typeof old==='string' ? {v:old} : {}; };
+const rv = (id,key) => { const v=rf(id,key).v; return typeof v==='string' ? v : ''; };
+const raporIds = id => Object.values(rapor[id]?.f||{}).flatMap(x=>x&&typeof x==='object'?[x.by, x.ok?.by]:[]).filter(v=>v&&v!=='yerel');
+function itemFields(it){ const seen=new Set(), out=[]; RAPOR_TABLES.forEach(t=>t.rows.forEach(r=>{ if(r[2]!==it.id || seen.has(r[3])) return; seen.add(r[3]); out.push({label:r[0], unit:r[1], key:r[3], o:r[4]||{}, t:t.n}); }));
+  RAPOR_SECTIONS.filter(x=>x[2]===it.id).forEach(x=>out.push({label:`${x[0]}. ${x[1]}`, unit:'metin bölümü: bulduklarını ve taslağı yaz', key:'sec_'+x[0], o:{uzun:true}, t:'Metin bölümleri'})); return out; }
+function provHtml(id, f, ps, ro){ const x=rf(id,f.key); if(!x.v) return '';
+  const who = x.by ? esc(nameOf(ps,x.by)) : 'eski kayıt'; const mine = !!myId && x.by===myId;
+  const ok = x.ok?.by ? `<span class="okv">${TICK} Doğrulandı: ${esc(nameOf(ps,x.ok.by))}</span>` : (ro ? '<span>doğrulanmadı</span>' : (mine ? '<span>başka biri doğrulamalı</span>' : `<button type="button" class="btn link" data-rok="${f.key}">Doğrula</button>`));
+  return `<span class="prov">Giren: ${who}${x.at?' · '+ago(x.at):''}${x.src?' · '+esc(x.src):''} · ${ok}</span>`; }
+function raporBlock(it, ro, ps){ const fs=itemFields(it); if(!fs.length) return ''; const n=fs.filter(f=>rv(it.id,f.key)).length; const nOkv=fs.filter(f=>rf(it.id,f.key).ok?.by).length;
+  let lastT='';
+  return `<details class="cz rdet" ${openRap.has(it.id)?'open':''} data-rdet="${it.id}"><summary>Rapor için veriler <span class="mono">${n} / ${fs.length} dolu · ${nOkv} doğrulandı</span><span class="when">TTR şablonundaki tablolar</span></summary>
+    <p class="help" style="margin:6px 0">Ölçtükçe ya da öğrendikçe yaz ve kaynağını seç. Kimin ne zaman girdiği kaydedilir; değeri başka bir üye kontrol edip "Doğrula"ya basar. Değer değişirse doğrulama sıfırlanır. Hepsi Rapor sekmesinde şablondaki tablolar halinde toplanır.</p>
+    <div class="rfields">${fs.map(f=>{ const x=rf(it.id,f.key), val=rv(it.id,f.key); const head = f.t!==lastT ? `<span class="rgrp">${esc(f.t)}</span>` : ''; lastT=f.t;
+      const input = f.o.opts ? `<select class="inp" id="rv-${f.key}" data-rv="${f.key}" ${ro?'disabled':''}><option value="">—</option>${f.o.opts.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('')}</select>`
+        : f.o.uzun ? `<textarea class="inp" id="rv-${f.key}" data-rv="${f.key}" maxlength="3000" ${ro?'disabled':''}>${esc(val)}</textarea>`
+        : `<input class="inp" id="rv-${f.key}" data-rv="${f.key}" maxlength="200" value="${esc(val)}" ${ro?'disabled':''}>`;
+      return `${head}<div class="rfl ${f.o.uzun?'wide':''} ${x.ok?.by?'is-ok':''}"><label for="rv-${f.key}">${esc(f.label)}<small>${esc(f.unit)}${f.o.son?' · araç bitince':''}</small></label>
+        <div class="rfrow">${input}${f.o.uzun||!val?'':`<select class="inp rsrc" data-rsrc="${f.key}" aria-label="Kaynak" ${ro?'disabled':''}><option value="">Kaynak</option>${KAYNAK.map(k=>`<option ${k===x.src?'selected':''}>${k}</option>`).join('')}</select>`}</div>
+        ${provHtml(it.id, f, ps, ro)}</div>`; }).join('')}</div></details>`; }
+const openRap = new Set();
+async function setRapor(id, key, patch, logText){
+  const cur = rf(id,key); const at=new Date().toISOString(); let nf;
+  if('v' in patch){ const h = cur.v ? [{v:cur.v, by:cur.by||null, at:cur.at||null}, ...(cur.h||[])].slice(0,5) : (cur.h||[]); nf = { ...cur, v:patch.v, by:myId||'yerel', at, ok:null, h, src: patch.src ?? cur.src ?? null }; }
+  else nf = { ...cur, ...patch };
+  rapor[id] = { ...(rapor[id]||{}), f:{ ...(rapor[id]?.f||{}), [key]:nf } };
+  renderCard(); renderHeader(); if(tab==='rapor') renderRapor();
+  const ok = await writeDoc('rapor', id, { f:{ [key]:nf }, by:myId, at }, exists.rapor);
+  if(ok && logText) logIt(id, logText);
+}
+function tableTSV(t){ return ['Özellik\tBirim\tDeğer / Açıklama', ...t.rows.map(r=>`${r[0]}\t${r[1]}\t${rv(r[2],r[3])}`)].join('\n'); }
+let rapF = 'all';
+async function renderRapor(){
+  const rows=RAPOR_TABLES.flatMap(t=>t.rows); const uniq=new Map(); rows.forEach(r=>uniq.set(r[2]+'.'+r[3], r)); const U=[...uniq.values()];
+  const filled=U.filter(r=>rv(r[2],r[3])).length, verified=U.filter(r=>rf(r[2],r[3]).ok?.by).length;
+  const ps = await people(ITEMS.flatMap(it=>raporIds(it.id)));
+  const show = r => { const x=rf(r[2],r[3]); return rapF==='all' || (rapF==='bos' && !x.v) || (rapF==='dog' && x.v && !x.ok?.by); };
+  const cell = (id,key) => { const x=rf(id,key); if(!x.v) return ''; return `${x.by?esc(nameOf(ps,x.by)):'eski kayıt'}${x.at?`<br><span class="when">${ago(x.at)}</span>`:''}`; };
+  const okc = (id,key) => { const x=rf(id,key); if(!x.v) return ''; return x.ok?.by ? `<span class="okv">${TICK} ${esc(nameOf(ps,x.ok.by))}</span>` : '<span class="when">doğrulanmadı</span>'; };
+  const rq = ITEMS.flatMap(it=>it.reqs.map((q,i)=>({it,q,i})).filter(x=>x.q[2]==='R'));
+  $('raporBox').innerHTML = `<div class="head"><h2>Teknik Tasarım Raporu verileri</h2><span class="note">${filled} / ${U.length} alan dolu · ${verified} doğrulandı</span></div>
+    <p class="help">Ekip araç üzerinde çalışırken kalem sayfalarına girdiği değerler burada TTR şablonundaki tablolar halinde toplanır. Her değerin kim tarafından, ne zaman ve hangi kaynaktan (ölçüm, datasheet, hesap, tahmin) girildiği ve başka bir üyece doğrulanıp doğrulanmadığı görünür. "Tabloyu kopyala" Word ya da Google Docs'taki tabloya yapıştırılabilir. Takım üye tablosu (şablonda ikinci "Tablo 2") kişisel bilgi içerdiği için burada yok; KYS'deki bilgilerle doldurulmalı, burada yok.</p>
+    <div class="row" style="margin:8px 0 4px"><button class="btn small primary" type="button" data-copyt="_all">Bütün tabloları kopyala</button>
+      <span class="filters">${[['all','Hepsi'],['bos','Boş olanlar'],['dog','Doğrulanmamışlar']].map(([k,l])=>`<button type="button" class="fchip" data-rapf="${k}" aria-pressed="${rapF===k}">${l}</button>`).join('')}</span></div>
+    ${RAPOR_TABLES.map(t=>{ const n=t.rows.filter(r=>rv(r[2],r[3])).length; const vis=t.rows.filter(show); if(!vis.length) return ''; return `<section class="rt"><div class="head"><h3>${esc(t.n)} <span class="when">· ${esc(t.src)}</span></h3><span class="row"><span class="mono">${n} / ${t.rows.length}</span><button class="btn small" type="button" data-copyt="${t.id}">Tabloyu kopyala</button></span></div>
+      <div class="hscroll"><table class="ctbl rtbl"><thead><tr><th>Özellik</th><th>Birim</th><th>Değer / açıklama</th><th>Kaynak</th><th>Giren</th><th>Doğrulayan</th><th>Kalem</th></tr></thead><tbody>${vis.map(r=>{ const x=rf(r[2],r[3]), it=byId(r[2]);
+        return `<tr><td>${esc(r[0])}</td><td class="when">${esc(r[1])}</td><td>${x.v?esc(x.v):`<span class="miss">boş${r[4]?.son?' · araç bitince':''}</span>`}</td><td class="when">${esc(x.src||'')}</td><td>${cell(r[2],r[3])}</td><td>${okc(r[2],r[3])}</td><td><button type="button" class="namebtn" style="font-size:13px;font-weight:500" data-goto="${it.id}" data-rapopen="1">${esc(it.name)}</button></td></tr>`; }).join('')}</tbody></table></div></section>`; }).join('')}
+    <section class="rt"><div class="head"><h3>Metin bölümleri için notlar</h3><span class="mono">${RAPOR_SECTIONS.filter(x=>rv(x[2],'sec_'+x[0])).length} / ${RAPOR_SECTIONS.length}</span></div>
+      <p class="help">Şablonda yazıyla doldurulacak bölümler. Kalem sayfalarında girilen notlar ve taslaklar burada; destek ekibi bunlardan metni yazar.</p>
+      <ul class="rlist">${RAPOR_SECTIONS.filter(x=>show([0,0,x[2],'sec_'+x[0]])).map(x=>{ const it=byId(x[2]), k='sec_'+x[0], v=rv(x[2],k); return `<li><b>${esc(x[0])}. ${esc(x[1])}</b> · <button type="button" class="namebtn" style="font-size:13px;font-weight:500" data-goto="${it.id}" data-rapopen="1">${esc(it.name)}</button><br>${v?`<span class="secv">${esc(v)}</span><br><span class="when">${cell(x[2],k).replace('<br>',' · ')} · ${okc(x[2],k)}</span>`:'<span class="miss">henüz not yok</span>'}</li>`; }).join('')}</ul></section>
+    <section class="rt"><div class="head"><h3>Raporda anlatılacak öncüller</h3><span class="mono">${rq.filter(x=>reqState(x.it,x.i)===2).length} / ${rq.length} hazır</span></div>
+      <ul class="rlist">${rq.map(x=>{ const f=flowOf(x.it,x.i); return `<li><button type="button" class="namebtn" style="font-size:13.5px" data-goto="${x.it.id}">${esc(x.it.name)}</button> · ${esc(x.q[0])} <span class="when">(${esc(x.q[1])})</span><br><span class="when">${esc(reqStatus(x.it,x.i))}${f.not?' · '+esc(f.not):''}</span></li>`; }).join('')}</ul></section>`;
+}
+document.addEventListener('click', e=>{ const b=e.target.closest('[data-rapf]'); if(b){ rapF=b.dataset.rapf; renderRapor(); } });
+document.addEventListener('click', async e=>{ const b=e.target.closest('[data-copyt]'); if(!b) return;
+  const k=b.dataset.copyt; const txt = k==='_all' ? RAPOR_TABLES.map(t=>`${t.n} (${t.src})\n${tableTSV(t)}`).join('\n\n') : tableTSV(RAPOR_TABLES.find(t=>t.id===k));
+  try{ await navigator.clipboard.writeText(txt); toast('Kopyalandı. Word ya da Docs\'ta tabloya yapıştır.'); }
+  catch(err){ const ta=document.createElement('textarea'); ta.className='inp'; ta.readOnly=true; ta.style.minHeight='140px'; ta.value=txt; b.closest('.rt, .row').after(ta); ta.select(); toast('Otomatik kopyalanamadı; seçili metni kopyala.'); } });
+document.addEventListener('click', e=>{ const g=e.target.closest('[data-rapopen]'); if(g){ openRap.add(g.dataset.goto); } }, true);
+
+function srcChip(src){
+  const cs = SART ? parseSrc(src) : []; const bad = cs.some(c=>c.bad);
+  const first = cs.find(c=>!c.bad && !c.ceza);
+  if(first) return `<button type="button" class="srcbtn ${bad?'warn':''}" data-sart="${esc(first.doc+'|'+first.n+'|'+first.marks.join(','))}" title="Şartnamedeki metni aç">${esc(src)}</button>`;
+  if(cs.some(c=>c.ceza)) return `<button type="button" class="srcbtn" data-ceza="1" title="Ceza listesini aç">${esc(src)}</button>`;
+  return `<span class="srcbtn ${bad?'warn':''}" style="cursor:default">${esc(src)}</span>`;
+}
+function cezaBlock(it){
+  if(!SART) return ''; const rows=cezaFor(it.id); if(!rows.length) return '';
+  const dq=rows.filter(r=>isDQ(r.em)).length;
+  return `<details class="cz"><summary>Ceza listesinde bu kalem: ${rows.length} satır${dq?` · <b>${dq} diskalifiye</b>`:''} <span class="when">(B2 Ek 1)</span></summary>
+    <ul class="cezas">${rows.map(r=>`<li><span>${esc(r.b)}: ${esc(r.i)}</span><span class="pen ${penCls(r.em)}">${esc(r.em)}</span></li>`).join('')}</ul>
+    <p class="when" style="margin:4px 0 0">* güvenlik sebebiyle, ** kural ihlali sebebiyle. Süre cezaları yarış süresine eklenir.</p></details>`;
+}
+
+/* ---------- render: item list ---------- */
+function visibleItems(){
+  if(filter==='all') return ITEMS;
+  if(filter==='mine') return myBirim ? ITEMS.filter(x=>x.birim===myBirim) : ITEMS;
+  return ITEMS.filter(x=>x.birim===filter);
+}
+async function renderList(){
+  const rows = visibleItems();
+  const ps = await people(rows.map(x=>rec(x.id).owner));
+  $('filters').querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed', b.dataset.f===filter));
+  $('tbl').innerHTML = `<thead><tr><th>Kalem</th><th>Durum</th><th>Aşama</th><th>Madde</th><th>Sorumlu</th></tr></thead><tbody>${rows.map(it=>{
+    const r=rec(it.id), ph=phaseOf(it), st=stateOf(it), nOk=it.reqs.filter((_,i)=>reqState(it,i)===2).length;
+    return `<tr class="${it.id===selected?'sel':''}" data-row="${it.id}"><td><button class="namebtn" type="button" data-pick="${it.id}">${esc(it.name)}</button><small><span class="btag b-${it.birim}">${BIRIM_TAG[it.birim]}</span> · ${esc(nextStep(it))}</small></td>
+      <td><span class="pill st-${st}"><i></i>${ST_LABEL[st]}</span></td>
+      <td>${PHASES[phaseIdx(ph)].n}</td>
+      <td><span class="mono">${nOk}/${it.reqs.length}</span></td>
+      <td>${r.owner?esc(nameOf(ps,r.owner)):'<span class="when">—</span>'}</td></tr>`; }).join('')}</tbody>`;
+}
+
+/* ---------- render: technical control plate ---------- */
+const IC = {
+  car:'<path d="M3 15.5V13l2.2-4.2A2 2 0 0 1 7 7.8h10a2 2 0 0 1 1.8 1L21 13v2.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M5 13h14"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/>',
+  buggy:'<path d="M4 15 7.5 7h7l4 5.5H21"/><path d="M7.5 7 10 15M14.5 7 13 15"/><circle cx="5.5" cy="16.5" r="2.5"/><circle cx="18.5" cy="16.5" r="2.5"/><path d="M8 16.5h8"/>',
+  shield:'<path d="M12 3 19 6v5c0 4.6-3 8-7 10-4-2-7-5.4-7-10V6Z"/><path d="M8.5 13.5h7l-1-2.5h-5Z"/><circle cx="9.7" cy="14.6" r=".7"/><circle cx="14.3" cy="14.6" r=".7"/>',
+  motor:'<rect x="3.5" y="6.5" width="13" height="11" rx="2"/><circle cx="10" cy="12" r="3"/><path d="M16.5 10H20v4h-3.5M6 6.5v-2h8v2"/>',
+  driver:'<rect x="5" y="4" width="14" height="16" rx="2"/><rect x="8" y="7" width="8" height="5" rx="1"/><path d="M8.5 15.5h2M13.5 15.5h2"/><circle cx="9.5" cy="15.5" r=".4"/><circle cx="14.5" cy="15.5" r=".4"/>',
+  pulse:'<circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/><path d="M5.5 10.5h2l1.2-2.5 1.8 4.5 1.3-2h2.2"/>',
+  chip:'<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3"/><path d="M10 12h4"/>',
+  cells:'<rect x="3" y="8" width="5" height="10" rx="1"/><rect x="9.5" y="8" width="5" height="10" rx="1"/><rect x="16" y="8" width="5" height="10" rx="1"/><path d="M4.5 6.5h2M11 6.5h2M17.5 6.5h2"/>',
+  plug:'<path d="M7 3v4M11 3v4M5 7h8v3a4 4 0 0 1-8 0Z"/><path d="M9 14v3a3 3 0 0 0 3 3h2"/><path d="m18 9-2 4h3l-2 4"/>',
+  signal:'<path d="M5 18.5h14l-1.5-4h-11Z"/><circle cx="8" cy="19.5" r="1"/><circle cx="16" cy="19.5" r="1"/><path d="M8.5 9.5a5 5 0 0 1 7 0M6.3 7.2a8 8 0 0 1 11.4 0"/><circle cx="12" cy="11.8" r=".8"/>',
+  bolt:'<path d="M12 3.5 21.5 20h-19Z"/><path d="m12.8 9-2.6 4.5h3.4l-2.4 4"/>',
+  ok:'<path d="M12 3 19 6v5c0 4.6-3 8-7 10-4-2-7-5.4-7-10V6Z"/><path d="m8.6 12.2 2.4 2.4 4.6-4.8"/>' };
+const ico = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||''}</svg>`;
+const etItems = id => ITEMS.filter(x=>x.ets.includes(id));
+function etState(e){ const its=etItems(e.id); if(its.length && its.every(isDone)) return 'done'; return its.some(x=>progress(x)>0)?'part':'holo'; }
+function renderPlate(){
+  let k=0; $('tiles').innerHTML = PLATE_ROWS.map(n=>`<div class="trow">${ETIKETLER.slice(k,k+=n).map(e=>{ const st=etState(e);
+    return `<button type="button" class="tile ${st==='holo'?'':st}" data-et="${e.id}" aria-pressed="${e.id===selEt}" aria-label="${esc(e.n)}: ${{done:'geçmeye hazır',part:'süreçte',holo:'hayalet'}[st]}">${ico(e.ic)}<span>${esc(e.n)}</span></button>`; }).join('')}</div>`).join('');
+  const nDone = ETIKETLER.filter(e=>etState(e)==='done').length, all = nDone===ETIKETLER.length;
+  const g=$('green'); g.classList.toggle('on', all); g.innerHTML = `${ico('ok')}<span>${sartYil} yılı teknik kontrol başarılı${all?'':`<small>${nDone} / ${ETIKETLER.length} başlık hazır</small>`}</span>`;
+  const e = ETIKETLER.find(x=>x.id===selEt) || ETIKETLER[0]; const its = etItems(e.id);
+  const cites = SART ? parseSrc(e.src).filter(c=>!c.bad && !c.ceza) : [];
+  $('plateSide').innerHTML = `<span class="eyebrow">Teknik kontrol plakası · ${sartYil}</span><h3>${esc(e.n)}</h3>
+    <p class="help">Yarış haftasında her başlık geçildikçe plakadaki kare yapıştırılır; 11 karenin hepsi tamamlanınca yeşil "teknik kontrol başarılı" etiketi gelir. Sıra önemli: <b>Dinamik Sürüş ve Fren Testi</b> geçilmeden diğer ayrıntılı kontrollerin hiçbirine girilemez (B7 İkinci Gün e, h). Üç hak var (B7 İkinci Gün a).</p>
+    ${cites.length?`<div class="srcs">${cites.map(c=>sartBtn(c, citeLabel(c))).join('')}</div>`:''}
+    <span class="eyebrow">Bu başlık için hazır olması gereken kalemler</span>
+    ${its.map(x=>{ const st=stateOf(x), p=Math.round(progress(x)*100); return `<button type="button" class="linkrow" data-goto="${x.id}"><b>${esc(x.name)}</b><span class="bar"><span style="width:${p}%;background:${stColor(st)}"></span></span><em>${isDone(x)?'gerçek':PHASES[phaseIdx(phaseOf(x))].n}</em></button>`; }).join('')}
+    <p class="when" style="margin:4px 0 0">Plaka 2026 yarış haftasında araçlara yapıştırılanın aynısı. Hangi kalemin hangi başlıkta kontrol edildiği şartnamede tek tek yazmıyor; bu eşleştirme takımın tahmini. Bölüm 7'deki listede geçen Hidrojen ve Enerji Yönetim Sistemi plakada yok. Kare dolması için bağlı kalemlerin hepsi "Hazır" ve şartname maddeleri "uygun" olmalı.</p>`;
+}
+document.addEventListener('click', e=>{ const t=e.target.closest('.tile[data-et]'); if(t){ selEt=t.dataset.et; renderPlate(); } });
+
+/* ---------- render: takvim ---------- */
+function renderLevels(){
+  $('levels').innerHTML = LEVELS.map((L,i)=>{ const ids=setOf(L.set); const ready = ids.length? avgOf(ids) : null;
+    const cls = i===0?'n-on':(ready!==null&&ready>=1?'n-ok':'n-off');
+    return `<div class="lv"><div class="lv-top"><span class="node ${cls}">${L.n}</span>${i<LEVELS.length-1?'<span class="lv-line"></span>':''}</div>
+      <h3>${esc(L.name)}</h3><span class="when">${esc(L.when)}</span><span class="need">${esc(L.need)}</span>
+      ${ready!==null?`<div class="bar" style="margin-top:3px" title="Hazırlık %${Math.round(ready*100)}"><span style="width:${Math.round(ready*100)}%;background:var(--real)"></span></div>`:''}</div>`; }).join('');
+}
+const T0=Date.UTC(2026,9,1), T1=Date.UTC(2027,10,1);
+const pct = d => ((typeof d==='number'?d:Date.parse(d+'T00:00:00Z'))-T0)/(T1-T0)*100;
+function packRows(bars){ const rows=[]; return bars.map(bar=>{ const a=Date.parse(bar.a), b=Date.parse(bar.b); let r=rows.findIndex(e=>e<a-3*864e5); if(r<0){r=rows.length;rows.push(0);} rows[r]=b; return r; }); }
+function barInfo(bar){ const ids=setOf(bar.bz); if(bar.pend) return {cls:'pend',p:null}; if(!ids.length) return {cls:'cal',p:null}; const p=avgOf(ids); const done=ids.every(id=>isDone(byId(id))); return {cls: done?'done':p>0?'part':'', p}; }
+function renderTimeline(){
+  const months=[]; for(let i=0;i<13;i++){ const d=new Date(Date.UTC(2026,9+i,1)); months.push({x:pct(d.getTime()), l:AYLAR[d.getUTCMonth()]+' '+String(d.getUTCFullYear()).slice(2)}); }
+  const vl = months.map(m=>`<span class="tl-vline" style="left:${m.x}%"></span>`).join('');
+  const ml = MILES.map(m=>`<span class="tl-mline" style="left:${pct(m.d)}%"></span>`).join('');
+  const tx = pct(Date.now()); const tl = (tx>0&&tx<100)?`<span class="tl-today" style="left:${tx}%"></span>`:'';
+  let h = `<div class="tl-months"><div></div><div class="tl-mrow">${months.map(m=>`<span class="tl-m" style="left:${m.x}%">${m.l}</span>`).join('')}</div></div>`;
+  h += `<div class="tl-miles"><div></div><div class="tl-mlrow">${MILES.map((m,i)=>`<button type="button" class="mile ${m.tier?'t'+m.tier:''}" style="left:${pct(m.d)}%" data-mile="${i}"><i></i><span>${esc(m.n)}</span></button>`).join('')}</div></div>`;
+  LANES.forEach(L=>{ const rows=packRows(L.bars); const n=Math.max(...rows)+1;
+    h += `<div class="tl-lane"><div class="tl-lname">${esc(L.name)}<small>${esc(L.sub)}</small></div><div class="tl-track" style="height:${n*32+8}px">${vl}${ml}${tl}
+      ${L.bars.map((bar,i)=>{ const inf=barInfo(bar); const l=pct(bar.a), w=Math.max(pct(bar.b)-l,.6); const key=`${L.id}:${i}`;
+        const mine = myBirim && (L.b===myBirim || setOf(bar.bz).some(id=>byId(id).birim===myBirim));
+        return `<button type="button" class="tl-bar ${inf.cls} ${mine?'mine':''}" data-bar="${key}" aria-pressed="${key===selBar}" style="left:${l}%;width:${w}%;top:${rows[i]*32+5}px" title="${esc(bar.n)}">${inf.p!==null&&inf.cls!=='done'?`<span class="fill" style="width:${Math.round(inf.p*100)}%"></span>`:''}<span class="lbl">${esc(bar.n)}</span></button>`; }).join('')}</div></div>`; });
+  $('timeline').innerHTML = h; renderTlDetail();
+}
+const fmt = d => { const x=new Date(d+'T00:00:00Z'); return x.getUTCDate()+' '+AYLAR[x.getUTCMonth()]+' '+x.getUTCFullYear(); };
+function renderTlDetail(){
+  if(selBar.startsWith('mile:')){ const m=MILES[+selBar.slice(5)];
+    $('tlDetail').innerHTML = `<div><span class="eyebrow">TEKNOFEST tarihi · tahmini</span><h3>${esc(m.n)}</h3><span class="dates">~ ${fmt(m.d)}</span><p>2026 takviminin bir yıl sonrası. 2027 şartnamesi yayımlanınca gerçek tarihle güncellenecek.</p></div><div></div>`; return; }
+  const [lid,ix]=selBar.split(':'); const L=LANES.find(x=>x.id===lid); const bar=L.bars[+ix]; const ids=setOf(bar.bz);
+  const days=Math.round((Date.parse(bar.b)-Date.parse(bar.a))/864e5)+1; const now=Date.now(), a=Date.parse(bar.a), b=Date.parse(bar.b)+864e5;
+  const ts = now<a?`${Math.ceil((a-now)/864e5)} gün sonra başlıyor`:now>b?'Süresi geçti':`${Math.ceil((b-now)/864e5)} gün kaldı`;
+  const linked = ids.length ? ids.map(id=>{ const it=byId(id), st=stateOf(it), p=Math.round(progress(it)*100);
+      return `<button type="button" class="linkrow" data-goto="${id}"><b>${esc(it.name)}</b><span class="bar"><span style="width:${p}%;background:${stColor(st)}"></span></span><em>${PHASES[phaseIdx(phaseOf(it))].n}</em></button>`; }).join('')
+    : `<p>${bar.pend?'Henüz veri yok.':'Takvim görevi: bir kaleme bağlı değil.'}</p>`;
+  $('tlDetail').innerHTML = `<div><span class="eyebrow">${esc(L.name)} · ${esc(L.sub)}</span><h3>${esc(bar.n)}</h3><span class="dates">${fmt(bar.a)} → ${fmt(bar.b)} · ${days} gün · ${ts}</span><p>${esc(bar.d||'')}</p></div>
+    <div><span class="eyebrow">${ids.length?'Bağlı kalemler · araca git':'Durum'}</span>${linked}</div>`;
+}
+
+/* ---------- render: şartname ---------- */
+function renderSart(){
+  $('sartYil').innerHTML = SART_VERS.map(v=>`<option value="${v.yil}" ${v.yil===sartYil?'selected':''}>${esc(v.n)}</option>`).join('');
+  if(sartErr){ $('sartVer').textContent='açılamadı'; $('toc').innerHTML=''; $('reader').innerHTML=`<p class="msg err">Şartname metni yüklenemedi: ${esc(sartErr)}. Sayfayı yenile.</p>`; return; }
+  if(!SART){ $('sartVer').textContent='yükleniyor…'; return; }
+  $('sartVer').textContent = `${SART.docs.length} kitapçık · ${SART.docs.reduce((a,d)=>a+d.secs.length,0)} madde başlığı`;
+  if($('sartQ').value!==sv.q && document.activeElement!==$('sartQ')) $('sartQ').value=sv.q;
+  const d = sdoc(sv.doc) || SART.docs[0];
+  $('toc').innerHTML = `<div class="docs" role="group" aria-label="Kitapçık">
+      <button type="button" class="fchip" data-sdoc="_ozet" aria-pressed="${sv.mode==='ozet'}">Özet</button>
+      ${SART.docs.map(x=>`<button type="button" class="fchip" data-sdoc="${x.id}" aria-pressed="${sv.mode==='sec'&&sv.doc===x.id}">${esc(DOC_SHORT[x.id]||x.id)}</button>`).join('')}
+      <button type="button" class="fchip" data-sdoc="_ceza" aria-pressed="${sv.mode==='ceza'}">Ceza listesi</button>
+      <button type="button" class="fchip" data-sdoc="_gal" aria-pressed="${sv.mode==='gal'}">Görseller</button></div>
+    <span class="eyebrow" style="padding:0 8px">${esc(d.title)}</span>
+    <div class="secs">${d.secs.map(x=>{ const dep=x.n.startsWith('G')||x.n==='0'?1:x.n.split('.').length;
+      return `<button type="button" class="d${dep}" data-sec="${esc(d.id+'|'+x.n)}" aria-current="${sv.mode==='sec'&&sv.doc===d.id&&sv.n===x.n}"><i>${x.n==='0'?'·':x.n.startsWith('G')?'':esc(x.n)}</i>${esc(x.t)}</button>`; }).join('')}</div>`;
+  const back = sv.back && byId(sv.back) ? `<div class="backrow"><button type="button" class="btn small" data-goto="${sv.back}">‹ ${esc(byId(sv.back).name)} kalemine dön</button></div>` : '';
+  if(sv.mode==='search') return renderSearch(back);
+  if(sv.mode==='ceza') return renderCeza(back);
+  if(sv.mode==='gal') return renderGal(back);
+  if(sv.mode==='sec' && ssec(sv.doc,sv.n)) return renderSec(back);
+  renderOzet();
+}
+function renderSec(back){
+  const d=sdoc(sv.doc), sec=ssec(sv.doc,sv.n); const hits=new Set(sv.marks?.length?citeIdx(sec,sv.marks):[]);
+  const users=usersOf(d.id, sec.n); const figs=secFigs(d.id, sec.n); const usedF=new Set();
+  $('reader').innerHTML = `${back}<span class="eyebrow">${esc(d.title)}</span>
+    <h2>${sec.n==='0'||sec.n.startsWith('G')?'':esc(sec.n)+' '}${esc(sec.t)}</h2>
+    <span class="rmeta">${sartYil} kitapçığı${d.ver?' · '+esc(d.ver):''} · PDF sayfa ${sec.pg} · ${esc(d.file)}</span>
+    ${sv.marks?.length?`<p class="msg" style="margin:0">Atıf yapılan bent: <b>(${esc(sv.marks.join(', '))})</b>${hits.size?' · turuncu ile işaretli':' · bu maddede bulunamadı'}</p>`:''}
+    <div class="rule">${sec.p.map((p,i)=>{ if(typeof p!=='string') return tableHtml(p, sv.q);
+      const fn=figNum(p); const f = fn && figs.find(x=>!usedF.has(x.i) && (x.n===fn || x.cap.startsWith('Şekil '+fn+'.')));
+      if(f){ usedF.add(f.i); return figHtml(f); }
+      const k=mkOf(p); const sub = k[2]==='.' && ROM.includes(k[1]) || /^[•▪-]/.test(p);
+      return `<p id="sp-${i}" class="${hits.has(i)?'hit':''} ${sv.pi===i?'found':''} ${sub?'sub':''}">${hl(p, sv.q)}</p>`; }).join('') || '<p class="msg">Bu başlığın altında metin yok; alt maddelere bak.</p>'}
+      ${figs.filter(f=>!usedF.has(f.i)).map(f=>figHtml(f)).join('')}</div>
+    ${users.length?`<div><span class="eyebrow">Bu maddeyi takip eden kalemler</span>
+      ${users.map(u=>`<button type="button" class="linkrow" data-goto="${u.it.id}"><b>${esc(u.it.name)}</b><span style="flex:1;font-size:12.5px;color:var(--ink-2)">${esc(u.q[0])}</span><em>${['bakılmadı','eksik','uygun'][reqState(u.it,u.i)]}</em></button>`).join('')}</div>`:''}`;
+  const target = sv.pi!=null ? $('sp-'+sv.pi) : (hits.size ? $('sp-'+[...hits][0]) : null);
+  if(target && sv.scroll){ sv.scroll=false; target.scrollIntoView({block:'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }
+}
+function renderSearch(back){
+  const q=sv.q.trim(), ql=q.toLocaleLowerCase('tr'); const res=[];
+  SART.docs.forEach(d=>d.secs.forEach(sec=>{
+    if(sec.t.toLocaleLowerCase('tr').includes(ql)) res.push({d,sec,pi:null,txt:sec.t,title:true});
+    sec.p.forEach((p,pi)=>{ const t=paraText(p); const j=t.toLocaleLowerCase('tr').indexOf(ql); if(j>=0) res.push({d,sec,pi,txt:(j>70?'…':'')+t.slice(Math.max(0,j-70), j+ql.length+110)+(j+ql.length+110<t.length?'…':'')}); });
+  }));
+  const ceza=(SART.ceza||[]).filter(c=>c.em && (c.b+' '+c.i).toLocaleLowerCase('tr').includes(ql));
+  $('reader').innerHTML = `${back}<span class="eyebrow">Arama</span><h2>"${esc(q)}"</h2><span class="rmeta">${res.length} yerde geçiyor${ceza.length?` · ceza listesinde ${ceza.length} satır`:''}</span>
+    ${ceza.length?`<div class="qblk"><div class="qhead"><b>Ceza listesi (B2 Ek 1)</b><button type="button" class="srcbtn" data-ceza="1">Listeyi aç</button></div>${ceza.slice(0,8).map(r=>`<p>${hl(r.b,q)}: ${hl(r.i,q)} → <span class="pen ${penCls(r.em)}">${esc(r.em)}</span></p>`).join('')}</div>`:''}
+    <div class="results">${res.slice(0,80).map(r=>`<button type="button" class="res" data-sec="${esc(r.d.id+'|'+r.sec.n)}" ${r.pi!=null?`data-pi="${r.pi}"`:''}><b>${esc(DOC_SHORT[r.d.id]||r.d.id)} · ${r.sec.n==='0'?'':esc(r.sec.n)+' '}${esc(r.sec.t)}</b><small>${r.title?'Başlıkta geçiyor':hl(r.txt,q)}</small></button>`).join('') || '<p class="msg">Bulunamadı. Daha kısa bir kelime dene (ör. "sigorta" yerine "sigort").</p>'}
+    ${res.length>80?'<p class="msg">İlk 80 sonuç gösteriliyor; aramayı daralt.</p>':''}</div>`;
+}
+function renderCeza(back){
+  const all=(SART.ceza||[]); const em=all.filter(c=>c.em);
+  const rows = em.filter(c=> sv.cf==='dq' ? isDQ(c.em) : sv.cf==='risk' ? !isDone(byId(cezaKalem(c))) && isDQ(c.em) : true);
+  let lastG='';
+  $('reader').innerHTML = `${back}<span class="eyebrow">Bölüm 2 · Ek 1</span><h2>Ceza listesi</h2>
+    <span class="rmeta">${sartYil} kitapçığı · ${em.length} elektromobil satırı · yalnız hidromobile ait ${all.length-em.length} satır gizli</span>
+    <div class="filters">${[['all','Tümü'],['dq','Sadece diskalifiye'],['risk','Kalemi hazır olmayan diskalifiyeler']].map(([k,l])=>`<button type="button" class="fchip" data-cf="${k}" aria-pressed="${sv.cf===k}">${l}</button>`).join('')}</div>
+    <div class="hscroll"><table class="ctbl"><thead><tr><th>Grup</th><th>Başlık</th><th>İhlal</th><th>Elektromobil</th><th>Sorumlu kalem</th></tr></thead><tbody>
+    ${rows.map(c=>{ const it=byId(cezaKalem(c)); const st=it?stateOf(it):'holo'; const g=c.g!==lastG?c.g:''; lastG=c.g;
+      return `<tr><td class="g">${esc(g)}</td><td>${esc(c.b)}</td><td>${esc(c.i)}</td><td class="pen ${penCls(c.em)}">${esc(c.em)}</td><td>${it?`<button type="button" class="namebtn" style="font-size:13px" data-goto="${it.id}"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:${st==='done'?'var(--real)':'transparent'};border:2px ${st==='done'||st==='part'?'solid':'dashed'} ${stColor(st)}"></span>${esc(it.name)}</button>`:'—'}</td></tr>`; }).join('') || '<tr><td colspan="5" class="msg">Bu filtrede satır yok.</td></tr>'}
+    </tbody></table></div>
+    <p class="when" style="margin:0">* Güvenlik sebebiyle, ** Kural ihlali sebebiyle diskalifiye. Satırın sorumlu kalemi takımın eşleştirmesi; kalem "gerçek" olunca o satırın riski kapanmış sayılır.</p>`;
+}
+function renderGal(back){
+  const F=SART.figs||[];
+  $('reader').innerHTML = `${back}<h2>Şartnamedeki görseller</h2><span class="rmeta">${F.length} şekil · ${sartYil} kitapçıklarından kesildi. Dokununca büyür; oradan maddesine gidebilirsin.</span>
+    ${SART.docs.filter(d=>F.some(f=>f.doc===d.id)).map(d=>`<div class="gal"><h3>${esc(d.title)}</h3><div class="thumbs">${F.filter(f=>f.doc===d.id).map(thumbHtml).join('')}</div></div>`).join('')}`;
+}
+function renderOzet(){
+  const em=(SART.ceza||[]).filter(c=>c.em); const dq=em.filter(c=>isDQ(c.em));
+  const riskDq=dq.filter(c=>!isDone(byId(cezaKalem(c))));
+  const nReq=ITEMS.reduce((a,x)=>a+x.reqs.length,0); const okReq=ITEMS.reduce((a,x)=>a+x.reqs.filter((_,i)=>reqState(x,i)===2).length,0);
+  const broken=brokenCites(); const sonList=ITEMS.flatMap(it=>it.reqs.map((q,i)=>({it,q,i})).filter(x=>deferred(x.it,x.i)));
+  $('reader').innerHTML = `<h2>Araç şartnameye ne kadar uygun?</h2><span class="rmeta">${sartYil} kitapçıklarına göre. Soldan bir kitapçık seç, yukarıdan ara ya da görsellere bak.</span>
+    <div class="ozet">
+      <div class="oz"><span class="eyebrow">Takip edilen maddeler</span><b class="big">${okReq} / ${nReq}</b><p>Kalemlerdeki şartname maddelerinden "uygun" işaretlenenler. Her maddenin kaynağına dokununca asıl metin açılır.</p></div>
+      <div class="oz"><span class="eyebrow">Açık diskalifiye riski</span><b class="big" style="color:${riskDq.length?'var(--bad)':'var(--ok)'}">${riskDq.length} / ${dq.length}</b><p>Ceza listesindeki diskalifiye satırlarından, sorumlu kalemi henüz gerçek olmayanlar.</p><button type="button" class="btn small" data-ceza="risk">Bu satırları gör</button></div>
+      <div class="oz"><span class="eyebrow">Araç bitince bakılacak</span><b class="big">${sonList.length}</b><p>Araç tamamlanmadan doğrulanamayan maddeler. Kalemleri bekletmez; araç bitince tek tek işaretlenir.</p>
+        ${sonList.slice(0,8).map(x=>`<button type="button" class="linkrow" data-goto="${x.it.id}"><b>${esc(x.it.name)}</b><em style="width:auto;text-align:left;flex:1">${esc(x.q[0])}</em></button>`).join('')}</div>
+      <div class="oz"><span class="eyebrow">Kaynak kontrolü</span><b class="big" style="color:${broken.length?'var(--bad)':'var(--ok)'}">${broken.length?broken.length+' sorun':'Tamam'}</b><p>${broken.length?'Bu madde numaraları seçili yılın kitapçığında bulunamadı:':`Kalemlerdeki tüm madde numaraları ${sartYil} kitapçıklarında bulundu. 2027 kitapçıkları gelince bu kontrol yeniden yapılır.`}</p>
+        ${broken.slice(0,6).map(b=>`<button type="button" class="linkrow" data-goto="${b.it.id}"><b>${esc(b.it.name)}</b><em style="width:auto">${esc(b.c.raw)}</em></button>`).join('')}</div>
+    </div>
+    <div><span class="eyebrow">Kitapçıklar</span>
+      <div class="results" style="margin-top:6px">${SART.docs.map(d=>`<button type="button" class="res" data-sec="${esc(d.id+'|'+d.secs[0].n)}"><b>${esc(d.title)}</b><small>${esc(d.ver||String(sartYil))} · ${d.secs.length} madde başlığı · ${d.pages} sayfa</small></button>`).join('')}</div></div>
+    <p class="when" style="margin:0">Metinler ve şekiller TEKNOFEST'in yayımladığı ${sartYil} PDF kitapçıklarından otomatik çıkarıldı; bazı tablolar düzgün aktarılamamış olabilir. Şüphede PDF'teki sayfaya bak (her maddede sayfa numarası yazıyor).</p>`;
+}
+function openSart(doc, n, marks, back){ sv={ ...sv, mode:'sec', doc, n, marks:marks||[], pi:null, back: back??sv.back, scroll:true }; setTab('sart'); $('reader').scrollIntoView({block:'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }
+let sqT; $('sartQ').addEventListener('input', e=>{ clearTimeout(sqT); sqT=setTimeout(()=>{ const q=e.target.value.trim(); sv.q=q; if(q.length>=2){ sv.mode='search'; } else if(sv.mode==='search'){ sv.mode='ozet'; } renderSart(); },220); });
+$('sartYil').addEventListener('change', e=>{ loadSart(+e.target.value); });
+document.addEventListener('click', e=>{
+  const a=e.target.closest('[data-sart]'); if(a){ const [doc,n,m]=a.dataset.sart.split('|'); openSart(doc, n, m?m.split(','):[], a.closest('#card')?selected:(a.closest('#plateSide')?null:undefined)); return; }
+  const c=e.target.closest('[data-ceza]'); if(c){ sv={...sv, mode:'ceza', cf: c.dataset.ceza==='risk'?'risk':sv.cf, back: c.closest('#card')?selected:sv.back}; setTab('sart'); return; }
+  const sc=e.target.closest('[data-sec]'); if(sc){ const [doc,n]=sc.dataset.sec.split('|'); const fromSearch = sc.classList.contains('res') && sv.mode==='search';
+    sv={...sv, mode:'sec', doc, n, marks:[], pi: sc.dataset.pi!=null ? +sc.dataset.pi : null, q: fromSearch?sv.q:'', scroll:true}; if(!fromSearch) $('sartQ').value=''; renderSart(); if(window.innerWidth<861) $('reader').scrollIntoView({block:'start'}); return; }
+  const sd=e.target.closest('[data-sdoc]'); if(sd){ const k=sd.dataset.sdoc; if(k==='_ozet'||k==='_ceza'||k==='_gal'){ sv={...sv,mode:k.slice(1),q:''}; $('sartQ').value=''; } else { const d=sdoc(k); sv={...sv,mode:'sec',doc:k,n:d.secs[0].n,marks:[],pi:null,q:''}; $('sartQ').value=''; } renderSart(); return; }
+  const cf=e.target.closest('[data-cf]'); if(cf){ sv.cf=cf.dataset.cf; renderSart(); return; }
+});
+
+/* ---------- render: birimler ---------- */
+async function renderUnits(){
+  const out=[]; const owners=[]; const lasts={};
+  for(const k of ['M','E','O']){
+    const its = ITEMS.filter(x=>x.birim===k);
+    const p = Math.round(avgOf(its.map(x=>x.id))*100);
+    const cnt = {tespit:0, tarama:0, yurut:0, hazir:0};
+    its.forEach(x=>{ const ph=phaseOf(x); if(ph==='tespit') cnt.tespit++; else if(ph==='arastirma') cnt.tarama++; else if(isDone(x)) cnt.hazir++; else cnt.yurut++; });
+    const working = its.filter(x=>!isDone(x) && phaseOf(x)!=='tespit');
+    const todo = its.filter(x=>phaseOf(x)==='tespit');
+    let last=null; its.forEach(x=>{ const r=rec(x.id); if(r.at && (!last || r.at>last.at)) last=r; });
+    lasts[k]=last; its.forEach(x=>owners.push(rec(x.id).owner)); if(last) owners.push(last.by);
+    out.push({k,p,cnt,working,todo,its});
+  }
+  const ps = await people(owners);
+  $('units').innerHTML = out.map(u=>`<div class="unit ${u.k===myBirim?'mine':''}"><h3>${esc(BIRIM[u.k])}<em>%${u.p}</em></h3>
+      <div class="bar"><span style="width:${u.p}%;background:var(--real)"></span></div>
+      <div class="phases"><div><b>${u.cnt.tespit}</b><small>tespit bekliyor</small></div><div><b>${u.cnt.tarama}</b><small>taramada</small></div><div><b>${u.cnt.yurut}</b><small>yürütmede</small></div><div><b style="color:var(--real)">${u.cnt.hazir}</b><small>hazır</small></div></div>
+      <span class="lab">Süreçteki kalemler</span>
+      ${u.working.length?`<ul>${u.working.slice(0,5).map(x=>`<li><button type="button" data-goto="${x.id}">${esc(x.name)}</button> <span>· ${PHASES[phaseIdx(phaseOf(x))].n}${rec(x.id).owner?' · '+esc(nameOf(ps,rec(x.id).owner)):''}</span><br><span>${esc(nextStep(x))}</span></li>`).join('')}</ul>`:'<p class="empty">Süreçte kalem yok.</p>'}
+      <span class="lab">Tespit bekleyen</span>
+      ${u.todo.length?`<ul>${u.todo.map(x=>`<li><button type="button" data-goto="${x.id}">${esc(x.name)}</button></li>`).join('')}</ul>`:'<p class="empty">Hepsi tespit edildi.</p>'}
+      <span class="last">${lasts[u.k]?`Son hareket: ${esc(nameOf(ps,lasts[u.k].by))}, ${ago(lasts[u.k].at)}`:'Henüz hareket yok'}</span></div>`).join('');
+}
+async function renderFeed(){
+  if(mode!=='db'){ $('feed').innerHTML='<li class="empty">Hareket kaydı ortak kayıtla çalışır.</li>'; return; }
+  if(!logRows.length){ $('feed').innerHTML='<li class="empty">İlk değişiklik burada görünecek.</li>'; return; }
+  const ps = await people(logRows.map(r=>r.by));
+  $('feed').innerHTML = logRows.slice(0,30).map(r=>{ const it=byId(r.item); const p=ps[r.by];
+    return `<li>${p?.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="">`:''}<div><div><b>${esc(nameOf(ps,r.by))}</b> · ${it?`<button type="button" class="namebtn" style="font-size:13px" data-goto="${it.id}">${esc(it.name)}</button>`:''}: ${esc(r.text)}</div><span class="when">${ago(r.at)}</span></div></li>`; }).join('');
+}
+
+/* ---------- render: chat ---------- */
+function renderChans(){
+  $('chans').innerHTML = CHANNELS.map(c=>`<button type="button" class="chan" data-chan="${c.id}" aria-pressed="${c.id===chan}">${esc(c.n)}${unread[c.id]?`<span class="count">${unread[c.id]}</span>`:''}</button>`).join('');
+}
+async function renderMsgs(){
+  const list = chat[chan] || [];
+  if(mode!=='db'){ $('msgs').innerHTML='<p class="empty">Sohbet ortak kayıtla çalışır; bu görünümde açılamadı.</p>'; return; }
+  if(!list.length){ $('msgs').innerHTML=`<p class="empty">${esc(CHANNELS.find(c=>c.id===chan).n)} kanalında henüz mesaj yok. İlk mesajı sen yaz.</p>`; return; }
+  const ps = await people(list.map(m=>m.by));
+  const box=$('msgs'); const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+  box.innerHTML = list.map(m=>{ const p=ps[m.by]; const it=m.item&&byId(m.item);
+    return `<div class="m">${p?.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="">`:'<span style="width:28px"></span>'}<div class="m-body"><div class="m-meta"><b>${esc(nameOf(ps,m.by))}</b>${ago(m.at)}</div><div class="m-text">${esc(m.text)}</div>${it?`<button type="button" class="m-item" data-goto="${it.id}">${esc(it.name)}</button>`:''}</div></div>`; }).join('');
+  if(atBottom || box.dataset.first!=='1'){ box.scrollTop = box.scrollHeight; box.dataset.first='1'; }
+}
+function markRead(){ try{ localStorage.setItem('vh-seen-'+chan, new Date().toISOString()); }catch(e){} unread[chan]=0; renderChans(); renderHeader(); }
+function computeUnread(c){ let seen=''; try{ seen=localStorage.getItem('vh-seen-'+c)||''; }catch(e){}
+  unread[c] = (chat[c]||[]).filter(m=>m.at>seen && m.by!==myId).length; if(chatOpen && c===chan) unread[c]=0; }
+function renderAttach(){ const a=$('attach'); if(attachItem){ a.hidden=false; a.innerHTML=`Kalem: <b>${esc(byId(attachItem).name)}</b> <button type="button" class="xbtn" id="attachX" aria-label="Kalemi kaldır">×</button>`; } else a.hidden=true; }
+
+function renderAll(){ renderHeader(); renderNotice(); renderCard(); renderList(); renderPlate(); if(tab==='takvim'){ renderLevels(); renderTimeline(); } if(tab==='birim'){ renderUnits(); renderFeed(); } if(tab==='sart' && sv.mode!=='sec') renderSart(); if(tab==='rapor') renderRapor(); syncScene(); }
+
+/* ---------- interactions ---------- */
+function select(id, jump){ selected=id; openStep[id]=0; const it=byId(id); if(it.ets.length && !it.ets.includes(selEt)) selEt=it.ets[0]; if(tab!=='arac') setTab('arac'); renderCard(); renderList(); renderPlate(); syncScene();
+  if(jump && window.innerWidth<1001){ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches; $('card').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'}); } }
+function setTab(t){ if(!$('v-'+t)) t='arac'; tab=t; ['arac','kontrol','sart','takvim','birim','rapor'].forEach(x=>{ $('v-'+x).hidden = x!==t; });
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===t)); try{ localStorage.setItem('vh-tab',t); }catch(e){}
+  if(t==='takvim'){ renderLevels(); renderTimeline(); } if(t==='birim'){ renderUnits(); renderFeed(); } if(t==='sart') renderSart(); if(t==='kontrol') renderPlate(); if(t==='rapor') renderRapor(); }
+document.querySelector('.tabs').addEventListener('click', e=>{ const b=e.target.closest('.tab'); if(b) setTab(b.dataset.tab); });
+document.addEventListener('click', e=>{ const g=e.target.closest('[data-goto]'); if(g){ e.preventDefault(); select(g.dataset.goto, true); if(window.innerWidth<700 && chatOpen) toggleChat(false); } });
+
+$('filters').addEventListener('click', e=>{ const b=e.target.closest('.fchip'); if(!b) return; filter=b.dataset.f; try{ localStorage.setItem('vh-filter',filter); }catch(e){} renderList(); });
+$('tbl').addEventListener('click', e=>{
+  const p=e.target.closest('[data-pick]'); if(p){ select(p.dataset.pick, true); return; }
+  if(!e.target.closest('button')){ const tr=e.target.closest('tr[data-row]'); if(tr){ select(tr.dataset.row, true); return; } }
+  const b=e.target.closest('button[data-set]'); if(!b||b.disabled) return;
+  const [f,id]=b.dataset.set.split(':'); const v=JSON.parse(b.dataset.val); const r=rec(id);
+  const nv = r.v===v ? '?' : v;
+  patchItem(id, { v:nv, asama:null, karar:null }, `Yapılmış mı → ${{var:'yapılmış',kismen:'kısmen / revize',yok:'yapılmamış','?':'bilinmiyor'}[nv]}`);
+});
+
+const LABELS = { v:{var:'yapılmış',kismen:'kısmen / revize',yok:'yapılmamış'}, cal:{true:'çalışıyor',false:'çalışmıyor'}, test:{true:'test edildi',false:'test edilmedi'},
+  tas:{var:'tasarım var',yok:'tasarım yok'}, dok:{var:'doküman var',yok:'doküman yok'}, har:{var:'daha önce başlanmış',yok:'başlanmamış'},
+  uyg:{evet:'bulunanlar kullanılabilir',kismen:'bulunanlar kısmen uygun',hayir:'bulunanlar kullanılamaz'}, karar:{devam:'karar: mevcuttan devam',sifir:'karar: sıfırdan'} };
+$('card').addEventListener('click', async e=>{
+  const it=byId(selected); const r=rec(it.id);
+  const sb=e.target.closest('button[data-set]');
+  if(sb && !sb.disabled){ const f=sb.dataset.set, v=JSON.parse(sb.dataset.val); const nv = r[f]===v ? null : v; const patch={[f]:nv};
+    if(f==='v'){ patch.v = nv ?? '?'; patch.asama=null; patch.karar=null; if(nv!=='var'){ patch.cal=null; patch.test=null; } }
+    if(f==='cal'){ patch.asama=null; if(nv!==true) patch.test=null; }
+    if(f==='test') patch.asama=null;
+    if(f==='karar') patch.asama = nv ? 'tasarim' : null;
+    if(['v','cal','test','karar','tas','dok','har'].includes(f)) openStep[it.id]=0;
+    const logT = f==='is' ? (nv===null?'Yapılacak iş kaldırıldı':`Yapılacak iş: ${BAK[it.id].isler[nv]?.n||''}`) : (nv===null ? `${f} sıfırlandı` : (LABELS[f]?.[String(nv)] || `${f} → ${nv}`));
+    patchItem(it.id, patch, logT); return; }
+  const st=e.target.closest('button[data-stage]');
+  if(st && !st.disabled){ const s=st.dataset.stage;
+    if(s==='uretim' || s==='test' || s==='hazir'){ const miss=it.deps.filter(d=>!isDone(byId(d))); if(miss.length && s==='uretim') toast(`Not: ${esc(miss.map(d=>byId(d).name).join(', '))} henüz hazır değil.`); }
+    patchItem(it.id, { asama:s }, `Aşama → ${PHASES[phaseIdx(s)].n}`); return; }
+  const rok=e.target.closest('button[data-rok]'); if(rok){ const key=rok.dataset.rok; const f=itemFields(it).find(x=>x.key===key); setRapor(it.id, key, {ok:{by:myId||'yerel', at:new Date().toISOString()}}, `Rapor verisi doğrulandı: ${f?f.label:key} = ${rv(it.id,key).slice(0,80)}`); return; }
+  const gr=e.target.closest('button[data-goreq]'); if(gr){ const i=+gr.dataset.goreq; openReq.add(it.id+':'+i); await renderCard();
+    const el=document.querySelectorAll('#card .req')[i]; if(el) el.scrollIntoView({block:'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); return; }
+  const os=e.target.closest('button[data-open]'); if(os){ openStep[it.id] = +os.dataset.open || 0; renderCard(); return; }
+  const hn=e.target.closest('button[data-hint]'); if(hn){ const k=it.id+':'+hn.dataset.hint; openReq.has(k)?openReq.delete(k):openReq.add(k); renderCard(); return; }
+  if(e.target.closest('#prevItem')||e.target.closest('#nextItem')){ const i=ITEMS.findIndex(x=>x.id===it.id); const n=e.target.closest('#nextItem')?1:-1; select(ITEMS[(i+n+ITEMS.length)%ITEMS.length].id); return; }
+  const rf=e.target.closest('button[data-rf]'); if(rf && !rf.disabled){ const [i,field]=rf.dataset.rf.split('|'); const v=JSON.parse(rf.dataset.val); const f=flowOf(it,+i); const nv = f[field]===v ? null : v;
+    const lab = {v:{evet:'karşılanıyor',kismen:'kısmen',hayir:'karşılanmıyor'},olc:{true:'ölçüldü',false:'ölçülmedi'},db:{var:'Database\'de çalışma bulundu',yok:'Database\'de çalışma yok'}}[field]?.[String(nv)] || (field==='asama' ? 'aşama: '+(RSTAGE(it.reqs[+i][2]==='A').find(x=>x[0]===nv)?.[1]||'-') : 'sıfırlandı');
+    setFlow(it.id, +i, {[field]:nv}, lab); return; }
+  const rixa=e.target.closest('[data-rixadd]'); if(rixa){ const s0=rixa.dataset.rixadd; const k=s0.indexOf('|'); const i=+s0.slice(0,k), u=safeUrl(s0.slice(k+1)), t=(rixa.dataset.rixn||'').slice(0,140); if(!u) return;
+    const found=[...(flowOf(it,i).found||[]), {t, u}].slice(-12); setFlow(it.id, i, {found}, `arşivden dosya eklendi: ${t}`); toast(`<b>Eklendi:</b> ${esc(t)}`); return; }
+  const rfa=e.target.closest('[data-rfadd]'); if(rfa){ const i=+rfa.dataset.rfadd; const t=document.querySelector(`#card [data-rft="${i}"]`).value.trim(), u=document.querySelector(`#card [data-rfu="${i}"]`).value.trim(); if(!t && !u) return;
+    if(u && !safeUrl(u)){ toast('Link http veya https ile başlamalı.'); return; }
+    const found=[...(flowOf(it,i).found||[]), {t:(t||u).slice(0,120), u:u.slice(0,500)}].slice(-12); const key=it.id+':'+i; justAdded[key]=Date.now(); setTimeout(()=>{ if(selected===it.id) renderCard(); }, 4100);
+    setFlow(it.id, i, {found}, `dosya eklendi: ${t||u}`); toast(`<b>Eklendi:</b> ${esc(t||u)}`); return; }
+  const rdf=e.target.closest('[data-rdelfound]'); if(rdf){ const [i,m]=rdf.dataset.rdelfound.split('|').map(Number); const found=(flowOf(it,i).found||[]).filter((_,k)=>k!==m); setFlow(it.id, i, {found}, 'dosya kaldırıldı'); return; }
+  const rqb=e.target.closest('button[data-rq]'); if(rqb){ const i=+rqb.dataset.rq; const txt=reqQuery(it,i);
+    try{ await navigator.clipboard.writeText(txt); toast('Sorgu kopyalandı. Database projesindeki sohbete yapıştır.'); }
+    catch(err){ reqCopy[it.id+':'+i]=txt; renderCard(); toast('Otomatik kopyalanamadı; metni seçip kopyala.'); } return; }
+  if(e.target.closest('#ownBtn')){ const mine = r.owner && r.owner===myId; patchItem(it.id, { owner: mine?null:myId }, mine?'sorumluluğu bıraktı':'üstlendi'); return; }
+  if(e.target.closest('#talkBtn')){ attachItem=it.id; chan = it.birim; toggleChat(true); renderAttach(); $('chatText').focus(); return; }
+  if(e.target.closest('#fAdd')){ const t=$('fT').value.trim(), u=$('fU').value.trim(); if(!t && !u) return;
+    if(u && !safeUrl(u)){ toast('Link http veya https ile başlamalı.'); return; }
+    const found=[...(Array.isArray(r.found)?r.found:[]), {t:(t||u).slice(0,120), u:u.slice(0,500), by:myId}].slice(-30);
+    justAdded[it.id]=Date.now(); setTimeout(()=>{ if(selected===it.id) renderCard(); }, 4100);
+    patchItem(it.id, { found }, `Bulunan dosya eklendi: ${t||u}`); toast(`<b>Eklendi:</b> ${esc(t||u)}`); return; }
+  const fo=e.target.closest('[data-foto]'); if(fo){ openPhoto(fo.dataset.foto, fo.dataset.fslot||'t'); return; }
+  const dfo=e.target.closest('[data-delfoto]'); if(dfo){ const [slot,k]=dfo.dataset.delfoto.split('|'); const list=fotoList(it,slot); const id=list[+k]; if(!id) return; const rest=list.filter((_,j)=>j!==+k);
+    if(slot==='t') patchItem(it.id,{testFoto:rest},'Test fotoğrafı kaldırıldı'); else setFlow(it.id, +slot, {foto:rest}, 'fotoğraf kaldırıldı');
+    assets?.delete(id).catch(()=>{}); return; }
+  const df=e.target.closest('[data-delfound]'); if(df){ const found=(r.found||[]).filter((_,i)=>i!==+df.dataset.delfound); patchItem(it.id,{found},'Bulunan dosya kaldırıldı'); return; }
+  if(e.target.closest('#copyQ')){ copyQuery(it); return; }
+});
+$('card').addEventListener('toggle', e=>{ const d=e.target.closest?.('[data-rdet]'); if(d){ d.open?openRap.add(d.dataset.rdet):openRap.delete(d.dataset.rdet); } }, true);
+$('card').addEventListener('change', e=>{
+  if(e.target.id==='itemSel'){ select(e.target.value); return; }
+  if(e.target.matches('[data-rv]')){ const it=byId(selected); const key=e.target.dataset.rv; const val=e.target.value.trim().slice(0,3000); if(val!==rv(it.id,key)){ const f=itemFields(it).find(x=>x.key===key); setRapor(it.id, key, {v:val}, `Rapor verisi: ${f?f.label:key} = ${val.slice(0,80)||'—'}`); } return; }
+  if(e.target.matches('[data-rix]')){ const it=byId(selected); ixQ[it.id+':'+e.target.dataset.rix]=e.target.value.trim().slice(0,80); renderCard(); return; }
+  if(e.target.matches('[data-rsrc]')){ const it=byId(selected); const key=e.target.dataset.rsrc; setRapor(it.id, key, {src:e.target.value||null}, null); return; }
+  if(e.target.matches('[data-ris]')){ const it=byId(selected); const i=+e.target.dataset.ris; if(e.target.value!==(flowOf(it,i).is||'')) setFlow(it.id, i, {is:e.target.value.slice(0,300)}, 'yapılacak iş yazıldı'); return; }
+  if(e.target.matches('[data-rnot]')){ const it=byId(selected); const i=+e.target.dataset.rnot; if(e.target.value!==(flowOf(it,i).not||'')) setFlow(it.id, i, {not:e.target.value.slice(0,300)}, 'not güncellendi'); return; }
+  if(e.target.matches('[data-fotoin]') && e.target.files?.length){ uploadPhotos(byId(selected), e.target.files, e.target.dataset.fotoin||'t'); return; }
+  const it=byId(selected); const r=rec(it.id);
+  if(e.target.id==='noteIn' && e.target.value!==(r.not||'')) patchItem(it.id, { not:e.target.value.slice(0,1500) }, 'Not güncellendi');
+  if(e.target.id==='testNot' && e.target.value!==(r.testNot||'')) patchItem(it.id, { testNot:e.target.value.slice(0,300) }, 'Test kaydı güncellendi');
+  if(e.target.id==='isNot' && e.target.value!==(r.isNot||'')) patchItem(it.id, { isNot:e.target.value.slice(0,400) }, 'Yapılacak iş açıklandı');
+});
+
+/* prior-work lookup */
+function queryText(it){
+  const r = rec(it.id), b = BAK[it.id];
+  const jb = Number.isInteger(r.is) ? b.isler[r.is] : b.isler[0];
+  const durum = {var:'Bu kalem araçta var', kismen:'Bu kalem araçta kısmen var, revize edilecek', yok:'Bu kalem araçta hiç yok, sıfırdan yapılacak'}[r.v] || 'Kalemin durumu atölyede henüz tespit edilmedi';
+  const ek = [r.v==='var'&&r.cal===false?'var ama çalışmıyor':'', r.testNot?'test notu: '+r.testNot:'', r.not?'ekip notu: '+r.not:''].filter(Boolean).join('; ');
+  const kural = jb.m.map(i=>it.reqs[i]).filter(Boolean);
+  return `Voltaris Database'inde önceki çalışmaları arıyorum. Aynı işi baştan yapmamak istiyoruz.
+
+Ne yapacağız: ${it.name} kaleminde şu işe başlıyoruz: ${jb.n}.${r.isNot?'\nAyrıntı: '+r.isNot:''}
+Şu anki durum: ${durum}${ek?' ('+ek+')':''}.
+
+Bu iş için işimize yarayacak şunları ara. Birebir aynısı olmasa da benzer bir şey varsa onu da yaz:
+${jb.ara.map(a=>'- '+a).join('\n')}
+
+Bulduğun her şey için şunları yaz: dosyanın adı, nerede durduğu (klasör ya da link), tarihi, kim hazırladığı ve bu işte nasıl kullanılabileceği (tek cümle). Olduğu gibi kullanılabilir mi, revize mi ister, yoksa kullanılamaz mı belirt.
+${kural.length?`\nBulduklarını şu ${sartYil} şartname kurallarına göre de kontrol et, uymayanı söyle:\n${kural.map(q=>'- '+q[0]+' ('+q[1]+')').join('\n')}\n`:''}
+Aradıklarımdan bulamadığın olursa "bulunamadı" yaz, tahmin yürütme. Bu işle ilgisi olmayan dosyaları listeleme.`;
+}
+async function copyQuery(it){
+  const txt = queryText(it);
+  try{ await navigator.clipboard.writeText(txt); toast('Sorgu kopyalandı. Database projesindeki sohbete yapıştır.'); }
+  catch(e){ driveState[it.id] = { ...(driveState[it.id]||{}), msg:'Otomatik kopyalanamadı; aşağıdaki metni seçip kopyala.', err:true, copy:txt }; await renderCard(); $('copyBox')?.select(); }
+}
+
+/* birim */
+$('myBirim').addEventListener('change', async e=>{
+  myBirim = e.target.value; if(myBirim && filter==='all') filter='mine';
+  try{ localStorage.setItem('vh-birim', myBirim); }catch(err){}
+  renderAll();
+  if(mode==='db' && myId){ try{ await db.doc('members/'+myId).update({ birim:myBirim, at:new Date().toISOString() }); }catch(err){} }
+});
+
+/* chat */
+function toggleChat(open){ chatOpen = open ?? !chatOpen; $('drawer').hidden=!chatOpen; $('chatBtn').setAttribute('aria-expanded', chatOpen);
+  if(chatOpen){ renderChans(); $('msgs').dataset.first=''; renderMsgs(); markRead(); renderAttach(); } }
+$('chatBtn').addEventListener('click', ()=>toggleChat());
+$('chatClose').addEventListener('click', ()=>toggleChat(false));
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && chatOpen) toggleChat(false); });
+$('chans').addEventListener('click', e=>{ const b=e.target.closest('.chan'); if(!b) return; chan=b.dataset.chan; $('msgs').dataset.first=''; renderChans(); renderMsgs(); markRead(); });
+$('attach').addEventListener('click', e=>{ if(e.target.closest('#attachX')){ attachItem=null; renderAttach(); } });
+$('chatText').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); $('compose').requestSubmit(); } });
+let sending=false;
+$('compose').addEventListener('submit', async e=>{
+  e.preventDefault(); if(sending) return;
+  const text=$('chatText').value.trim(); if(!text) return;
+  if(mode!=='db'){ toast('Sohbet ortak kayıtla çalışır; bu görünümde gönderilemiyor.'); return; }
+  if(canWrite===false){ toast('Mesaj göndermek için takım üyesi olmalısın; bir yöneticiye sor.'); return; }
+  sending=true; $('chatSend').disabled=true;
+  const doc={ text:text.slice(0,1000), by:myId, at:new Date().toISOString() }; if(attachItem) doc.item=attachItem;
+  try{ await db.collection('chat/'+chan+'/m').add(doc); $('chatText').value=''; attachItem=null; renderAttach(); }
+  catch(err){ toast(err?.code==='invalid_argument'?'Mesaj göndermek için takım üyesi olmalısın; bir yöneticiye sor.':'Mesaj gönderilemedi, tekrar dene.'); }
+  sending=false; $('chatSend').disabled=false; $('chatText').focus();
+});
+
+/* ---------- storage + connect ---------- */
+function saveLocal(){ try{ localStorage.setItem('vh-local', JSON.stringify({recs,checks,rapor})); }catch(e){} }
+function loadLocal(){ try{ const s=JSON.parse(localStorage.getItem('vh-local')||'null'); if(s){ Object.assign(recs,s.recs||{}); Object.assign(checks,s.checks||{}); Object.assign(rapor,s.rapor||{}); } }catch(e){} }
+const clean = (v)=>v && typeof v==='object' ? v : {};
+async function connect(oturum){
+  try{ myBirim = localStorage.getItem('vh-birim') || ''; filter = localStorage.getItem('vh-filter') || (myBirim?'mine':'all'); const t=localStorage.getItem('vh-tab'); if(t) setTab(t); }catch(e){}
+  if(!oturum){ mode='local'; loadLocal(); renderAll(); return; }
+  ({ db, user, assets } = oturum); myId=oturum.me.id; canWrite=true; mode='db';
+  if(!myBirim && ['M','E','O'].includes(oturum.birim)) myBirim=oturum.birim;
+  const el=$('me'); el.hidden=false; el.innerHTML=oturum.me.avatarUrl?`<img src="${esc(oturum.me.avatarUrl)}" alt="" referrerpolicy="no-referrer"><span></span>`:'<span></span>'; el.querySelector('span').textContent=oturum.me.name;
+  $('cikisBtn').hidden=false; $('yonetimBtn').hidden=!oturum.yonetici;
+  db.collection('items').onSnapshot(snap=>{
+    snap.docs.forEach(doc=>{ exists.items.add(doc.id); if(byId(doc.id)) recs[doc.id] = clean(doc.data()); });
+    renderAll();
+  }, ()=>{});
+  db.collection('rapor').onSnapshot(snap=>{
+    snap.docs.forEach(doc=>{ exists.rapor.add(doc.id); const v=clean(doc.data()); if(byId(doc.id)) rapor[doc.id] = { v:clean(v.v), f:clean(v.f) }; });
+    renderAll();
+  }, ()=>{});
+  db.collection('checks').onSnapshot(snap=>{
+    snap.docs.forEach(doc=>{ exists.checks.add(doc.id); const v=clean(doc.data()); if(byId(doc.id)) checks[doc.id] = { ...v, s: clean(v.s) }; });
+    renderAll();
+  }, ()=>{});
+  db.collection('log').orderBy('at','desc').limit(40).onSnapshot(snap=>{
+    logRows = snap.docs.map(x=>clean(x.data())).filter(r=>typeof r.at==='string' && typeof r.text==='string');
+    if(tab==='birim') renderFeed();
+  }, ()=>{});
+  CHANNELS.forEach(c=>{
+    db.collection('chat/'+c.id+'/m').orderBy('at','desc').limit(100).onSnapshot(snap=>{
+      chat[c.id] = snap.docs.map(x=>clean(x.data())).filter(m=>typeof m.text==='string' && typeof m.at==='string').reverse();
+      computeUnread(c.id); renderHeader(); if(chatOpen){ renderChans(); if(c.id===chan){ renderMsgs(); markRead(); } }
+    }, ()=>{});
+  });
+  if(myId){ db.doc('members/'+myId).onSnapshot(s=>{ const v=s.exists?clean(s.data()):{}; if(v.birim && v.birim!==myBirim && ['M','E','O'].includes(v.birim)){ myBirim=v.birim; try{ localStorage.setItem('vh-birim',myBirim); }catch(e){} renderAll(); } }, ()=>{}); }
+  renderAll();
+}
+
+/* ---------- 3D ---------- */
+const canvas=$('gl');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping;
+const scene=new THREE.Scene(); const camera=new THREE.PerspectiveCamera(34,1,.05,60);
+const controls=new OrbitControls(camera,canvas); controls.enableDamping=true; controls.minDistance=2.4; controls.maxDistance=9; controls.maxPolarAngle=Math.PI*.49; controls.target.set(0,.55,0);
+controls.autoRotate=!matchMedia('(prefers-reduced-motion: reduce)').matches; controls.autoRotateSpeed=.55; controls.addEventListener('start',()=>{controls.autoRotate=false;});
+scene.add(new THREE.HemisphereLight(0xcfe6ff,0x1a1408,1.1));
+const key=new THREE.DirectionalLight(0xffffff,2.2); key.position.set(3,5,4); scene.add(key);
+const rim=new THREE.DirectionalLight(0x4fd8e8,1.4); rim.position.set(-4,2,-3); scene.add(rim);
+const grid=new THREE.GridHelper(9,36,0x1f4a66,0x13253d); grid.material.transparent=true; grid.material.opacity=.55; scene.add(grid);
+const disc=new THREE.Mesh(new THREE.CircleGeometry(2.3,64),new THREE.MeshBasicMaterial({color:0x4fd8e8,transparent:true,opacity:.05,depthWrite:false})); disc.rotation.x=-Math.PI/2; disc.position.y=.002; scene.add(disc);
+// Hologram after the team site's own shader (src/three/hologram.ts).
+const SCAN={value:0};
+const VERT=`varying vec3 vN; varying vec3 vE; varying vec3 vP;
+void main(){ vP=position; vec4 mv=modelViewMatrix*vec4(position,1.); vN=normalize(normalMatrix*normal); vE=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`;
+const FRAG=`uniform vec3 uColor; uniform float uBase; uniform float uRim; uniform float uFall; uniform float uGain; uniform float uTime; uniform float uGrid; uniform float uHi;
+varying vec3 vN; varying vec3 vE; varying vec3 vP;
+float contour(float v){ float f=v/0.045; float d=abs(fract(f-0.5)-0.5)/max(fwidth(f),1e-4); return 1.-min(d,1.); }
+void main(){ float facing=abs(dot(normalize(vN),normalize(vE))); float edge=pow(1.-facing,uFall);
+  float head=mod(uTime*0.55,5.2)-2.6; float band=exp(-pow((vP.x-head)/0.07,2.)); float wake=exp(-max(head-vP.x,0.)*2.4)*step(vP.x,head)*0.22;
+  float lines=0.86+0.14*sin(vP.y*260.); float g=uGrid>0.?max(max(contour(vP.x),contour(vP.y)),contour(vP.z)*0.6)*uGrid:0.;
+  float s=((uBase+uRim*edge)*lines+g+(band+wake)*0.9)*uGain*(1.+uHi); gl_FragColor=vec4(uColor*s,s); }`;
+const LOOK={Govde:{base:.10,rim:.95,fall:2.0,grid:.3},Cam:{base:.09,rim:.8,fall:2.0},Ayna:{base:.2,rim:.85,fall:1.9},Sasi:{base:.26,rim:.7,fall:1.9},RollCage:{base:.3,rim:.8,fall:1.9},Tekerlek:{base:.2,rim:.85,fall:2.0},Koltuk:{base:.26,rim:.85,fall:1.9},Direksiyon:{base:.3,rim:.8,fall:1.8},Kokpit:{base:.22,rim:.7,fall:2.0},Ekran:{base:.7,rim:.4,fall:1.5},Far:{base:.8,rim:.8,fall:1.7},Stop:{base:.8,rim:.8,fall:1.7},Batarya:{base:.45,rim:.7,fall:1.7},Motor:{base:.5,rim:.9,fall:1.6},V_:{base:.45,rim:.8,fall:1.7}};
+const SOLID={Govde:{c:0xE8ECF1,m:.15,r:.32},Cam:{c:0x1B2A36,m:.1,r:.08,o:.62},Ayna:{c:0xC9CED6,m:.6,r:.25},Sasi:{c:0xB9C0CA,m:.75,r:.35},RollCage:{c:0xC4452D,m:.35,r:.45},Tekerlek:{c:0x1A1C21,m:.1,r:.85},Koltuk:{c:0x1E2128,m:.05,r:.7},Direksiyon:{c:0x24272E,m:.2,r:.6},Kokpit:{c:0x2A2F37,m:.2,r:.6},Ekran:{c:0x0B1C26,m:0,r:.3,e:0x46C9F0},Far:{c:0xF4F7FA,m:0,r:.2,e:0xDDF2FF},Stop:{c:0x8E1B12,m:0,r:.3,e:0xFF3B2E},Batarya_Kutu:{c:0x3A4352,m:.5,r:.45},Batarya_Hucre:{c:0x2F6FD0,m:.3,r:.4},Batarya_Fan:{c:0x1B1E24,m:.3,r:.5},Motor:{c:0x8C929C,m:.8,r:.3},V_Surucu:{c:0x4A5263,m:.6,r:.4},V_YSB:{c:0x5A6476,m:.5,r:.45},V_Izolasyon:{c:0x6A5D8A,m:.3,r:.5},V_AcilStop:{c:0xD8261B,m:.2,r:.4,e:0x5A0A05}};
+const pick=(t,n)=>{ const k=Object.keys(t).sort((a,b)=>b.length-a.length).find(k=>n.startsWith(k)); return k?t[k]:null; };
+const COL={holo:new THREE.Color(0x4FD8E8),part:new THREE.Color(0xF5A524),done:new THREE.Color(0xF5A524),lock:new THREE.Color(0x7486B0)};
+const units=[];
+function itemFor(name){ const n=name.replace(/^Tel_/,''); return ITEMS.find(x=>x.parts.some(p=>n.startsWith(p)||name.startsWith(p))); }
+function addUnit(name,geometry,matrix){
+  const item=itemFor(name); if(!item) return; const isWire=name.startsWith('Tel_'); const look=pick(LOOK,name.replace(/^Tel_/,''))||{base:.2,rim:.6,fall:2};
+  const hm = isWire ? new THREE.MeshBasicMaterial({color:0x4FD8E8,wireframe:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})
+    : new THREE.ShaderMaterial({uniforms:{uColor:{value:new THREE.Color(0x4FD8E8)},uBase:{value:look.base},uRim:{value:look.rim},uFall:{value:look.fall},uGain:{value:1},uTime:SCAN,uGrid:{value:look.grid||0},uHi:{value:0}},vertexShader:VERT,fragmentShader:FRAG,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  const holo=new THREE.Mesh(geometry,hm); holo.matrixAutoUpdate=false; holo.matrix.copy(matrix); holo.renderOrder=2; holo.name=name; scene.add(holo);
+  let solid=null;
+  if(!isWire){ const sp=pick(SOLID,name)||{c:0x9aa3b0,m:.3,r:.5};
+    const sm=new THREE.MeshStandardMaterial({color:sp.c,metalness:sp.m,roughness:sp.r,transparent:true,opacity:0,depthWrite:false,emissive:sp.e?new THREE.Color(sp.e):new THREE.Color(0),emissiveIntensity:sp.e?1.4:0,side:THREE.DoubleSide});
+    sm.userData.maxO=sp.o??1; solid=new THREE.Mesh(geometry,sm); solid.matrixAutoUpdate=false; solid.matrix.copy(matrix); solid.renderOrder=1; solid.name=name; scene.add(solid); }
+  units.push({name,item,isWire,holo,solid,cur:{s:0,g:1,col:new THREE.Color(0x4FD8E8),hi:0},tgt:{s:0,g:1,col:new THREE.Color(0x4FD8E8),hi:0}});
+}
+function syncScene(){
+  for(const u of units){ const s_=stateOf(u.item), p=progress(u.item); const shell=/^(Tel_)?Govde|^Cam/.test(u.name);
+    let s = s_==='done'?1 : s_==='part'? .12+.55*p : 0;
+    let g = s_==='done'? .16 : s_==='part'? 1-.45*p : s_==='lock'? .6 : 1;
+    if(xray&&shell){ s=0; g=Math.max(g,.55); }
+    if(u.isWire){ s=0; g = s_==='done'&&!xray ? 0 : (s_==='lock'?.25:.5); }
+    u.tgt.s=s; u.tgt.g=g; u.tgt.col.copy(COL[s_]); u.tgt.hi = u.item.id===selected ? .9 : 0; }
+}
+const pulses={}; function pulse(id){ pulses[id]=performance.now(); }
+const VIEWS={on:[3.4,2.0,4.4],yan:[0.05,1.25,5.6],arka:[-3.9,1.9,3.8],ust:[1.2,5.4,1.6]};
+function setView(v,instant){ const to=new THREE.Vector3(...VIEWS[v]);
+  if(instant||matchMedia('(prefers-reduced-motion: reduce)').matches){ camera.position.copy(to); controls.update(); return; }
+  const from=camera.position.clone(), t0=performance.now(); (function step(){ const k=Math.min((performance.now()-t0)/700,1); camera.position.lerpVectors(from,to,1-Math.pow(1-k,3)); if(k<1) requestAnimationFrame(step); })(); }
+$('views').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  if(b.id==='xray'){ xray=!xray; b.setAttribute('aria-pressed',xray); syncScene(); return; }
+  controls.autoRotate=false; $('views').querySelectorAll('button[data-v]').forEach(x=>x.setAttribute('aria-pressed',x===b)); setView(b.dataset.v); });
+setView('on',true);
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+function hitAt(ev){ const r=canvas.getBoundingClientRect(); ndc.set(((ev.clientX-r.left)/r.width)*2-1,-((ev.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(units.filter(u=>!u.isWire).map(u=>u.holo),false); if(!hits.length) return null;
+  const unitOf=o=>units.find(u=>u.holo===o); const first=unitOf(hits[0].object);
+  if(/^Govde/.test(first.name) && isDone(first.item) && !xray) return first;
+  const inner=hits.find(h=>!/^(Govde|Cam)/.test(h.object.name)); return unitOf((inner||hits[0]).object); }
+let downAt=null;
+canvas.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{ if(!downAt) return; const mv=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]); downAt=null; if(mv>6) return; const u=hitAt(e); if(u) select(u.item.id); });
+canvas.addEventListener('pointermove',e=>{ const tip=$('tip'); if(e.pointerType!=='mouse'||downAt){tip.hidden=true;return;} const u=hitAt(e); canvas.classList.toggle('pointing',!!u); if(!u){tip.hidden=true;return;}
+  const r=canvas.getBoundingClientRect(); tip.hidden=false; tip.style.left=(e.clientX-r.left)+'px'; tip.style.top=(e.clientY-r.top)+'px'; tip.textContent=`${u.item.name} · ${PHASES[phaseIdx(phaseOf(u.item))].n}`; });
+canvas.addEventListener('pointerleave',()=>{$('tip').hidden=true;});
+function resize(){ const w=canvas.clientWidth,h=canvas.clientHeight,pr=renderer.getPixelRatio(); if(!w||!h) return; if(canvas.width!==Math.floor(w*pr)||canvas.height!==Math.floor(h*pr)){ renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); } }
+let last=performance.now();
+function frame(){ const t=performance.now(), dt=Math.min((t-last)/1000,.05); last=t; requestAnimationFrame(frame);
+  if(tab!=='arac') return;
+  SCAN.value+=dt; resize(); controls.update(); const k=1-Math.exp(-dt*4.5);
+  for(const u of units){ u.cur.s+=(u.tgt.s-u.cur.s)*k; u.cur.g+=(u.tgt.g-u.cur.g)*k; u.cur.col.lerp(u.tgt.col,k); u.cur.hi+=(u.tgt.hi-u.cur.hi)*k;
+    let flash=0; const pt=pulses[u.item.id]; if(pt){ const a=(t-pt)/1400; flash=a<1?Math.sin(a*Math.PI)*1.6:0; }
+    const hw=u.cur.hi*(.55+.45*Math.sin(t*.005));
+    if(u.isWire){ u.holo.material.color.copy(u.cur.col).multiplyScalar(.2*u.cur.g); u.holo.visible=u.cur.g>.01; }
+    else { const m=u.holo.material.uniforms; m.uColor.value.copy(u.cur.col); m.uGain.value=u.cur.g+flash*.6; m.uHi.value=hw+flash; u.holo.visible=(u.cur.g+flash)>.01; }
+    if(u.solid){ const o=Math.min(1,u.cur.s)*u.solid.material.userData.maxO; u.solid.material.opacity=o; u.solid.visible=o>.005; const op=o>.985&&u.solid.material.userData.maxO===1; u.solid.material.transparent=!op; u.solid.material.depthWrite=op; } }
+  renderer.render(scene,camera); }
+function addVirtual(name,size,pos){ addUnit(name,new THREE.BoxGeometry(...size),new THREE.Matrix4().makeTranslation(...pos)); }
+function onModel(gltf){ gltf.scene.updateMatrixWorld(true); gltf.scene.traverse(o=>{ if(o.isMesh) addUnit(o.name,o.geometry,o.matrixWorld.clone()); });
+  addVirtual('V_Surucu',[.17,.08,.15],[-0.98,.36,.33]); addVirtual('V_YSB',[.17,.08,.13],[-1.24,.36,-.33]); addVirtual('V_Izolasyon',[.09,.05,.09],[-0.74,.34,0]); addVirtual('V_AcilStop',[.07,.07,.07],[0.62,.86,-.2]);
+  syncScene(); for(const u of units){ u.cur.s=u.tgt.s; u.cur.g=u.tgt.g; u.cur.col.copy(u.tgt.col); } $('loading').hidden=true; }
+function modelFailed(err){ $('loading').textContent='Model yüklenemedi. Sayfayı yenile.'; console.error(err); }
+// The same model the site's /arac page shows.
+function loadModel(){ new GLTFLoader().load('/models/voltaris-arac.glb', onModel, undefined, modelFailed); }
+
+try{ $('guide').hidden = localStorage.getItem('vh-guide')==='1'; }catch(e){ $('guide').hidden=false; }
+$('guideX').addEventListener('click', ()=>{ $('guide').hidden=true; try{ localStorage.setItem('vh-guide','1'); }catch(e){} });
+/* ---------- giriş kapısı ---------- */
+// Only members on the uyeler list get past this. Without a Firebase config (a local checkout with
+// no .env) the panel opens straight into its local mode, as it did outside Claude.
+function kapi(){
+  const ac = () => { $('gate').hidden=true; $('wrap').hidden=false; };
+  if(!fb.configured){ ac(); return Promise.resolve(null); }
+  return new Promise(resolve=>{ let acik=false;
+    fb.oturumuIzle(o=>{
+      if(acik){ if(o.durum!=='giris') location.reload(); return; }   // signed out in another tab
+      const msg=$('gateMsg'); $('gateBtn').hidden=true; $('gateOut').hidden=true;
+      if(o.durum==='cikis'){ msg.textContent='Panel yalnızca Voltaris üyelerine açık. Takımın üye listesindeki Google hesabınla giriş yap.'; $('gateBtn').hidden=false; return; }
+      if(o.durum==='red'){ msg.textContent = o.pasif ? `${o.email} hesabı pasif durumda. Bir yöneticiye sor.` : `${o.email} takımın üye listesinde yok. Bir yöneticiden seni eklemesini iste ya da listedeki hesabınla gir.`; $('gateOut').hidden=false; return; }
+      acik=true; ac(); resolve(o);
+    });
+  }); }
+$('gateBtn').addEventListener('click', async ()=>{ $('gateBtn').disabled=true;
+  try{ await fb.girisYap(); }catch(e){ $('gateMsg').textContent=`Giriş yapılamadı (${e?.code||'bilinmeyen hata'}). Tekrar dene.`; }
+  $('gateBtn').disabled=false; });
+$('gateOut').addEventListener('click', ()=>fb.cikisYap());
+$('cikisBtn').addEventListener('click', ()=>fb.cikisYap().then(()=>location.reload()));
+$('yonetimBtn').addEventListener('click', ()=>yonetimiAc({ esc, toast }));
+
+const oturum = await kapi();
+renderAll(); loadModel(); requestAnimationFrame(frame); connect(oturum); loadSart(sartYil);
+</script>
+</body>
+</html>
