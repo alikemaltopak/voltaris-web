@@ -36,6 +36,10 @@ export function Navbar() {
               {link.label}
             </NavLink>
           ))}
+          {/* a plain link: the team panel is its own page outside the React router */}
+          <a href="/panel/" className="navbar__link" onClick={() => setMenuOpen(false)}>
+            {t.nav.panel}
+          </a>
         </nav>
 
         <div className="navbar__actions">

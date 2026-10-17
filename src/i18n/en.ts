@@ -10,6 +10,7 @@ const en: Dictionary = {
     vehicle: "Vehicle",
     sponsors: "Sponsors",
     contact: "Contact",
+    panel: "Virtual Workshop",
     joinCta: "Join Us",
     themeDark: "DARK",
     themeLight: "LIGHT",

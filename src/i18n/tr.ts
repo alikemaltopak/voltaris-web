@@ -8,6 +8,7 @@ const tr = {
     vehicle: "Araç",
     sponsors: "Sponsorlar",
     contact: "İletişim",
+    panel: "Sanal Atölye",
     joinCta: "Bize Katıl",
     themeDark: "KOYU",
     themeLight: "AÇIK",
