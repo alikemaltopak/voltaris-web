@@ -497,6 +497,31 @@ summary{cursor:pointer}
 .ixd{color:var(--ink-2)} .ixd.ok{color:var(--ok);font-weight:600}
 .ix-tm ul{margin:4px 0 0;padding-left:18px;font-size:12.5px;display:flex;flex-direction:column;gap:6px}
 .ix-tm b{font-weight:500;word-break:break-word}
+/* Database balonu: takım arşivinde serbest arama. Ekranın iki kenarından birine yapışır, sürüklenip atılabilir. */
+.dbb{position:fixed;z-index:25;width:56px;height:56px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;
+  background:var(--accent);color:var(--on-accent);box-shadow:0 6px 18px rgba(10,20,40,.28),0 1px 3px rgba(10,20,40,.2);
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;transition:left .38s cubic-bezier(.2,1.25,.4,1),top .38s cubic-bezier(.2,1.25,.4,1),transform .15s ease}
+.dbb[hidden]{display:none}
+.dbb svg{width:28px;height:28px;pointer-events:none}
+.dbb.drag{transition:none;cursor:grabbing;transform:scale(1.08)}
+.dbb[aria-expanded="true"]{box-shadow:0 0 0 4px var(--accent-soft),0 6px 18px rgba(10,20,40,.28)}
+.dbb:focus-visible{outline:3px solid var(--link);outline-offset:3px}
+.dbp{position:fixed;z-index:26;width:min(420px,calc(100vw - 32px));max-height:min(72vh,640px);display:flex;flex-direction:column;
+  background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(10,20,40,.22)}
+.dbp[hidden]{display:none}
+.dbp-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line-2)}
+.dbp-h svg{width:22px;height:22px;color:var(--accent);flex:none}
+.dbp-h h2{margin:0;font-size:16px;flex:1}.dbp-h .when{font-size:12px}
+.dbp-f{display:flex;gap:8px;padding:12px 14px 8px}.dbp-f .inp{flex:1;min-width:0}
+.dbp-b{overflow:auto;padding:4px 14px 14px;display:flex;flex-direction:column;gap:6px}
+.dbp-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.db-r{display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:8px;background:var(--sunk);border:1px solid var(--line-2)}
+.db-r .row1{display:flex;align-items:flex-start;gap:8px}
+.db-r .ix-t a{white-space:normal;word-break:break-word}
+.db-r .ixd svg{width:12px;height:12px;vertical-align:-1px;margin-right:3px}
+.db-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.db-add .sel{flex:1 1 140px;min-width:0;max-width:100%}
+@media (max-width:640px){ .dbp{left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom, 0px))!important;width:auto;max-height:78vh} }
+@media (prefers-reduced-motion:reduce){ .dbb{transition:none} }
 /* giriş kapısı: üye listesinde olmayan paneli hiç görmez */
 .gate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:var(--bg)}
 .gate[hidden],.wrap[hidden]{display:none}
@@ -682,6 +707,12 @@ summary{cursor:pointer}
       <span class="row"><button class="btn small" type="button" id="figOpen">Maddeyi oku</button><button class="btn small" type="button" id="figClose">Kapat</button></span></div>
   </div>
 </dialog>
+<button class="dbb" id="dbBtn" type="button" hidden aria-label="Database: takım arşivinde ara" aria-expanded="false" aria-controls="dbPop" title="Database: takım arşivinde ara (sürükleyip kenara atabilirsin)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v6.2c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8V5.5"/><path d="M4.5 11.7v6.6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-6.6"/></svg></button>
+<div class="dbp" id="dbPop" role="dialog" aria-labelledby="dbTitle" hidden>
+  <div class="dbp-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v6.2c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8V5.5"/><path d="M4.5 11.7v6.6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-6.6"/></svg><h2 id="dbTitle">Database</h2><span class="when" id="dbVer"></span><button class="btn small" type="button" id="dbClose">Kapat</button></div>
+  <form class="dbp-f" id="dbForm" role="search"><input class="inp" id="dbQ" type="search" maxlength="80" autocomplete="off" placeholder="Takım arşivinde ara: jant CAD, BMS şema…" aria-label="Takım arşivinde ara"><button class="btn primary" type="submit">Ara</button></form>
+  <div class="dbp-b" id="dbRes" aria-live="polite"></div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script type="module">
@@ -1082,6 +1113,9 @@ function reqFlowHtml(it, i, ro){ const q=it.reqs[i], A=q[2]==='A', f=flowOf(it,i
       ${ro?'':`<div class="row"><input class="inp" data-rft="${i}" placeholder="Bulunan dosyanın adı" maxlength="120"><input class="inp" data-rfu="${i}" placeholder="Linki" maxlength="500">${justAdded[key]&&Date.now()-justAdded[key]<4000?`<button class="btn small added" type="button" data-rfadd="${i}">${TICK} Eklendi</button>`:`<button class="btn small" type="button" data-rfadd="${i}">Ekle</button>`}</div>`}
       <div class="q"><span>${k}. Şu an hangi aşamada?<small>"Uygun" seçince öncül tamamlanır.</small></span>${rseg(i,'asama',RSTAGE(A),f.asama,ro)}</div>`; }
   if(f.v) h += `<input class="inp" data-rnot="${i}" maxlength="300" placeholder="${eksik?'Not: eksik olan ya da yapılacak iş':L.n}" value="${esc(f.not||'')}" ${ro?'disabled':''}>`;
+  // Files can be filed under an öncül from the Database bubble whatever its state; the list above only
+  // shows while the öncül is missing something, so show it here otherwise.
+  if(!eksik){ const fl=Array.isArray(f.found)?f.found:[]; if(fl.length) h += `<div class="rfound"><span class="sub-h">Bulunan dosyalar</span><ul class="found">${fl.map((x,m)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro?'':`<button class="xbtn" type="button" data-rdelfound="${i}|${m}" aria-label="Kaldır">×</button>`}</li>`).join('')}</ul></div>`; }
   h += `<div class="rfoto"><span class="sub-h">Fotoğraflar <small>bu öncülle ilgili: montaj yeri, ölçüm, parça</small></span>${photoBlock(it, ro, String(i))}</div>`;
   return h + '</div>'; }
 function reqQuery(it, i){ const q=it.reqs[i], A=q[2]==='A', f=flowOf(it,i);
@@ -1176,6 +1210,7 @@ async function renderCard(){
       :`<div class="now"><span class="eyebrow">Durum</span><h3>${esc(nextStep(it))}</h3></div>`}
     <section class="sect"><h3>Öncüller (şartname maddeleri) <span class="mono">${nOk} / ${it.reqs.length} uygun${nSon?` · ${nSon} araç bitince`:''}</span></h3>
       <p class="help">Durum tespiti her öncülün içinde yapılır: araçta karşılanıyor mu, evetse ölçüldü mü; değilse Database'e sor, bulunanları ekle ve aşamasını seç. Kalemin durumu öncüllerden hesaplanır. Saat işaretliler araç bitince bakılacak, kalemi bekletmez.</p>${reqs}${cezaBlock(it)}</section>
+    ${foundBlock(r, ro)}
     <section class="sect"><h3>Test kaydı ve fotoğraflar <span class="mono">${fotos(r).length}</span></h3>
       <input class="inp" id="testNot" maxlength="300" placeholder="Test kaydı: ne test edildi, sonuç, varsa dosya linki" value="${esc(r.testNot||'')}" ${ro?'disabled':''}>${photoBlock(it, ro)}</section>
     ${raporBlock(it, ro, ps)}
@@ -1185,6 +1220,11 @@ async function renderCard(){
       ${r.at?`<p class="when" style="margin:0">Son değişiklik: ${esc(nameOf(ps,r.by))}, ${ago(r.at)}</p>`:''}</section>
     ${galleryBlock(it)}`;
 }
+
+// items/<id>.found: files filed under the item as a whole from the Database bubble
+function foundBlock(r, ro){ const list=Array.isArray(r.found)?r.found:[]; if(!list.length) return '';
+  return `<section class="sect"><h3>Database'den eklenen dosyalar <span class="mono">${list.length}</span></h3>
+    <ul class="found">${list.map((x,k)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro?'':`<button class="xbtn" type="button" data-delfound="${k}" aria-label="Kaldır: ${esc(x.t||x.u)}">×</button>`}</li>`).join('')}</ul></section>`; }
 
 /* ---------- rapor verileri ---------- */
 // rapor/<itemId>.f.<alan> = {v, by, at, src, ok:{by,at}|null, h:[önceki değerler]}; eski kayıtlar rapor/<id>.v.<alan> düz metin.
@@ -1507,7 +1547,7 @@ function computeUnread(c){ let seen=''; try{ seen=localStorage.getItem('vh-seen-
   unread[c] = (chat[c]||[]).filter(m=>m.at>seen && m.by!==myId).length; if(chatOpen && c===chan) unread[c]=0; }
 function renderAttach(){ const a=$('attach'); if(attachItem){ a.hidden=false; a.innerHTML=`Kalem: <b>${esc(byId(attachItem).name)}</b> <button type="button" class="xbtn" id="attachX" aria-label="Kalemi kaldır">×</button>`; } else a.hidden=true; }
 
-function renderAll(){ renderHeader(); renderNotice(); renderCard(); renderList(); renderPlate(); if(tab==='takvim'){ renderLevels(); renderTimeline(); } if(tab==='birim'){ renderUnits(); renderFeed(); } if(tab==='sart' && sv.mode!=='sec') renderSart(); if(tab==='rapor') renderRapor(); syncScene(); }
+function renderAll(){ if(!$('dbPop').hidden && dbQ) renderDb(); renderHeader(); renderNotice(); renderCard(); renderList(); renderPlate(); if(tab==='takvim'){ renderLevels(); renderTimeline(); } if(tab==='birim'){ renderUnits(); renderFeed(); } if(tab==='sart' && sv.mode!=='sec') renderSart(); if(tab==='rapor') renderRapor(); syncScene(); }
 
 /* ---------- interactions ---------- */
 function select(id, jump){ selected=id; openStep[id]=0; const it=byId(id); if(it.ets.length && !it.ets.includes(selEt)) selEt=it.ets[0]; if(tab!=='arac') setTab('arac'); renderCard(); renderList(); renderPlate(); syncScene();
@@ -1628,7 +1668,7 @@ $('myBirim').addEventListener('change', async e=>{
 });
 
 /* chat */
-function toggleChat(open){ chatOpen = open ?? !chatOpen; $('drawer').hidden=!chatOpen; $('chatBtn').setAttribute('aria-expanded', chatOpen);
+function toggleChat(open){ chatOpen = open ?? !chatOpen; $('drawer').hidden=!chatOpen; $('dbBtn').hidden=chatOpen; if(chatOpen) dbToggle(false); $('chatBtn').setAttribute('aria-expanded', chatOpen);
   if(chatOpen){ renderChans(); $('msgs').dataset.first=''; renderMsgs(); markRead(); renderAttach(); } }
 $('chatBtn').addEventListener('click', ()=>toggleChat());
 $('chatClose').addEventListener('click', ()=>toggleChat(false));
@@ -1777,6 +1817,95 @@ function loadModel(){ new GLTFLoader().load('/models/voltaris-arac.glb', onModel
 
 try{ $('guide').hidden = localStorage.getItem('vh-guide')==='1'; }catch(e){ $('guide').hidden=false; }
 $('guideX').addEventListener('click', ()=>{ $('guide').hidden=true; try{ localStorage.setItem('vh-guide','1'); }catch(e){} });
+/* ---------- Database balonu: takım arşivinde serbest arama ---------- */
+// Same index and scoring as the per-öncül box (ixSearch), but with the member's own words and no
+// item to lean on. A hit can be filed under any item: the item as a whole (items/<id>.found, shown
+// in the card) or one öncül (checks/<id>.f.<i>.found, same list as the öncül's "Ekle").
+let dbQ='', dbRes=null, dbOpen=null, dbSec={};
+function ixSerbest(q){ if(!IDX||IDX.err) return null; const n=nrm(q); if(!n) return {drive:[],teams:[],n:0};
+  const words=n.split(' ').filter(x=>x.length>=2 && !STOP.has(x)); if(!words.length) words.push(n);
+  // every word that matches counts; files matching all words, or the whole phrase, rise to the top
+  const scored=IDX.drive.map(r=>{ let s=0, hit=0; for(const t of words){ let x=0; if(r.sn.includes(t)) x=3; else if(r.se.includes(t)) x=2; else if(r.sp.includes(t)) x=1.5; else if(r.sk.includes(t)) x=1; if(x){ s+=x; hit++; } }
+    if(!hit) return null; if(words.length>1 && (r.sn.includes(n)||r.se.includes(n)||r.sp.includes(n))) s+=3;
+    s*=.5+.5*hit/words.length; if(r.d==='kullanışlı') s+=1; if(r.g==='düşük') s-=.5; return {r,s}; }).filter(x=>x && x.s>=1.2).sort((a,b)=>b.s-a.s);
+  const terms=new Map(words.map(w=>[w,1]));
+  const perDir={}, drive=[]; for(const x of scored){ const d=x.r.p; perDir[d]=(perDir[d]||0)+1; if(perDir[d]<=3) drive.push(x.r); if(drive.length>=25) break; }
+  const teams=IDX.teams.map(r=>{ const [a]=ixScore(r.sp,terms), [b]=ixScore(r.sf,terms); return {r, s:a*1.5+b}; }).filter(x=>x.s>=1.5).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.r);
+  return {drive, teams, n:scored.length}; }
+// Items whose committee owns the file's folder come first in the "which item" list.
+const dbOneri = r => ITEMS.filter(it=>(KOMITE[it.id]||[]).includes(r.c)).map(it=>it.id);
+function dbEklendi(r){ const out=[]; for(const it of ITEMS){ if((rec(it.id).found||[]).some(x=>x.u===r.u)) out.push(it.name);
+    else if(it.reqs.some((_,i)=>(flowOf(it,i).found||[]).some(x=>x.u===r.u))) out.push(it.name); } return out; }
+function dbItemOpts(r, cur){ const on=dbOneri(r); const opt=it=>`<option value="${it.id}" ${it.id===cur?'selected':''}>${esc(it.name)}</option>`;
+  return (on.length?`<optgroup label="Önerilen (${esc(r.c||'')})">${ITEMS.filter(it=>on.includes(it.id)).map(opt).join('')}</optgroup><optgroup label="Diğer kalemler">`:'')
+    + ITEMS.filter(it=>!on.includes(it.id)).map(opt).join('') + (on.length?'</optgroup>':''); }
+// Results change the window's height, so it is placed again after every render.
+function renderDb(){ renderDbIc(); dbpPlace(); }
+function renderDbIc(){
+  const box=$('dbRes'), ro=readOnly(); $('dbVer').textContent = IDX&&!IDX.err ? 'indeks '+ixDate(IDX.ver) : '';
+  if(!IDX){ box.innerHTML='<p class="when">İndeks yükleniyor…</p>'; return; }
+  if(IDX.err){ box.innerHTML=`<p class="msg err">${mode==='db'?'Takım arşivi indeksi yüklenmemiş. Üye listesini yöneten hesap Üyeler → "Bir kerelik veri yükleme"den yüklemeli.':'Arşiv araması ortak kayıtla çalışır; bu görünümde açılamadı.'}</p>`; return; }
+  if(!dbQ){ const it=byId(selected); const kws=[...new Set([...(BAK[it.id]?.isler||[]).flatMap(j=>j.q), ...(it.q||[])])].slice(0,6);
+    box.innerHTML=`<p class="help" style="margin:0">Drive'daki ${IDX.drive.length} dosya ve Teams'teki ${IDX.teams.length} klasör arasında arar. Bulduğunu ilgili kaleme ya da öncüle ekleyebilirsin.</p>
+      <div class="dbp-chips"><span class="when">${esc(it.name)} için:</span>${kws.map(w=>`<button type="button" class="kw" data-dbkw="${esc(w)}">${esc(w)}</button>`).join('')}</div>`; return; }
+  const res=dbRes||{drive:[],teams:[],n:0};
+  if(!res.drive.length && !res.teams.length){ box.innerHTML=`<p class="when">"${esc(dbQ)}" için arşivde eşleşme yok. Daha kısa ya da farklı bir kelime dene (ör. Türkçe yerine İngilizce).</p>`; return; }
+  box.innerHTML = `<span class="when">${!res.drive.length?`Drive'da "${esc(dbQ)}" adında dosya yok; Teams'teki klasörlere bak ya da başka kelime dene (ör. BMS yerine BYS).`:res.n>res.drive.length?`${res.n} eşleşmeden en iyi ${res.drive.length} tanesi`:`${res.drive.length} dosya`}</span>`
+    + res.drive.map((r,k)=>{ const ekli=dbEklendi(r), sec=dbSec[k]||{}, cur=sec.it||(dbOneri(r).includes(selected)?selected:(dbOneri(r)[0]||selected)), cit=byId(cur);
+      return `<div class="db-r"><div class="row1"><div class="ix-t"><a href="${esc(r.u)}" target="_blank" rel="noopener">${esc(r.n)}</a>
+        <small>${esc(r.p)}</small><small>${esc(r.k)}${r.f?' · '+esc(r.f):''}${r.t?' · '+esc(ixDate(r.t)):''} · <span class="ixd ${r.d==='kullanışlı'?'ok':''}">${esc(r.d)}</span></small>
+        ${ekli.length?`<small class="ixd ok">${TICK} Eklendi: ${esc(ekli.join(', '))}</small>`:''}</div>
+        ${ro?'':`<button class="btn small" type="button" data-dbopen="${k}" aria-expanded="${dbOpen===k}">${dbOpen===k?'Vazgeç':'Kaleme ekle'}</button>`}</div>
+        ${!ro && dbOpen===k?`<div class="db-add"><select class="sel" data-dbit="${k}" aria-label="Kalem">${dbItemOpts(r,cur)}</select>
+          <select class="sel" data-dbreq="${k}" aria-label="Nereye"><option value="">Kalemin geneli</option>${cit.reqs.map((q,i)=>`<option value="${i}" ${String(sec.req)===String(i)?'selected':''}>Öncül: ${esc(q[0])}</option>`).join('')}</select>
+          <button class="btn primary small" type="button" data-dbadd="${k}">Ekle</button></div>`:''}</div>`; }).join('')
+    + (res.teams.length?`<details class="ix-tm"><summary>Teams'te olabilecek klasörler (${res.teams.length})</summary><ul>${res.teams.map(r=>`<li><b>${esc(r.p)}</b><br><span class="when">${r.nf} dosya · ${esc(r.feat)}${r.t?' · '+esc(ixDate(r.t)):''}</span><br><span class="when">Drive'da: ${esc(r.dd)}</span></li>`).join('')}</ul></details>`:''); }
+function dbAra(q){ dbQ=String(q||'').trim().slice(0,80); dbOpen=null; dbSec={}; dbRes=dbQ?ixSerbest(dbQ):null; renderDb(); }
+function dbEkle(k){ const r=dbRes?.drive?.[k]; if(!r) return; const sec=dbSec[k]||{};
+  const it=byId(sec.it||$('dbRes').querySelector(`[data-dbit="${k}"]`)?.value||selected); const req=$('dbRes').querySelector(`[data-dbreq="${k}"]`)?.value ?? '';
+  const t=r.n.slice(0,140), u=safeUrl(r.u); if(!u) return;
+  if(req===''){ const found=Array.isArray(rec(it.id).found)?rec(it.id).found:[]; if(found.some(x=>x.u===u)){ toast('Bu dosya bu kalemde zaten var.'); return; }
+    patchItem(it.id, { found:[...found, {t, u, by:myId}].slice(-30) }, `Database'den dosya eklendi: ${t}`); }
+  else { const i=+req, found=flowOf(it,i).found||[]; if(found.some(x=>x.u===u)){ toast('Bu dosya bu öncülde zaten var.'); return; }
+    setFlow(it.id, i, { found:[...found, {t, u}].slice(-12) }, `arşivden dosya eklendi: ${t}`); }
+  toast(`<b>${esc(it.name)}</b>${req===''?'':' · öncül'}: ${esc(t)} eklendi`); dbOpen=null; renderDb(); }
+$('dbForm').addEventListener('submit', e=>{ e.preventDefault(); dbAra($('dbQ').value); });
+$('dbClose').addEventListener('click', ()=>dbToggle(false));
+$('dbRes').addEventListener('click', e=>{
+  const kw=e.target.closest('[data-dbkw]'); if(kw){ $('dbQ').value=kw.dataset.dbkw; dbAra(kw.dataset.dbkw); return; }
+  const op=e.target.closest('[data-dbopen]'); if(op){ const k=+op.dataset.dbopen; dbOpen = dbOpen===k ? null : k; renderDb(); return; }
+  const ad=e.target.closest('[data-dbadd]'); if(ad){ dbEkle(+ad.dataset.dbadd); } });
+$('dbRes').addEventListener('change', e=>{
+  const s1=e.target.closest('[data-dbit]'); if(s1){ const k=+s1.dataset.dbit; dbSec[k]={ it:s1.value, req:'' }; renderDb(); return; }
+  const s2=e.target.closest('[data-dbreq]'); if(s2){ const k=+s2.dataset.dbreq; dbSec[k]={ ...(dbSec[k]||{}), it:$('dbRes').querySelector(`[data-dbit="${k}"]`).value, req:s2.value }; } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('dbPop').hidden){ dbToggle(false); $('dbBtn').focus(); } });
+
+// The bubble sticks to the left or right edge. Dragging moves it freely; letting go (or flicking)
+// sends it to the nearer edge, or the edge it was thrown towards. A tap without movement opens it.
+const DBB = 56, DBB_M = 16;
+let dbbSide='r', dbbY=.72;
+try{ const v=JSON.parse(localStorage.getItem('vh-dbb')||'null'); if(v && (v.side==='l'||v.side==='r') && v.y>=0 && v.y<=1){ dbbSide=v.side; dbbY=v.y; } }catch(e){}
+function dbbPlace(){ const b=$('dbBtn'), maxY=innerHeight-DBB-DBB_M; b.style.left=(dbbSide==='l'?DBB_M:innerWidth-DBB-DBB_M)+'px'; b.style.top=Math.round(Math.min(maxY, Math.max(72, dbbY*innerHeight)))+'px'; dbpPlace(); }
+function dbpPlace(){ const p=$('dbPop'); if(p.hidden || innerWidth<=640) return; const b=$('dbBtn').getBoundingClientRect(), h=p.offsetHeight;
+  p.style.left = dbbSide==='l' ? (b.right+12)+'px' : ''; p.style.right = dbbSide==='r' ? (innerWidth-b.left+12)+'px' : '';
+  p.style.top = Math.round(Math.min(innerHeight-h-16, Math.max(16, b.top+DBB/2-h/2)))+'px'; }
+function dbToggle(open){ const p=$('dbPop'); open = open ?? p.hidden; p.hidden=!open; $('dbBtn').setAttribute('aria-expanded', open);
+  if(open){ loadIdx()?.then(()=>{ if(dbQ) dbRes=ixSerbest(dbQ); renderDb(); dbpPlace(); }).catch(()=>{ renderDb(); }); renderDb(); dbpPlace(); setTimeout(()=>$('dbQ').focus(), 0); } }
+(()=>{ const b=$('dbBtn'); let drag=null, moved=false;
+  b.addEventListener('pointerdown', e=>{ if(e.button!==0) return; const r=b.getBoundingClientRect(); drag={ dx:e.clientX-r.left, dy:e.clientY-r.top, x0:e.clientX, y0:e.clientY, hist:[[e.clientX, performance.now()]] }; moved=false; b.setPointerCapture(e.pointerId); });
+  b.addEventListener('pointermove', e=>{ if(!drag) return; if(!moved && Math.hypot(e.clientX-drag.x0, e.clientY-drag.y0)<6) return;
+    if(!moved){ moved=true; b.classList.add('drag'); $('dbPop').hidden=true; b.setAttribute('aria-expanded','false'); }
+    b.style.left=(e.clientX-drag.dx)+'px'; b.style.top=(e.clientY-drag.dy)+'px'; drag.hist.push([e.clientX, performance.now()]); if(drag.hist.length>5) drag.hist.shift(); });
+  const end=e=>{ if(!drag) return; const d=drag; drag=null; b.classList.remove('drag'); if(!moved) return;
+    const [x1,t1]=d.hist[0], [x2,t2]=d.hist[d.hist.length-1], vx=(x2-x1)/Math.max(1,t2-t1);   // px/ms
+    const mid=b.getBoundingClientRect().left+DBB/2; dbbSide = Math.abs(vx)>.5 ? (vx<0?'l':'r') : (mid<innerWidth/2?'l':'r');
+    dbbY=Math.min(1, Math.max(0, b.getBoundingClientRect().top/innerHeight)); try{ localStorage.setItem('vh-dbb', JSON.stringify({side:dbbSide, y:dbbY})); }catch(err){}
+    dbbPlace(); };
+  b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end);
+  // click also comes from the keyboard; after a drag it must not open the window
+  b.addEventListener('click', e=>{ if(moved){ moved=false; e.preventDefault(); return; } dbToggle(); });
+  addEventListener('resize', dbbPlace); })();
+
 /* ---------- giriş kapısı ---------- */
 // Only members on the uyeler list get past this. Without a Firebase config (a local checkout with
 // no .env) the panel opens straight into its local mode, as it did outside Claude.
@@ -1801,6 +1930,7 @@ $('yonetimBtn').addEventListener('click', ()=>yonetimiAc({ esc, toast }));
 
 const oturum = await kapi();
 renderAll(); loadModel(); requestAnimationFrame(frame); connect(oturum); loadSart(sartYil);
+$('dbBtn').hidden=false; dbbPlace();
 </script>
 </body>
 </html>

@@ -176,6 +176,14 @@ Kalem bitince ya da bir kalemin kilidi açılınca `announce()` kısa bir bildir
 | **Birimler** | Birim başına ilerleme, kim neyi üstlendi, son hareketler akışı (`log`). | `renderUnits`, `renderFeed` |
 | **Rapor** | TTR verileri: şablondaki tablolar (Tablo 1–9), her değerin kaynağı / gireni / doğrulayanı, "Boş" ve "Doğrulanmamış" filtreleri, tabloyu Word/Docs'a yapıştırılacak TSV olarak kopyalama, metin bölümü notları, raporda anlatılacak R-türü öncüller. | `renderRapor`, `tableTSV` |
 
+### Database balonu
+Her sekmede ekranın kenarında duran yuvarlak düğme (veritabanı simgesi). Sürüklenir; bırakınca ya da fırlatınca sağ veya
+sol kenara yapışır, yeri tarayıcıda hatırlanır (`vh-dbb`). Dokununca açılan pencerede takım arşivi indeksinde serbest arama
+yapılır (`ixSerbest`: kelimelerden biri tutsa yeter, hepsi tutanlar üstte; dosya adı ×3, etiket ×2, klasör ×1.5, konu ×1).
+Her sonuç "Kaleme ekle" ile bir kaleme eklenir: **kalemin geneline** (`items/<id>.found`, kartta "Database'den eklenen
+dosyalar") ya da **bir öncüle** (`checks/<id>.f.<i>.found`, öncülün "Bulunan dosyalar" listesi). Kalem listesi dosyanın
+komitesine göre öneriyle başlar (`KOMITE`). Sohbet açıkken balon gizlenir; telefonda pencere alttan açılır.
+
 ### Kalem kartı (yukarıdan aşağı)
 
 1. Başlık: aşama etiketi, birim, sorumlu, **Üstlen**, **Sohbette sor**, ilerleme çubuğu.
