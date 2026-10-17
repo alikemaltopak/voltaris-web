@@ -69,7 +69,8 @@ canvas), `SmoothScroll` (Lenis), `CustomCursor`.
   Statik verisi `public/panel/data/`. `firestore.rules` + `firebase.json` kökte; kural değişince
   Firebase'e yeniden yayınlanmalı. Ortam değişkenleri `VITE_FIREBASE_*` (`.env.example`).
   **Gizli:** takım arşivi indeksi (`indeks.json`) ve Claude dökümü (`data-export/`) depoya ve
-  `public/`'e girmez (depo herkese açık); Firestore'a paneldeki yönetici ekranından yüklenir.
+  `public/`'e girmez (depo herkese açık); Firestore'a paneldeki Üyeler ekranından yüklenir.
+  Üye listesini yalnız `voltaris.official` ve `alikemaltopak` (gmail) yönetir; yönetici rolü yok.
 - `cad-assets/` — CAD → Blender → kare/GLB üretim betikleri (Python). Sitenin
   çalışma zamanının parçası değil; Vercel'e gitmez (`.vercelignore`).
 

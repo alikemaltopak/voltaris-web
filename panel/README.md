@@ -48,7 +48,7 @@ npm run build        # dist/panel/index.html + dist/assets/panel-*.js
   VITE_FIREBASE_EMULATOR=1 npm run dev
   ```
   Giriş penceresinde "Add new account" ile sahte bir Google hesabı açılır. `voltaris.official@gmail.com`
-  adıyla açılan hesap her zaman yöneticidir; üyeleri ve verileri onunla ekle.
+  ya da `alikemaltopak@gmail.com` adıyla açılan hesap üye listesini yönetebilir; üyeleri ve verileri onunla ekle.
 
 ---
 
@@ -62,7 +62,7 @@ ev-takim-sitesi/
 │   ├── bak.js           ← her kalem için atölye rehberi ve "yapılacak iş" tanımları (Database aramaları)
 │   ├── rapor.js         ← TTR tablo alanları, metin bölümleri, "araç bitince" maddeleri, kaynak türleri
 │   ├── firebase.js      ← Firebase katmanı: oturum, panele verilen db/user/assets, indeks, yönetim işlemleri
-│   ├── yonetim.js       ← "Üyeler" penceresi (yalnız yöneticiler): üye listesi + bir kerelik veri yükleme
+│   ├── yonetim.js       ← "Üyeler" penceresi (yalnız iki kurucu hesap): üye listesi + bir kerelik veri yükleme
 │   ├── README.md        ← bu dosya
 │   ├── scripts/         ← şartname / şekil / indeks üreten Python betikleri (bölüm 11)
 │   └── kaynak/OKU.md    ← betiklerin girdi dosyaları buraya konur (içerik .gitignore'da)
@@ -77,7 +77,7 @@ ev-takim-sitesi/
 `vite.config.ts` bunları `/*__ITEMS__*/` yerine yapıştırır. Biçimlerini koru (bölüm 6).
 
 **Depoda olmayanlar (gizli):** Claude'daki kayıtların dökümü (`data-export/*.json`) ve takım arşivi indeksi
-(`indeks.json`). Site deposu herkese açık; ikisi de `.gitignore`'da ve Firestore'a paneldeki yönetici
+(`indeks.json`). Site deposu herkese açık; ikisi de `.gitignore`'da ve Firestore'a paneldeki Üyeler
 ekranından yüklenir (bölüm 9, adım 7).
 
 ---
@@ -253,11 +253,12 @@ Kullanıcı kimlikleri Firebase uid'leridir (Claude'dan aktarılıp eşlenmeyenl
 | `chat/<kanal>/m/<auto>` | `{ text≤1000, by, at, item? }` — kanallar: `genel, M, E, O` | sohbet formu |
 | `members/<uid>` | `{ ad, foto, email, giris, birim:'M'\|'E'\|'O', at }` — diğer üyelerin gördüğü ad ve fotoğraf | girişte `oturumuIzle()`, birim seçimi |
 | `fotolar/<id>` | `{ veri: bayt (JPEG ≤ 900 KB), tur, by, at }`. Fotoğraflar 1600 px JPEG'e küçültülür; kalem belgelerinde yalnız id saklanır | `uploadPhotos()` → `assets.upload()` |
-| `uyeler/<e-posta>` | `{ ad, birim, rol:'uye'\|'yonetici', aktif, at }` — belge kimliği küçük harfli Google e-postası; panele kimin girebileceğini belirler | `yonetim.js` |
+| `uyeler/<e-posta>` | `{ ad, birim, aktif, at }` — belge kimliği küçük harfli Google e-postası; panele kimin girebileceğini belirler | `yonetim.js` |
 | `indeks/meta`, `indeks/p<n>` | `{ ver, parca, at }` ve `{ json: metin parçası }` — takım arşivi indeksi (bölüm 10) | `indeksYaz()` |
 
 Erişim kuralları `firestore.rules`'ta: yalnız aktif üyeler okur ve yazar; `members` herkes yalnız kendi belgesini,
-`log` ve `chat` yalnız kendi adına ekler (`by` = kendi uid'i), `uyeler` ve `indeks`'i yöneticiler yazar.
+`log` ve `chat` yalnız kendi adına ekler (`by` = kendi uid'i), `uyeler` ve `indeks`'i yalnız iki kurucu hesap (`voltaris.official@gmail.com`, `alikemaltopak@gmail.com`) yazar.
+Yönetici rolü bilerek yok: kimse bir üyeye bu yetkiyi veremez; eski kayıtlarda `rol` alanı kalmışsa yok sayılır.
 
 ### Doğrulama (TTR verisi)
 Bir değer girildiğinde giren kişi ve zaman kaydedilir, kaynak türü seçilir. Başka bir üye "Doğrula"ya basar (giren kendi değerini doğrulayamaz).
@@ -265,7 +266,7 @@ Değer değişince `ok` sıfırlanır, eski değer `h` dizisine (son 5) geçer. 
 
 ### Mevcut veri
 `data-export/` (depoda değil) 17.10.2026 itibarıyla Claude'daki ortak kaydın tam dökümüdür: 8 `items`, 6 `checks`, 257 `log`, 1 `members`; `rapor` ve `chat` boş.
-Belgelerdeki `by/owner` kimlikleri Claude'a özeldir (`u_…`, iki kişi). Yönetici ekranındaki aktarım bunları panele girmiş üyelerle
+Belgelerdeki `by/owner` kimlikleri Claude'a özeldir (`u_…`, iki kişi). Üyeler ekranındaki aktarım bunları panele girmiş üyelerle
 eşlemeyi sorar; eşlenmeyenler "Bir ekip üyesi" olarak görünür.
 Fotoğraf asset'leri dökümde yoktur (şu ana kadar yüklenen fotoğraf yok).
 
@@ -295,7 +296,8 @@ WhatsApp) açılır pencere engellenirse yönlendirmeli girişe düşer. Başka 
 ## 9. Kurulum ve yayın
 
 İlk kurulum bir kez yapılır. Ücretsiz Spark planı yeterli (Storage kullanılmıyor). Proje, devredilebilir olması için
-`voltaris.official@gmail.com` hesabıyla açılmalı; bu hesap kurallarda ve `firebase.js`'te (`KURUCU`) her zaman yöneticidir.
+`voltaris.official@gmail.com` hesabıyla açılmalı. Üye listesini yalnız bu hesap ve `alikemaltopak@gmail.com` yönetir;
+ikisi `firestore.rules`'taki `kurucu()` ve `firebase.js`'teki `KURUCULAR` listesinde. Değişecekse ikisi birlikte değişir ve kurallar yeniden yayınlanır.
 
 1. **Proje.** console.firebase.google.com → Proje ekle (Google Analytics gerekmez).
 2. **Giriş.** Authentication → Sign-in method → **Google**'ı etkinleştir. Authentication → Settings → Authorized domains'e
@@ -307,12 +309,12 @@ WhatsApp) açılır pencere engellenirse yönlendirmeli girişe düşer. Başka 
    `projectId`, `appId` değerlerini `.env`'e (`.env.example`'daki adlarla) **ve** Vercel → Settings → Environment Variables'a
    gir. Vercel'de yeniden deploy et. Bu değerler gizli değildir (derlemeye gömülür); veriyi kurallar korur.
 6. **Üyeler.** `/panel/`'e `voltaris.official` ile gir → **Üyeler** → her üyenin Google e-postası, adı, birimi.
-   Başka yönetici gerekiyorsa rolünü "Yönetici" yap. Ayrılan üyeyi "Aktif"ten çıkar ya da sil; girdiği kayıtlar kalır.
+   Ayrılan üyeyi "Aktif"ten çıkar ya da sil; girdiği kayıtlar kalır.
 7. **Veriler (bir kez).** Üyeler → "Bir kerelik veri yükleme": `indeks.json`'ı ve `data-export` klasöründeki altı `.json`'ı seç.
    Eski kayıtları aktarmadan önce o kişilerin panele bir kez girmiş olması, adlarının eşlenebilmesini sağlar.
 
 **Denendi (emülatörde, 17.10.2026):** kurallar 38 durumda (giriş yok, üye değil, doğrulanmamış e-posta, pasif üye,
-üye, yönetici, kurucu; başkası adına log/mesaj, 1 MB üstü fotoğraf, 400 belgelik aktarım); tarayıcıda uçtan uca 21 adım
+üye, eski "yönetici" rollü üye, iki kurucu hesap; başkası adına log/mesaj, 1 MB üstü fotoğraf, 400 belgelik aktarım); tarayıcıda uçtan uca 21 adım
 (üye olmayanın reddi, üye ekleme, indeks ve eski kayıt aktarımı, öncül cevaplama, indeks araması, fotoğraf yükleme,
 sohbet, ikinci üyenin canlı görmesi, 390 px'te yatay kaydırma olmaması, çıkış).
 Gerçek Firebase projesinde ilk girişte yine kontrol et: Google ile giriş, Authorized domains, kuralların yayında olması.

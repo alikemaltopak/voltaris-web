@@ -1,7 +1,7 @@
 // Admin dialog: the member list (who may sign in) and the one-time loads that replace what the
 // Claude Artifact had built in — the archive index and the export of its shared records.
 // Firestore rules enforce the same limits (firestore.rules); this file is only the UI.
-import { KURUCU, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar } from './firebase.js';
+import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar } from './firebase.js';
 
 const BIRIM = { M:'Mekanik', E:'Elektrik-Elektronik', O:'Organizasyon ve Sosyal Medya' };
 const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -18,15 +18,14 @@ function kur(){
   d.className = 'ynt'; d.setAttribute('aria-labelledby', 'yntTitle');
   d.innerHTML = `<div class="ynt-in">
     <div class="ynt-h"><h2 id="yntTitle">Üyeler</h2><button class="btn small" type="button" data-kapat>Kapat</button></div>
-    <p class="help">Panele yalnız bu listedeki Google hesapları girebilir. ${esc(KURUCU)} her zaman yöneticidir.</p>
+    <p class="help">Panele yalnız bu listedeki Google hesapları girebilir. Listeyi yalnız ${KURUCULAR.map(esc).join(' ve ')} değiştirebilir.</p>
     <form class="ynt-ekle" id="yntForm">
       <input class="inp" name="email" type="email" required maxlength="120" placeholder="Google e-postası" aria-label="Google e-postası">
       <input class="inp" name="ad" required maxlength="80" placeholder="Ad Soyad" aria-label="Ad Soyad">
       <select class="sel" name="birim" aria-label="Birim"><option value="">Birim</option>${Object.entries(BIRIM).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
-      <select class="sel" name="rol" aria-label="Rol"><option value="uye">Üye</option><option value="yonetici">Yönetici</option></select>
       <button class="btn primary" type="submit">Ekle</button>
     </form>
-    <div class="hscroll"><table class="tbl ynt-tbl"><thead><tr><th>Ad</th><th>E-posta</th><th>Birim</th><th>Rol</th><th>Aktif</th><th></th></tr></thead><tbody id="yntList"></tbody></table></div>
+    <div class="hscroll"><table class="tbl ynt-tbl"><thead><tr><th>Ad</th><th>E-posta</th><th>Birim</th><th>Aktif</th><th></th></tr></thead><tbody id="yntList"></tbody></table></div>
     <details class="ynt-aktar"><summary>Bir kerelik veri yükleme</summary>
       <p class="help"><b>Takım arşivi indeksi.</b> <code>build_indeks.py</code>'nin ürettiği <code>indeks.json</code>. Panelde "Takım arşivinde bulunanlar" bunu arar. Yenisi eskisinin yerine geçer.</p>
       <label class="btn small">indeks.json seç<input type="file" accept=".json,application/json" id="yntIdx" hidden></label>
@@ -52,7 +51,6 @@ function liste(){
   tb.innerHTML = uyeler.map(u => `<tr data-email="${esc(u.email)}">
     <td>${esc(u.ad || '—')}</td><td class="mono">${esc(u.email)}</td>
     <td><select class="sel" data-alan="birim" aria-label="Birim"><option value="">—</option>${Object.entries(BIRIM).map(([k, v]) => `<option value="${k}" ${u.birim === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
-    <td><select class="sel" data-alan="rol" aria-label="Rol"><option value="uye">Üye</option><option value="yonetici" ${u.rol === 'yonetici' ? 'selected' : ''}>Yönetici</option></select></td>
     <td><input type="checkbox" data-alan="aktif" ${u.aktif !== false ? 'checked' : ''} aria-label="Aktif"></td>
     <td><button class="xbtn" type="button" data-sil aria-label="Listeden çıkar">×</button></td></tr>`).join('');
 }
@@ -62,7 +60,7 @@ async function ekle(e){
   const f = new FormData(e.target), email = String(f.get('email')).trim().toLowerCase(), ad = String(f.get('ad')).trim();
   if(!EPOSTA.test(email) || !ad) return;
   if(uyeler.some(u => u.email === email)){ toast('Bu e-posta zaten listede.'); return; }
-  try{ await uyeYaz(email, { ad, birim:String(f.get('birim')), rol:String(f.get('rol')), aktif:true }); e.target.reset(); toast(`<b>Eklendi:</b> ${esc(ad)}`); }
+  try{ await uyeYaz(email, { ad, birim:String(f.get('birim')), aktif:true }); e.target.reset(); toast(`<b>Eklendi:</b> ${esc(ad)}`); }
   catch(err){ toast('Eklenemedi: ' + esc(err?.code || 'hata')); }
 }
 

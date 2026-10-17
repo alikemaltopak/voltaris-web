@@ -973,7 +973,7 @@ async function writeDoc(coll, id, patch, set){
   if(mode!=='db'){ saveLocal(); return true; }
   try{ await db.doc(coll+'/'+id).update(patch); set.add(id); return true; }
   catch(err){
-    if(err?.code==='invalid_argument'){ canWrite=false; renderAll(); toast('Bu panelde değişiklik yapma yetkin yok. Üyeliğin kaldırılmış olabilir; bir yöneticiye sor.'); return false; }
+    if(err?.code==='invalid_argument'){ canWrite=false; renderAll(); toast('Bu panelde değişiklik yapma yetkin yok. Üyeliğin kaldırılmış olabilir; takım sorumlusuna sor.'); return false; }
     toast('Kaydedilemedi, bağlantını kontrol edip tekrar dene.'); return false;
   }
 }
@@ -1114,7 +1114,7 @@ function renderNotice(){
   const n=$('notice'); n.className='notice';
   if(mode==='loading'){ n.textContent='Takımın kayıtları yükleniyor…'; n.hidden=false; return; }
   if(mode==='local'){ n.classList.add('warn'); n.textContent='Ortak kayıt bu görünümde açılamadı: değişikliklerin sadece bu tarayıcıda kalır, ekip görmez ve sohbet çalışmaz.'; n.hidden=false; return; }
-  if(canWrite===false){ n.textContent='Değişiklik yapma yetkin yok: üyeliğin kaldırılmış ya da pasif olabilir. Bir yöneticiye sor.'; n.hidden=false; return; }
+  if(canWrite===false){ n.textContent='Değişiklik yapma yetkin yok: üyeliğin kaldırılmış ya da pasif olabilir. Takım sorumlusuna sor.'; n.hidden=false; return; }
   if(!myBirim){ n.innerHTML='Hoş geldin. Önce sağ üstten <b>birimini seç</b>: liste ve takvim senin birimine göre öne çıkar.'; n.hidden=false; return; }
   if(!Object.keys(recs).length){ n.innerHTML='Henüz hiçbir kalem tespit edilmedi, araç tamamen hayalet. Atölye turuna başla: aşağıdaki listede her kalem için <b>yapılmış mı</b> sorusunu işaretle.'; n.hidden=false; return; }
   n.hidden=true;
@@ -1641,11 +1641,11 @@ $('compose').addEventListener('submit', async e=>{
   e.preventDefault(); if(sending) return;
   const text=$('chatText').value.trim(); if(!text) return;
   if(mode!=='db'){ toast('Sohbet ortak kayıtla çalışır; bu görünümde gönderilemiyor.'); return; }
-  if(canWrite===false){ toast('Mesaj göndermek için takım üyesi olmalısın; bir yöneticiye sor.'); return; }
+  if(canWrite===false){ toast('Mesaj göndermek için takım üyesi olmalısın; takım sorumlusuna sor.'); return; }
   sending=true; $('chatSend').disabled=true;
   const doc={ text:text.slice(0,1000), by:myId, at:new Date().toISOString() }; if(attachItem) doc.item=attachItem;
   try{ await db.collection('chat/'+chan+'/m').add(doc); $('chatText').value=''; attachItem=null; renderAttach(); }
-  catch(err){ toast(err?.code==='invalid_argument'?'Mesaj göndermek için takım üyesi olmalısın; bir yöneticiye sor.':'Mesaj gönderilemedi, tekrar dene.'); }
+  catch(err){ toast(err?.code==='invalid_argument'?'Mesaj göndermek için takım üyesi olmalısın; takım sorumlusuna sor.':'Mesaj gönderilemedi, tekrar dene.'); }
   sending=false; $('chatSend').disabled=false; $('chatText').focus();
 });
 
@@ -1788,7 +1788,7 @@ function kapi(){
       if(acik){ if(o.durum!=='giris') location.reload(); return; }   // signed out in another tab
       const msg=$('gateMsg'); $('gateBtn').hidden=true; $('gateOut').hidden=true;
       if(o.durum==='cikis'){ msg.textContent='Panel yalnızca Voltaris üyelerine açık. Takımın üye listesindeki Google hesabınla giriş yap.'; $('gateBtn').hidden=false; return; }
-      if(o.durum==='red'){ msg.textContent = o.pasif ? `${o.email} hesabı pasif durumda. Bir yöneticiye sor.` : `${o.email} takımın üye listesinde yok. Bir yöneticiden seni eklemesini iste ya da listedeki hesabınla gir.`; $('gateOut').hidden=false; return; }
+      if(o.durum==='red'){ msg.textContent = o.pasif ? `${o.email} hesabı pasif durumda. Takım sorumlusuna sor.` : `${o.email} takımın üye listesinde yok. Takım sorumlusundan seni eklemesini iste ya da listedeki hesabınla gir.`; $('gateOut').hidden=false; return; }
       acik=true; ac(); resolve(o);
     });
   }); }

@@ -14,9 +14,9 @@ import {
   getDoc, getDocs, setDoc, addDoc, deleteDoc, onSnapshot, writeBatch, Bytes,
 } from 'firebase/firestore';
 
-// Must match `kurucu()` in firestore.rules: this account is always an admin, so the very first
-// member can be added from the panel without touching the Firebase console.
-export const KURUCU = 'voltaris.official@gmail.com';
+// Must match `kurucu()` in firestore.rules: only these two accounts manage the member list and load
+// data, and they are always members. There is no admin role to hand out, by design.
+export const KURUCULAR = ['voltaris.official@gmail.com', 'alikemaltopak@gmail.com'];
 
 const env = import.meta.env;
 const emulator = env.VITE_FIREBASE_EMULATOR === '1';
@@ -52,13 +52,12 @@ export function oturumuIzle(cb){
     const email = emailKey(u.email);
     let uye = null;
     try{ const s = await getDoc(doc(fs, 'uyeler', email)); if(s.exists()) uye = s.data(); }catch{ /* not a member: rules deny the read */ }
-    const kurucu = email === KURUCU;
+    const kurucu = KURUCULAR.includes(email);
     if(!kurucu && (!uye || uye.aktif === false)){ cb({ durum:'red', email, pasif: !!uye }); return; }
-    const yonetici = kurucu || uye?.rol === 'yonetici';
     const ad = String(uye?.ad || u.displayName || email.split('@')[0]).slice(0, 80);
     // members/<uid> is how other members see this person's name (user.profiles below).
     try{ await setDoc(doc(fs, 'members', u.uid), { ad, foto: u.photoURL || '', email, giris: nowIso() }, { merge:true }); }catch{}
-    cb({ durum:'giris', ...oturum(u, { ad, email, yonetici, birim: uye?.birim || '' }) });
+    cb({ durum:'giris', ...oturum(u, { ad, email, yonetici:kurucu, birim: uye?.birim || '' }) });
   });
 }
 

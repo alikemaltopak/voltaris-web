@@ -1,27 +1,27 @@
 rules_version = '2';
 
 // Team panel (/panel/). Only accounts on the `uyeler` list (document id = lower-case Google
-// e-mail) read or write anything. voltaris.official is always an admin, so the first members can
-// be added from the panel itself. Keep KURUCU in panel/firebase.js in step with kurucu() here.
+// e-mail) read or write anything. Managing that list, loading the archive index and moderating
+// the feed belong to two fixed accounts and nobody else: there is no admin role a member could be
+// given. Keep KURUCULAR in panel/firebase.js in step with kurucu() here.
 service cloud.firestore {
   match /databases/{database}/documents {
     function girdi() { return request.auth != null && request.auth.token.email_verified == true; }
     function eposta() { return request.auth.token.email.lower(); }
-    function kurucu() { return girdi() && eposta() == 'voltaris.official@gmail.com'; }
+    function kurucu() { return girdi() && eposta() in ['voltaris.official@gmail.com', 'alikemaltopak@gmail.com']; }
     function kayit() { return /databases/$(database)/documents/uyeler/$(eposta()); }
     function uye() { return kurucu() || (girdi() && exists(kayit()) && get(kayit()).data.get('aktif', true) != false); }
-    function yonetici() { return kurucu() || (uye() && get(kayit()).data.get('rol', 'uye') == 'yonetici'); }
     function yazan() { return request.resource.data.get('by', null) == request.auth.uid; }
 
     // A signed-in non-member may read only their own entry, so the gate can say "inactive".
     match /uyeler/{email} {
       allow read: if uye() || (girdi() && email == eposta());
-      allow write: if yonetici() && email == email.lower();
+      allow write: if kurucu() && email == email.lower();
     }
-    // name, photo and unit of each member; others' entries only through an admin's import
+    // name, photo and unit of each member; others' entries only through the founders' import
     match /members/{uid} {
       allow read: if uye();
-      allow write: if (uye() && request.auth.uid == uid) || yonetici();
+      allow write: if (uye() && request.auth.uid == uid) || kurucu();
     }
     match /items/{id}  { allow read, write: if uye(); }
     match /checks/{id} { allow read, write: if uye(); }
@@ -29,22 +29,22 @@ service cloud.firestore {
     // the activity feed and chat are append-only and signed by their author
     match /log/{id} {
       allow read: if uye();
-      allow create: if uye() && (yazan() || yonetici());
-      allow update, delete: if yonetici();
+      allow create: if uye() && (yazan() || kurucu());
+      allow update, delete: if kurucu();
     }
     match /chat/{kanal}/m/{id} {
       allow read: if uye();
-      allow create: if uye() && request.resource.data.text is string && request.resource.data.text.size() <= 1000 && (yazan() || yonetici());
-      allow update, delete: if yonetici();
+      allow create: if uye() && request.resource.data.text is string && request.resource.data.text.size() <= 1000 && (yazan() || kurucu());
+      allow update, delete: if kurucu();
     }
     match /fotolar/{id} {
       allow read, delete: if uye();
       allow create: if uye() && yazan() && request.resource.data.veri is bytes && request.resource.data.veri.size() <= 1000000;
     }
-    // team archive index: written by an admin from the panel (later by the Apps Script service account)
+    // team archive index: loaded by a founder from the panel (later by the Apps Script service account)
     match /indeks/{id} {
       allow read: if uye();
-      allow write: if yonetici();
+      allow write: if kurucu();
     }
   }
 }
