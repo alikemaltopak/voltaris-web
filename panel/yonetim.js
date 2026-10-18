@@ -96,7 +96,7 @@ async function driveKaydet(){
     const r = await driveAra('şasi');
     durum.textContent = `Çalışıyor: "şasi" için ${r.sonuc.length}${r.kesildi ? '+' : ''} dosya bulundu.`;
   }catch(err){
-    durum.textContent = { 'uye-degil':'Script cevap verdi ama üyeliği doğrulayamadı: AYAR.firebaseApiKey / projeId doğru mu?', http:'Script\'e ulaşılamadı: dağıtımda "Erişimi olanlar: Herkes" seçili mi?', arama:'Script Drive\'da arayamadı: izinleriVer() bir kez çalıştırıldı mı? ' + (err.message || '') }[err?.code]
+    durum.textContent = { 'uye-degil':'Script cevap verdi ama üyeliği doğrulayamadı: AYAR.firebaseApiKey / projeId doğru mu?', http:'Script\'e ulaşılamadı: dağıtımda "Erişimi olanlar: Herkes" seçili mi?', arama:'Script Drive\'da arayamadı: Drive API hizmeti eklendi ve kurulum() çalıştırıldı mı? ' + (err.message || '') }[err?.code]
       || 'Denenemedi: ' + (err?.message || err?.code || 'hata');
   }
 }

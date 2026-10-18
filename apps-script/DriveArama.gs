@@ -1,15 +1,25 @@
 /**
  * Takım paneli (/panel/) — Drive'da canlı arama.
  *
- * Ayrı bir Apps Script projesidir ve voltaris.official hesabında, o hesabın Drive'ında arar
- * (kurulum: apps-script/DRIVE_ARAMA.md). Paneldeki Database balonu her aramada buraya üyenin
- * Firebase giriş kimliğini (ID token) ve arama metnini gönderir. Script önce kimliği Google'a
- * doğrulatır, sonra kişinin üye listesinde olduğunu Firestore'dan — o kişinin kendi yetkisiyle,
- * yani firestore.rules'tan geçerek — okur. Üye değilse hiçbir şey dönmez.
+ * Ayrı bir Apps Script projesidir ve voltaris.official hesabında, o hesabın gördüğü Drive'da
+ * (ortak drive'lar dahil) arar. Kurulum: apps-script/DRIVE_ARAMA.md. "Drive API" gelişmiş hizmeti
+ * (v3) açık olmalı.
  *
- * Dosya adı ve içerik aranır; Drive'a yeni eklenen dosya kendiliğinden aramaya girer.
- * Kişisel veri taşıyan dosyalar (başvuru, kimlik, fatura…) ve Sponsorluk / Sosyal Medya
- * klasörleri, takım arşivi indeksinde olduğu gibi (panel/scripts/build_indeks.py) sonuçlara girmez.
+ * Paneldeki Database balonu her aramada buraya üyenin Firebase giriş kimliğini (ID token) ve arama
+ * metnini gönderir. Script önce kimliği Google'a doğrulatır, sonra kişinin üye listesinde olduğunu
+ * Firestore'dan — o kişinin kendi yetkisiyle, yani firestore.rules'tan geçerek — okur. Üye değilse
+ * hiçbir şey dönmez.
+ *
+ * Bir arama üç yoldan aday toplar ve hepsini aynı ölçüyle puanlar:
+ *  1. Adı, açıklaması ya da içeriği kelimelerden birini taşıyan dosyalar (Drive'ın kendi araması).
+ *  2. Adı kelimelerden birini taşıyan klasörler — klasör haritasında, Türkçe harfe duyarsız.
+ *  3. O klasörlerin (alt klasörleri dahil) içindeki dosyalar. CAD/STEP/ZIP gibi içi okunamayan
+ *     dosyalar çoğunlukla ancak bu yoldan, bulundukları klasörün adıyla bulunur.
+ * Klasör haritası (bütün klasörlerin adı ve üst klasörü) 6 saat önbellekte durur; kurulumda eklenen
+ * saatlik tetikleyici onu tazeler, böylece aramalar beklemez.
+ *
+ * Kişisel veri taşıyan dosyalar (başvuru, kimlik, fatura…) ve Sponsorluk / Sosyal Medya klasörleri,
+ * takım arşivi indeksinde olduğu gibi (panel/scripts/build_indeks.py) sonuçlara girmez.
  */
 
 const AYAR = {
@@ -18,7 +28,7 @@ const AYAR = {
   projeId: 'voltaris-sanal',
   // firestore.rules'taki kurucu() ve panel/firebase.js'teki KURUCULAR ile aynı.
   kurucular: ['voltaris.official@gmail.com', 'alikemaltopak@gmail.com'],
-  // Boşsa bütün Drive aranır. Klasör kimlikleri yazılırsa yalnız bu klasörlerin altındakiler.
+  // Boşsa her yer aranır. Klasör kimlikleri yazılırsa yalnız bu klasörlerin altındakiler.
   // Kimlik, klasörün Drive adresindeki /folders/ sonrasındaki kısımdır.
   kokKlasorler: [],
   enFazla: 25,
@@ -30,6 +40,9 @@ const AYAR = {
 const GIZLI = /basvuru|kimlik|\btc\b|nufus|cv\b|ozgecmis|telefon|iletisim bilgi|dilekce|taahhut|muvafakat|uye listesi|banka|iban|fatura|dekont|saglik/;
 // Bu adlı bir klasörün altındaki hiçbir şey gösterilmez (indekste de yoklar).
 const GIZLI_KLASOR = /^(sponsorluk|sosyal medya)$/;
+const KLASOR = 'application/vnd.google-apps.folder';
+// Bir aramanın Drive'a harcayabileceği süre; panel 30 sn sonra vazgeçer.
+const SURE_MS = 15000;
 
 // Türkçe kurallarıyla küçük harf (İ→i, I→ı), sonra işaretsiz harf: "KİMLİK" ve "kimlik" aynı olur.
 function norm(s) {
@@ -99,58 +112,157 @@ function uyeMi(token) {
   return email;
 }
 
-function ara(q) {
-  const kelimeler = q.toLocaleLowerCase('tr').split(/\s+/).filter(Boolean).slice(0, 6)
-    .map(function (k) { return k.replace(/\\/g, '\\\\').replace(/'/g, "\\'"); });
-  // her kelime ya adda ya içerikte geçmeli
-  const sorgu = "trashed = false and mimeType != 'application/vnd.google-apps.folder' and " +
-    kelimeler.map(function (k) { return "(title contains '" + k + "' or fullText contains '" + k + "')"; }).join(' and ');
-  const bul = DriveApp.searchFiles(sorgu);
-  const yol = yolBulucu();
-  const sonuc = [];
-  let bakilan = 0;
-  while (bul.hasNext() && sonuc.length < AYAR.enFazla && bakilan < 150) {
-    const f = bul.next(); bakilan++;
-    const p = yol(f);
-    if (p === null) continue;
-    const ad = f.getName();
-    if (GIZLI.test(norm(ad + ' ' + p))) continue;
-    sonuc.push({ n: ad, u: f.getUrl(), p: p, t: f.getLastUpdated().toISOString(), f: tur(f.getMimeType(), ad) });
+/* ---------- klasör haritası ---------- */
+
+// Drive'daki bütün klasörler: { id: [ad, üstKlasörId] }. Önbellekte parça parça durur (bir anahtar ≤100 KB).
+function klasorHaritasi(yenile) {
+  const cache = CacheService.getScriptCache();
+  if (!yenile) {
+    const n = Number(cache.get('kh:n') || 0);
+    if (n) {
+      const parcalar = cache.getAll(Array.from({ length: n }, function (_, i) { return 'kh:' + i; }));
+      if (Object.keys(parcalar).length === n) {
+        return JSON.parse(Array.from({ length: n }, function (_, i) { return parcalar['kh:' + i]; }).join(''));
+      }
+    }
   }
-  return { sonuc: sonuc, kesildi: bul.hasNext() };
+  const harita = {};
+  let sayfa;
+  do {
+    const r = Drive.Files.list({
+      q: "mimeType = '" + KLASOR + "' and trashed = false", pageSize: 1000, pageToken: sayfa,
+      fields: 'nextPageToken, files(id, name, parents)', corpora: 'allDrives', includeItemsFromAllDrives: true, supportsAllDrives: true,
+    });
+    (r.files || []).forEach(function (f) { harita[f.id] = [f.name, (f.parents || [])[0] || '']; });
+    sayfa = r.nextPageToken;
+  } while (sayfa);
+  const metin = JSON.stringify(harita), parca = 90000, n = Math.ceil(metin.length / parca), yaz = { 'kh:n': String(n) };
+  for (let i = 0; i < n; i++) yaz['kh:' + i] = metin.slice(i * parca, (i + 1) * parca);
+  cache.putAll(yaz, 21600);
+  return harita;
 }
 
-/**
- * Dosyanın klasör yolunu bulur; gizli bir klasörün altındaysa ya da kök klasörlerin dışındaysa null.
- * Klasörler 6 saat önbellekte durur, böylece aynı klasördeki dosyalar için Drive'a tekrar gidilmez.
- */
-function yolBulucu() {
-  const cache = CacheService.getScriptCache();
+// Saatlik tetikleyici bunu çağırır: harita hep sıcak kalır, ilk arama beklemez.
+function klasorHaritasiniYenile() { klasorHaritasi(true); }
+
+// Bir klasörün yolu ("A/B/C") ya da gizli bir klasörün altındaysa / kök klasörlerin dışındaysa null.
+function yolBulucu(harita) {
   const bellek = {};
   const kok = AYAR.kokKlasorler;
-  function klasor(folder) {
-    const id = folder.getId();
+  function yol(id, derinlik) {
+    if (!id || !harita[id]) return { p: '', ok: kok.length === 0 };   // Drive'ım kökü ya da görülmeyen üst
     if (bellek[id]) return bellek[id];
-    const c = cache.get('k:' + id);
-    if (c) return (bellek[id] = JSON.parse(c));
-    const ad = folder.getName();
-    const ustler = folder.getParents();
+    const ad = harita[id][0];
     let r;
     if (GIZLI_KLASOR.test(norm(ad).trim())) r = { p: null, ok: false };
     else if (kok.indexOf(id) >= 0) r = { p: ad, ok: true };
-    else if (!ustler.hasNext()) r = { p: '', ok: kok.length === 0 };   // Drive'ım kökü
+    else if (derinlik > 40) r = { p: ad, ok: kok.length === 0 };
     else {
-      const u = klasor(ustler.next());
+      const u = yol(harita[id][1], derinlik + 1);
       r = u.p === null ? u : { p: u.p ? u.p + '/' + ad : ad, ok: u.ok };
     }
-    cache.put('k:' + id, JSON.stringify(r), 21600);
     return (bellek[id] = r);
   }
-  return function (f) {
-    const ustler = f.getParents();
-    if (!ustler.hasNext()) return kok.length ? null : 'Benimle paylaşılanlar';
-    const r = klasor(ustler.next());
-    return r.ok && r.p !== null ? (r.p || 'Drive\'ım') : null;
+  return function (klasorId) {
+    const r = yol(klasorId, 0);
+    return r.ok && r.p !== null ? r.p : null;
+  };
+}
+
+/* ---------- arama ---------- */
+
+function ara(q) {
+  const t0 = Date.now();
+  const sureVar = function () { return Date.now() - t0 < SURE_MS; };
+  const ham = q.toLocaleLowerCase('tr').split(/\s+/).filter(function (k) { return k.length >= 2; }).slice(0, 6);
+  const kel = ham.map(norm);
+  if (!kel.length) return { sonuc: [], kesildi: false };
+  const harita = klasorHaritasi(false);
+  const yol = yolBulucu(harita);
+  const aday = {};   // id → { id, ad, klasor, tur, t, aciklama, icerik, dizin }
+
+  function ekle(f, yoldan) {
+    if (aday[f.id]) { if (yoldan === 'icerik') aday[f.id].icerik = true; return; }
+    aday[f.id] = { id: f.id, ad: f.name, ust: (f.parents || [])[0] || '', mime: f.mimeType, t: f.modifiedTime || '',
+      aciklama: f.description || '', icerik: yoldan === 'icerik' };
+  }
+  function listele(sorgu, enFazla, yoldan) {
+    let sayfa, alinan = 0;
+    do {
+      const r = Drive.Files.list({
+        q: sorgu, pageSize: Math.min(500, enFazla - alinan), pageToken: sayfa,
+        fields: 'nextPageToken, files(id, name, mimeType, parents, modifiedTime, description)',
+        corpora: 'allDrives', includeItemsFromAllDrives: true, supportsAllDrives: true,
+      });
+      (r.files || []).forEach(function (f) { ekle(f, yoldan); });
+      alinan += (r.files || []).length; sayfa = r.nextPageToken;
+    } while (sayfa && alinan < enFazla && sureVar());
+    return !!sayfa;
+  }
+  const kac = function (k) { return k.replace(/\\/g, '\\\\').replace(/'/g, "\\'"); };
+  // Drive'ın kendi aramasına hem yazıldığı gibi hem işaretsiz hâliyle sorulur ("şasi" ve "sasi").
+  const terimler = [];
+  ham.forEach(function (k, i) { terimler.push(k); if (kel[i] !== k) terimler.push(kel[i]); });
+  let tasti = false;
+
+  // 1. adı / açıklaması / içeriği eşleşen dosyalar
+  tasti = listele("trashed = false and mimeType != '" + KLASOR + "' and (" +
+    terimler.map(function (k) { return "name contains '" + kac(k) + "' or fullText contains '" + kac(k) + "'"; }).join(' or ') + ')',
+    400, 'icerik') || tasti;
+
+  // 2. adı eşleşen klasörler (haritada, Türkçe harfe duyarsız)
+  const eslesen = Object.keys(harita).filter(function (id) {
+    const a = norm(harita[id][0]); return kel.some(function (k) { return a.indexOf(k) >= 0; });
+  });
+  eslesen.forEach(function (id) {
+    if (!aday[id]) aday[id] = { id: id, ad: harita[id][0], ust: harita[id][1], mime: KLASOR, t: '', aciklama: '', icerik: false };
+  });
+
+  // 3. o klasörlerin altındaki dosyalar: önce alt klasörler haritadan, sonra içerikleri parça parça
+  const cocuk = {};
+  Object.keys(harita).forEach(function (id) { const u = harita[id][1]; (cocuk[u] = cocuk[u] || []).push(id); });
+  const altlar = [], gorulen = {};
+  const kuyruk = eslesen.slice(0, 40);
+  while (kuyruk.length && altlar.length < 300) {
+    const id = kuyruk.shift(); if (gorulen[id]) continue; gorulen[id] = true; altlar.push(id);
+    (cocuk[id] || []).forEach(function (c) { kuyruk.push(c); });
+  }
+  if (kuyruk.length) tasti = true;
+  for (let i = 0; i < altlar.length && sureVar(); i += 40) {
+    tasti = listele("trashed = false and mimeType != '" + KLASOR + "' and (" +
+      altlar.slice(i, i + 40).map(function (id) { return "'" + id + "' in parents"; }).join(' or ') + ')', 300, 'dizin') || tasti;
+  }
+  if (!sureVar()) tasti = true;
+
+  // puanla: her kelime için ad 3, açıklama 2.5, klasör yolu 1.5; hiçbiri değilse ve Drive içerikte
+  // bulduysa bir kelime içerikte sayılır. Bütün kelimeleri tutanlar öne geçer.
+  const sonuc = [];
+  Object.keys(aday).forEach(function (id) {
+    const a = aday[id];
+    const p = yol(a.ust);
+    if (p === null) return;
+    if (a.mime === KLASOR && yol(id) === null) return;   // gizli klasörün kendisi
+    const na = norm(a.ad), nd = norm(a.aciklama), np = norm(p);
+    if (GIZLI.test(na + ' ' + np)) return;
+    let s = 0, tutan = 0;
+    kel.forEach(function (k) {
+      if (na.indexOf(k) >= 0) { s += 3; tutan++; } else if (nd.indexOf(k) >= 0) { s += 2.5; tutan++; } else if (np.indexOf(k) >= 0) { s += 1.5; tutan++; }
+    });
+    if (a.icerik && tutan < kel.length) { s += 1; tutan++; }
+    if (!tutan) return;
+    s *= 0.5 + 0.5 * tutan / kel.length;
+    if (a.mime === KLASOR) s += 0.3;
+    sonuc.push({ s: s, t: a.t, r: a, p: p || "Drive'ım" });
+  });
+  sonuc.sort(function (x, y) { return y.s - x.s || (y.t > x.t ? 1 : y.t < x.t ? -1 : 0); });
+  return {
+    toplam: sonuc.length,
+    kesildi: tasti || sonuc.length > AYAR.enFazla,
+    sonuc: sonuc.slice(0, AYAR.enFazla).map(function (x) {
+      const a = x.r, klasor = a.mime === KLASOR;
+      return { n: a.ad, p: x.p, t: a.t, f: klasor ? 'klasör' : tur(a.mime, a.ad),
+        u: klasor ? 'https://drive.google.com/drive/folders/' + a.id : 'https://drive.google.com/file/d/' + a.id + '/view' };
+    }),
   };
 }
 
@@ -161,9 +273,19 @@ function tur(mime, ad) {
     'application/vnd.google-apps.presentation': 'sunu', 'application/pdf': 'pdf' }[mime] || '';
 }
 
-// Kurulumda bir kez editörden çalıştır: Google, Drive'ı okuma ve dışarıya istek izinlerini sorar.
-function izinleriVer() {
-  Logger.log('Drive: ' + DriveApp.getRootFolder().getName());
-  Logger.log('Deneme araması: ' + JSON.stringify(ara('şasi').sonuc.slice(0, 3)));
+/* ---------- kurulum ---------- */
+
+// Kurulumda bir kez editörden çalıştır: izinleri sorar, klasör haritasını çıkarır, saatlik tazelemeyi kurar
+// ve bir deneme araması yapar. Tekrar çalıştırmak zararsızdır (tetikleyiciyi çoğaltmaz).
+function kurulum() {
+  const t = Date.now();
+  const harita = klasorHaritasi(true);
+  Logger.log('Klasör haritası: ' + Object.keys(harita).length + ' klasör, ' + (Date.now() - t) + ' ms');
+  const var_ = ScriptApp.getProjectTriggers().some(function (x) { return x.getHandlerFunction() === 'klasorHaritasiniYenile'; });
+  if (!var_) ScriptApp.newTrigger('klasorHaritasiniYenile').timeBased().everyHours(1).create();
+  Logger.log('Saatlik tazeleme: ' + (var_ ? 'zaten kurulu' : 'kuruldu'));
+  const d = Date.now(), r = ara('şasi');
+  Logger.log('Deneme araması "şasi": ' + r.toplam + ' sonuç, ' + (Date.now() - d) + ' ms. İlk üçü: ' +
+    JSON.stringify(r.sonuc.slice(0, 3).map(function (x) { return x.p + '/' + x.n; })));
   UrlFetchApp.fetch('https://identitytoolkit.googleapis.com/', { muteHttpExceptions: true });
 }

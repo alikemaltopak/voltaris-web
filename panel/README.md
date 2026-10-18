@@ -180,7 +180,10 @@ Kalem bitince ya da bir kalemin kilidi açılınca `announce()` kısa bir bildir
 Her sekmede ekranın kenarında duran yuvarlak düğme (veritabanı simgesi). Sürüklenir; bırakınca ya da fırlatınca sağ veya
 sol kenara yapışır, yeri tarayıcıda hatırlanır (`vh-dbb`). Dokununca açılan pencerede takım arşivi indeksinde serbest arama
 yapılır; bir arama iki yere gider:
-- **Drive'da (canlı):** `apps-script/DriveArama.gs` üzerinden takımın Drive'ında dosya adı ve içerik araması (`driveAra()`).
+- **Drive'da (canlı):** `apps-script/DriveArama.gs` üzerinden takımın Drive'ında (ortak drive'lar dahil) arama
+  (`driveAra()`): dosya adı, açıklama ve içerik Drive'ın kendi aramasıyla; klasör adları script'in klasör haritasında
+  (Türkçe harfe duyarsız) ve eşleşen klasörlerin altındaki dosyalar. Puan: ad 3, açıklama 2,5, klasör yolu 1,5, içerik 1;
+  en iyi 25 döner. Açıklamaya yazılan etiketler (ör. `Kalem: Şasi · şasi, braket`) bu yüzden aramayı doğrudan iyileştirir.
   Script voltaris.official hesabında çalışır, her istekte üyenin Firebase ID token'ını Google'a doğrulatıp `uyeler`'i
   o üyenin kendi yetkisiyle okur. Kişisel veri desenleri ve Sponsorluk / Sosyal Medya klasörleri elenir. Script'in adresi
   `ayarlar/genel.driveArama`'da; Üyeler → "Drive araması"ndan girilir. Kurulum: `apps-script/DRIVE_ARAMA.md`.

@@ -207,7 +207,8 @@ export async function driveAra(q, signal){
   // Apps Script hands the reply over on a second hop that now and then answers 404; once more is enough.
   try{ d = await istek(); }catch(e){ if(e?.name === 'AbortError') throw e; d = await istek(); }
   if(!d?.ok) throw hata(d?.hata || 'arama', d?.mesaj);
-  return { sonuc:Array.isArray(d.sonuc) ? d.sonuc : [], kesildi:!!d.kesildi };
+  const sonuc = Array.isArray(d.sonuc) ? d.sonuc : [];
+  return { sonuc, kesildi:!!d.kesildi, toplam:Number(d.toplam) || sonuc.length };
 }
 
 /* ---------- yönetim: üye listesi ve bir kerelik veri aktarımı ---------- */

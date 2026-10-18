@@ -1859,11 +1859,11 @@ const DB_HATA = { kurulmadi:'Canlı Drive araması henüz kurulmadı; şimdilik 
   http:'Drive aramasına ulaşılamadı; biraz sonra tekrar dene.', arama:'Drive araması başarısız oldu; biraz sonra tekrar dene.' };
 function dbCanliHtml(ro){ const c=dbCanli;
   if(c.durum==='yok') return '';
-  const bas = `<div class="db-bas">${DB_SVG_K}<b>Drive'da</b><span class="when">${c.durum==='yukleniyor'?'aranıyor…':c.durum==='tamam'?`${c.liste.length}${c.kesildi?'+':''} dosya · adı ya da içeriği eşleşen`:''}</span></div>`;
+  const bas = `<div class="db-bas">${DB_SVG_K}<b>Drive'da</b><span class="when">${c.durum==='yukleniyor'?'aranıyor…':c.durum==='tamam'?`${c.toplam>c.liste.length?`${c.toplam}${c.kesildi?'+':''} sonuçtan en iyi ${c.liste.length}`:`${c.liste.length} sonuç`} · ad, klasör, açıklama ya da içerik`:''}</span></div>`;
   if(c.durum==='yukleniyor') return bas;
   if(c.durum==='hata') return bas + `<p class="when">${esc(DB_HATA[c.kod]||DB_HATA.http)}</p>`;
   if(!c.liste.length) return bas + `<p class="when">Drive'da "${esc(dbQ)}" geçen dosya yok.</p>`;
-  return bas + c.liste.map((r,k)=>dbSatirHtml(r,'c'+k,ro)).join('') + (c.kesildi?`<p class="when">Daha fazlası var; aramayı daraltmak için kelime ekle.</p>`:''); }
+  return bas + c.liste.map((r,k)=>dbSatirHtml(r,'c'+k,ro)).join('') + (c.toplam>c.liste.length?`<p class="when">Daha fazlası var; aramayı daraltmak için kelime ekle (ör. klasör ya da kalem adı).</p>`:''); }
 // Results change the window's height, so it is placed again after every render.
 function renderDb(){ renderDbIc(); dbpPlace(); }
 function renderDbIc(){
@@ -1885,7 +1885,7 @@ async function dbAra(q){ dbQ=String(q||'').trim().slice(0,80); dbOpen=null; dbSe
   if(!dbQ || mode!=='db'){ dbCanli={durum:'yok', liste:[]}; renderDb(); return; }
   dbCanli={durum:'yukleniyor', liste:[]}; renderDb();
   const ac=new AbortController(); dbIptal=ac; const sure=setTimeout(()=>ac.abort(), 30000);
-  try{ const r=await fb.driveAra(dbQ, ac.signal); if(sira!==dbSira) return; dbCanli={durum:'tamam', liste:r.sonuc.filter(x=>x && typeof x.n==='string' && safeUrl(x.u)).slice(0,25), kesildi:r.kesildi}; }
+  try{ const r=await fb.driveAra(dbQ, ac.signal); if(sira!==dbSira) return; dbCanli={durum:'tamam', liste:r.sonuc.filter(x=>x && typeof x.n==='string' && safeUrl(x.u)).slice(0,25), kesildi:r.kesildi, toplam:r.toplam}; }
   catch(err){ if(sira!==dbSira) return; dbCanli={durum:'hata', liste:[], kod: err?.name==='AbortError' ? 'http' : err?.code}; }
   finally{ clearTimeout(sure); }
   renderDb(); }

@@ -1,11 +1,13 @@
 # Drive araması — kurulum
 
-Paneldeki Database balonu, takımın Drive'ında dosya adına **ve içeriğine** göre canlı arama yapar.
+Paneldeki Database balonu, takımın Drive'ında canlı arama yapar: dosya adı, **klasör adı**, açıklama ve
+(okunabilen dosyalarda) içerik. Ortak drive'lar ve takım arşivi indeksine girmemiş dosyalar da dahildir.
+Sonuçlar puanla sıralanır: ad eşleşmesi > açıklama > klasör yolu > içerik.
 Arama, `voltaris.official@gmail.com` hesabında çalışan küçük bir Google Apps Script üzerinden gider
 (`DriveArama.gs`). Script her istekte aramayı yapanın panel üyesi olduğunu Firebase'den kontrol eder;
 üye olmayan hiçbir sonuç alamaz. Drive'a yeni eklenen dosya kendiliğinden aramaya girer.
 
-Kurulum bir kez yapılır, ~10 dakika sürer.
+Kurulum bir kez yapılır, ~10 dakika sürer. Sorun giderme tablosu en altta.
 
 ## 0. Önce: kuralları yayınla
 
@@ -28,15 +30,26 @@ kokKlasorler: ['1AbCdEf...'],
 Boş bırakılırsa voltaris.official'ın gördüğü bütün Drive aranır. Her iki durumda da başvuru, kimlik,
 fatura gibi kişisel veri içeren dosyalar ve Sponsorluk / Sosyal Medya klasörleri sonuçlara girmez.
 
-## 2. İzin ver
+## 2. Drive API hizmetini aç
 
-1. Üstteki fonksiyon listesinden **`izinleriVer`**'i seç → **Çalıştır**.
+Soldaki **Hizmetler** (Services) yanındaki **+** → listeden **Drive API** → sürüm **v3** → tanımlayıcı
+`Drive` olarak kalsın → **Ekle**. (Script bununla tek istekte yüzlerce dosyayı ve bütün klasörleri okur.)
+
+## 3. Kurulumu çalıştır
+
+1. Üstteki fonksiyon listesinden **`kurulum`**'u seç → **Çalıştır**.
 2. "Yetkilendirme gerekli" → **İzinleri incele** → voltaris.official hesabını seç.
 3. "Google bu uygulamayı doğrulamadı" çıkarsa: **Gelişmiş** → **Voltaris Panel Drive Araması'na git
    (güvenli değil)**. Bu uyarı kendi yazdığın script için normaldir.
-4. **İzin ver**. Alttaki "Yürütme günlüğü"nde `Deneme araması: [...]` satırını görmelisin.
+4. **İzin ver**. Alttaki "Yürütme günlüğü"nde üç satır görmelisin:
+   - `Klasör haritası: N klasör, … ms` — Drive'daki bütün klasörler çıkarıldı.
+   - `Saatlik tazeleme: kuruldu` — harita her saat kendiliğinden güncellenir (Tetikleyiciler ⏰ sekmesinde görünür).
+   - `Deneme araması "şasi": N sonuç, … ms. İlk üçü: [...]`
 
-## 3. Web uygulaması olarak dağıt
+   Klasör sayısı ve deneme sonuçları beklediğin gibi değilse (ör. arşiv bir ortak drive'da ve hiç görünmüyorsa)
+   bu satırları bana gönder.
+
+## 4. Web uygulaması olarak dağıt
 
 1. Sağ üstte **Dağıt** → **Yeni dağıtım**.
 2. Tür seç (⚙️) → **Web uygulaması**.
@@ -47,7 +60,7 @@ fatura gibi kişisel veri içeren dosyalar ve Sponsorluk / Sosyal Medya klasörl
      (adres herkese açık olur ama üye olmayan biri hiçbir sonuç alamaz; script her istekte üyeliği kontrol eder)
 4. **Dağıt** → çıkan **Web uygulaması URL'sini** kopyala (`https://script.google.com/macros/s/…/exec`).
 
-## 4. Panele bağla
+## 5. Panele bağla
 
 1. Paneli aç (voltaris.official ya da alikemaltopak hesabıyla) → **Üyeler** → **Drive araması**.
 2. URL'yi yapıştır → **Kaydet ve dene**.
@@ -58,7 +71,8 @@ fatura gibi kişisel veri içeren dosyalar ve Sponsorluk / Sosyal Medya klasörl
 
 `DriveArama.gs` değişirse: kodu yapıştır → Kaydet → **Dağıt** → **Dağıtımları yönet** → kalem simgesi →
 Sürüm: **Yeni sürüm** → **Dağıt**. Bu yolla adres değişmez; panelde bir şey yapmaya gerek yok.
-("Yeni dağıtım" dersen adres değişir, o zaman 4. adımı tekrarla.)
+("Yeni dağıtım" dersen adres değişir, o zaman 5. adımı tekrarla.)
+Yeni bir kod sürümünde `kurulum`'u bir kez daha çalıştırmak zararsızdır ve haritayı hemen tazeler.
 
 ## Sorun giderme
 
@@ -67,8 +81,9 @@ Sürüm: **Yeni sürüm** → **Dağıt**. Bu yolla adres değişmez; panelde bi
 | "Canlı Drive araması henüz kurulmadı" | 4. adım yapılmadı ya da adres boş. |
 | "Script'e ulaşılamadı" | Dağıtımda "Erişimi olanlar: Herkes" seçili değil ya da adres yanlış kopyalandı. |
 | "Üyeliği doğrulayamadı" | `AYAR.firebaseApiKey` / `projeId` panelin `.env`'iyle aynı değil; ya da kişi üye listesinde değil / pasif. |
-| "Script Drive'da arayamadı" | 2. adım (`izinleriVer`) çalıştırılmadı. |
-| Bir dosya çıkmıyor | voltaris.official o dosyayı göremiyor (paylaşılmamış), adı/yolu gizli desene takılıyor, ya da Teams'te duruyor. Taranmış PDF'lerin içi aranamayabilir. |
+| "Script Drive'da arayamadı" | Drive API hizmeti eklenmedi (2. adım) ya da `kurulum` çalıştırılmadı (3. adım). |
+| Yeni açılan bir klasör adıyla çıkmıyor | Klasör haritası saatte bir tazelenir; en geç bir saat sonra çıkar. Hemen gerekirse `kurulum`'u çalıştır. |
+| Bir dosya çıkmıyor | voltaris.official o dosyayı göremiyor (paylaşılmamış), adı/yolu gizli desene takılıyor, ya da Teams'te duruyor. Taranmış PDF'lerin ve CAD dosyalarının içi aranamaz: bunlar adı, klasörü ya da açıklamasıyla bulunur. Çok genel bir kelimede (ör. "mekanik") yüzlerce sonuç olur ve yalnız en iyi 25'i gösterilir; kelime ekle. |
 
 Kurucu hesaplar değişirse `AYAR.kurucular`'ı `firestore.rules` (`kurucu()`) ve `panel/firebase.js`
 (`KURUCULAR`) ile birlikte güncelle.
