@@ -24,10 +24,19 @@ const AYAR = {
   enFazla: 25,
 };
 
-// build_indeks.py'deki SENS ile aynı desen: adında ya da yolunda bunlar geçen dosya gösterilmez.
-const GIZLI = /başvuru|basvuru|kimlik|\btc\b|nüfus|nufus|cv\b|özgeçmiş|ozgecmis|telefon|iletişim bilgi|dilekçe|taahhüt|muvafakat|üye listesi|uye listesi|banka|iban|fatura|dekont|sağlık|saglik/i;
+// build_indeks.py'deki SENS ile aynı kelimeler: adında ya da yolunda bunlar geçen dosya gösterilmez.
+// Desen sade harflerle yazılır ve metin önce norm()'dan geçer. JavaScript'in /i bayrağı Türkçe büyük
+// harfleri eşleştiremiyor: "KİMLİK", "İBAN", "SAĞLIK" doğrudan /kimlik|iban|sağlık/i'den kaçıyordu.
+const GIZLI = /basvuru|kimlik|\btc\b|nufus|cv\b|ozgecmis|telefon|iletisim bilgi|dilekce|taahhut|muvafakat|uye listesi|banka|iban|fatura|dekont|saglik/;
 // Bu adlı bir klasörün altındaki hiçbir şey gösterilmez (indekste de yoklar).
-const GIZLI_KLASOR = /^(sponsorluk|sosyal medya)$/i;
+const GIZLI_KLASOR = /^(sponsorluk|sosyal medya)$/;
+
+// Türkçe kurallarıyla küçük harf (İ→i, I→ı), sonra işaretsiz harf: "KİMLİK" ve "kimlik" aynı olur.
+function norm(s) {
+  return String(s).toLocaleLowerCase('tr').replace(/[çğıöşüâîû]/g, function (c) {
+    return { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'â': 'a', 'î': 'i', 'û': 'u' }[c];
+  });
+}
 
 function doPost(e) {
   let istek;
@@ -105,7 +114,7 @@ function ara(q) {
     const p = yol(f);
     if (p === null) continue;
     const ad = f.getName();
-    if (GIZLI.test(ad + ' ' + p)) continue;
+    if (GIZLI.test(norm(ad + ' ' + p))) continue;
     sonuc.push({ n: ad, u: f.getUrl(), p: p, t: f.getLastUpdated().toISOString(), f: tur(f.getMimeType(), ad) });
   }
   return { sonuc: sonuc, kesildi: bul.hasNext() };
@@ -127,7 +136,7 @@ function yolBulucu() {
     const ad = folder.getName();
     const ustler = folder.getParents();
     let r;
-    if (GIZLI_KLASOR.test(ad.trim())) r = { p: null, ok: false };
+    if (GIZLI_KLASOR.test(norm(ad).trim())) r = { p: null, ok: false };
     else if (kok.indexOf(id) >= 0) r = { p: ad, ok: true };
     else if (!ustler.hasNext()) r = { p: '', ok: kok.length === 0 };   // Drive'ım kökü
     else {
