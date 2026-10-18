@@ -1,7 +1,7 @@
 // Admin dialog: the member list (who may sign in) and the one-time loads that replace what the
 // Claude Artifact had built in — the archive index and the export of its shared records.
 // Firestore rules enforce the same limits (firestore.rules); this file is only the UI.
-import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar } from './firebase.js';
+import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra } from './firebase.js';
 
 const BIRIM = { M:'Mekanik', E:'Elektrik-Elektronik', O:'Organizasyon ve Sosyal Medya' };
 const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -26,6 +26,12 @@ function kur(){
       <button class="btn primary" type="submit">Ekle</button>
     </form>
     <div class="hscroll"><table class="tbl ynt-tbl"><thead><tr><th>Ad</th><th>E-posta</th><th>Birim</th><th>Aktif</th><th></th></tr></thead><tbody id="yntList"></tbody></table></div>
+    <details class="ynt-aktar" id="yntDrive"><summary>Drive araması</summary>
+      <p class="help">Database balonundaki canlı Drive araması bu adresteki Apps Script'e sorar (kurulum: <code>apps-script/DRIVE_ARAMA.md</code>). Script yeniden dağıtılıp adresi değişirse buradan güncelle.</p>
+      <div class="row"><input class="inp" id="yntDriveUrl" type="url" maxlength="300" placeholder="https://script.google.com/macros/s/…/exec" aria-label="Apps Script adresi" style="flex:1 1 260px;min-width:0">
+        <button class="btn small" type="button" id="yntDriveKaydet">Kaydet ve dene</button></div>
+      <p class="when" id="yntDriveDurum"></p>
+    </details>
     <details class="ynt-aktar"><summary>Bir kerelik veri yükleme</summary>
       <p class="help"><b>Takım arşivi indeksi.</b> <code>build_indeks.py</code>'nin ürettiği <code>indeks.json</code>. Panelde "Takım arşivinde bulunanlar" bunu arar. Yenisi eskisinin yerine geçer.</p>
       <label class="btn small">indeks.json seç<input type="file" accept=".json,application/json" id="yntIdx" hidden></label>
@@ -42,6 +48,8 @@ function kur(){
   d.querySelector('#yntIdx').addEventListener('change', indeks);
   d.querySelector('#yntEski').addEventListener('change', eskiOku);
   d.querySelector('#yntEsle').addEventListener('click', aktar);
+  d.querySelector('#yntDriveKaydet').addEventListener('click', driveKaydet);
+  driveAdresi().then(u => { d.querySelector('#yntDriveUrl').value = u; d.querySelector('#yntDriveDurum').textContent = u ? 'Kurulu.' : 'Henüz kurulmadı.'; });
   return d;
 }
 
@@ -75,6 +83,22 @@ async function sil(e){
   const email = b.closest('tr').dataset.email;
   if(!confirm(`${email} listeden çıkarılsın mı? Bu hesap panele bir daha giremez; girdiği kayıtlar kalır.`)) return;
   try{ await uyeSil(email); }catch(err){ toast('Çıkarılamadı: ' + esc(err?.code || 'hata')); }
+}
+
+const SCRIPT_ADRESI = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/;
+async function driveKaydet(){
+  const inp = dlg.querySelector('#yntDriveUrl'), durum = dlg.querySelector('#yntDriveDurum'), url = inp.value.trim();
+  if(url && !SCRIPT_ADRESI.test(url)){ durum.textContent = 'Adres https://script.google.com/macros/s/…/exec biçiminde olmalı (Dağıt → Web uygulaması).'; return; }
+  try{
+    await driveAdresiYaz(url);
+    if(!url){ durum.textContent = 'Kaldırıldı: balon yalnız arşiv indeksinde arar.'; return; }
+    durum.textContent = 'Kaydedildi, deneniyor…';
+    const r = await driveAra('şasi');
+    durum.textContent = `Çalışıyor: "şasi" için ${r.sonuc.length}${r.kesildi ? '+' : ''} dosya bulundu.`;
+  }catch(err){
+    durum.textContent = { 'uye-degil':'Script cevap verdi ama üyeliği doğrulayamadı: AYAR.firebaseApiKey / projeId doğru mu?', http:'Script\'e ulaşılamadı: dağıtımda "Erişimi olanlar: Herkes" seçili mi?', arama:'Script Drive\'da arayamadı: izinleriVer() bir kez çalıştırıldı mı? ' + (err.message || '') }[err?.code]
+      || 'Denenemedi: ' + (err?.message || err?.code || 'hata');
+  }
 }
 
 const dosyaOku = f => f.text().then(t => JSON.parse(t));

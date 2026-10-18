@@ -21,7 +21,8 @@ export const KURUCULAR = ['voltaris.official@gmail.com', 'alikemaltopak@gmail.co
 const env = import.meta.env;
 const emulator = env.VITE_FIREBASE_EMULATOR === '1';
 const config = emulator
-  ? { apiKey: 'demo', projectId: env.VITE_FIREBASE_PROJECT_ID || 'demo-voltaris', authDomain: '127.0.0.1' }
+  // always the demo project the emulators start with (README §1), whatever .env says
+  ? { apiKey: 'demo', projectId: 'demo-voltaris', authDomain: '127.0.0.1' }
   : { apiKey: env.VITE_FIREBASE_API_KEY, authDomain: env.VITE_FIREBASE_AUTH_DOMAIN, projectId: env.VITE_FIREBASE_PROJECT_ID, appId: env.VITE_FIREBASE_APP_ID };
 
 // Without a config (a fresh checkout with no .env) the panel falls back to its local mode.
@@ -183,6 +184,30 @@ export async function indeksYaz(obj){
   b.set(doc(fs, 'indeks', 'meta'), { ver:String(obj.ver || ''), parca:n, at:nowIso() });
   await b.commit();
   return n;
+}
+
+/* ---------- Drive'da canlı arama (apps-script/DriveArama.gs) ---------- */
+
+// The script's address lives in ayarlar/genel so a founder can set or change it from the panel
+// without a redeploy. The script checks the member's ID token itself; the address is not a secret.
+let driveAdresP = null;
+export const driveAdresi = () => (driveAdresP ??= getDoc(doc(fs, 'ayarlar', 'genel'))
+  .then(s => s.exists() ? String(s.data().driveArama || '') : '').catch(() => ''));
+export async function driveAdresiYaz(url){ await setDoc(doc(fs, 'ayarlar', 'genel'), { driveArama:url, at:nowIso() }, { merge:true }); driveAdresP = null; }
+
+const hata = (code, mesaj) => Object.assign(new Error(mesaj || code), { code });
+export async function driveAra(q, signal){
+  const url = await driveAdresi(); if(!url) throw hata('kurulmadi');
+  const token = await auth.currentUser.getIdToken();
+  // A bare string body keeps this a CORS simple request; Apps Script cannot answer a preflight
+  // (see src/lib/formEndpoint.ts).
+  const istek = () => fetch(url, { method:'POST', body:JSON.stringify({ token, q }), signal })
+    .then(r => { if(!r.ok) throw hata('http', 'HTTP '+r.status); return r.json(); });
+  let d;
+  // Apps Script hands the reply over on a second hop that now and then answers 404; once more is enough.
+  try{ d = await istek(); }catch(e){ if(e?.name === 'AbortError') throw e; d = await istek(); }
+  if(!d?.ok) throw hata(d?.hata || 'arama', d?.mesaj);
+  return { sonuc:Array.isArray(d.sonuc) ? d.sonuc : [], kesildi:!!d.kesildi };
 }
 
 /* ---------- yönetim: üye listesi ve bir kerelik veri aktarımı ---------- */

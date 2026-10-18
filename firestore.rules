@@ -41,6 +41,11 @@ service cloud.firestore {
       allow read, delete: if uye();
       allow create: if uye() && yazan() && request.resource.data.veri is bytes && request.resource.data.veri.size() <= 1000000;
     }
+    // panel settings, e.g. the address of the Drive search script (apps-script/DriveArama.gs)
+    match /ayarlar/{id} {
+      allow read: if uye();
+      allow write: if kurucu();
+    }
     // team archive index: loaded by a founder from the panel (later by the Apps Script service account)
     match /indeks/{id} {
       allow read: if uye();

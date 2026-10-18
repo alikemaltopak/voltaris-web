@@ -179,7 +179,13 @@ Kalem bitince ya da bir kalemin kilidi açılınca `announce()` kısa bir bildir
 ### Database balonu
 Her sekmede ekranın kenarında duran yuvarlak düğme (veritabanı simgesi). Sürüklenir; bırakınca ya da fırlatınca sağ veya
 sol kenara yapışır, yeri tarayıcıda hatırlanır (`vh-dbb`). Dokununca açılan pencerede takım arşivi indeksinde serbest arama
-yapılır (`ixSerbest`: kelimelerden biri tutsa yeter, hepsi tutanlar üstte; dosya adı ×3, etiket ×2, klasör ×1.5, konu ×1).
+yapılır; bir arama iki yere gider:
+- **Drive'da (canlı):** `apps-script/DriveArama.gs` üzerinden takımın Drive'ında dosya adı ve içerik araması (`driveAra()`).
+  Script voltaris.official hesabında çalışır, her istekte üyenin Firebase ID token'ını Google'a doğrulatıp `uyeler`'i
+  o üyenin kendi yetkisiyle okur. Kişisel veri desenleri ve Sponsorluk / Sosyal Medya klasörleri elenir. Script'in adresi
+  `ayarlar/genel.driveArama`'da; Üyeler → "Drive araması"ndan girilir. Kurulum: `apps-script/DRIVE_ARAMA.md`.
+- **Arşiv indeksi:** `ixSerbest` (kelimelerden biri tutsa yeter, hepsi tutanlar üstte; dosya adı ×3, etiket ×2, klasör ×1.5,
+  konu ×1) + Teams klasörleri. Teams yalnız buradadır.
 Her sonuç "Kaleme ekle" ile bir kaleme eklenir: **kalemin geneline** (`items/<id>.found`, kartta "Database'den eklenen
 dosyalar") ya da **bir öncüle** (`checks/<id>.f.<i>.found`, öncülün "Bulunan dosyalar" listesi). Kalem listesi dosyanın
 komitesine göre öneriyle başlar (`KOMITE`). Sohbet açıkken balon gizlenir; telefonda pencere alttan açılır.
@@ -262,6 +268,7 @@ Kullanıcı kimlikleri Firebase uid'leridir (Claude'dan aktarılıp eşlenmeyenl
 | `members/<uid>` | `{ ad, foto, email, giris, birim:'M'\|'E'\|'O', at }` — diğer üyelerin gördüğü ad ve fotoğraf | girişte `oturumuIzle()`, birim seçimi |
 | `fotolar/<id>` | `{ veri: bayt (JPEG ≤ 900 KB), tur, by, at }`. Fotoğraflar 1600 px JPEG'e küçültülür; kalem belgelerinde yalnız id saklanır | `uploadPhotos()` → `assets.upload()` |
 | `uyeler/<e-posta>` | `{ ad, birim, aktif, at }` — belge kimliği küçük harfli Google e-postası; panele kimin girebileceğini belirler | `yonetim.js` |
+| `ayarlar/genel` | `{ driveArama: Apps Script adresi, at }` — kurucular yazar, üyeler okur | `yonetim.js` |
 | `indeks/meta`, `indeks/p<n>` | `{ ver, parca, at }` ve `{ json: metin parçası }` — takım arşivi indeksi (bölüm 10) | `indeksYaz()` |
 
 Erişim kuralları `firestore.rules`'ta: yalnız aktif üyeler okur ve yazar; `members` herkes yalnız kendi belgesini,
@@ -290,7 +297,7 @@ Panel Claude Artifact için yazılmıştı ve yeteneklerini `window.claude.use('
 | `db` (paylaşılan belge veritabanı) | Firestore | `update` = `setDoc(..., {merge:true})`: iç içe nesneleri birleştirir, dizileri değiştirir, belge yoksa oluşturur (Claude'daki davranış). `writeDoc()` bu yüzden set/update ayrımı yapmıyor. Yetki hatası `permission-denied` → panelin beklediği `invalid_argument`. |
 | `user` (`me`, `can`, `profiles`) | Firebase Auth (Google) + `uyeler` + `members` | Giriş kapısını yalnız üyeler geçtiği için `can()` her zaman `true`. Ad önce `uyeler`'deki addan, yoksa Google adından gelir; `members/<uid>`'e yazılır, `profiles()` oradan okur. |
 | `assets` (`upload`, `/_blob/<id>`, `delete`) | Firestore `fotolar/<id>` | Firebase Storage yeni projelerde ücretli Blaze planı istiyor; küçültülmüş JPEG bir Firestore belgesine sığıyor. Görüntü `blobSrc(id)` ile önce boş, gelince gerçek. 900 KB'ı aşan fotoğraf otomatik küçültülür. |
-| `mcp` (görüntüleyenin Drive'ında arama) | kaldırıldı | Takım arşivi indeksi araması aynı işi görüyor. |
+| `mcp` (görüntüleyenin Drive'ında arama) | `apps-script/DriveArama.gs` | Takımın Drive'ında, voltaris.official adına; üyelik her istekte kontrol edilir. Üyelerden Drive izni istenmez. |
 | `hot` (yeniden yayında sekmeyi koruma) | kaldırıldı | Sekme zaten `localStorage`'da (`vh-tab`). |
 | `models/voltaris-arac.gltf.json` (base64 gömülü) | `/models/voltaris-arac.glb` | Artifact `data:` URL'lerini engellediği için gerekiyordu; site doğrudan GLB yüklüyor. |
 | `fetch('data/indeks.json')` | `indeksOku()` | Statik dosya herkese açık olurdu; artık Firestore'dan, yalnız üyelere. |
@@ -398,7 +405,7 @@ birebir yeniden üretildiği Claude sürümünde doğrulanmıştı.
 - Takvimde akademik takvim (sınav haftaları) yer tutucu.
 - Maliyet tablosu ve takım üye tablosu bilinçli olarak yok.
 - Etiket ↔ kalem eşlemesi şartnamede birebir yazmıyor; takımın yorumudur (`ITEMS[].ets`).
-- Drive araması (`driveSearch`) taşımada kaldırıldı; gerekirse Google girişine `drive.readonly` izni eklenerek Drive API ile yeniden yazılabilir.
+- Canlı Drive araması yalnız voltaris.official'ın görebildiği dosyaları bulur; Teams'teki dosyalar Drive'a taşınana kadar yalnız indekste (klasör düzeyinde) vardır. Sonuçlar Drive'ın sırasıyla gelir (en fazla 25), alaka puanı yok.
 - Fotoğraflar Firestore'da durduğu için ücretsiz kota (1 GiB) yaklaşık 3–4 bin fotoğraf taşır. Aşılırsa Blaze planına geçip `assetsApi()`'yi Firebase Storage'a çevirmek tek dosyalık iş.
 
 ### Sürüm notları

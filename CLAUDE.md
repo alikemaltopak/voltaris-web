@@ -59,7 +59,8 @@ canvas), `SmoothScroll` (Lenis), `CustomCursor`.
   `gsap`'ı buradan import et), `lenisInstance.ts`.
 - `public/` — kareler, modeller, logolar, sponsor görselleri, duyuru medyası.
 - `apps-script/` — `Kod.gs` (Google Apps Script: iletişim formu + eski başvuru
-  kodu) ve `KURULUM.md`. Ortam değişkenleri: `VITE_BASVURU_ENDPOINT`,
+  kodu) ve `KURULUM.md`; ayrıca `DriveArama.gs` + `DRIVE_ARAMA.md`: panelin canlı
+  Drive araması, voltaris.official'da ayrı bir Apps Script projesi olarak çalışır. Ortam değişkenleri: `VITE_BASVURU_ENDPOINT`,
   `VITE_BASVURU_ANAHTARI` (`.env.example`). İsimleri "başvuru" ama iletişim
   formu da bunları kullanıyor.
 - `panel/` — takım paneli: `index.html` (tek dosyada HTML+CSS+script), veri dosyaları

@@ -518,6 +518,7 @@ summary{cursor:pointer}
 .db-r{display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:8px;background:var(--sunk);border:1px solid var(--line-2)}
 .db-r .row1{display:flex;align-items:flex-start;gap:8px}
 .db-r .ix-t a{white-space:normal;word-break:break-word}
+.db-bas{display:flex;align-items:center;gap:6px;margin:8px 0 2px;font-size:13px}.db-bas svg{width:15px;height:15px;color:var(--accent);flex:none}.db-bas .when{margin-left:auto;font-size:12px;text-align:right}
 .db-r .ixd svg{width:12px;height:12px;vertical-align:-1px;margin-right:3px}
 .db-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.db-add .sel{flex:1 1 140px;min-width:0;max-width:100%}
 @media (max-width:640px){ .dbp{left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom, 0px))!important;width:auto;max-height:78vh} }
@@ -1817,11 +1818,13 @@ function loadModel(){ new GLTFLoader().load('/models/voltaris-arac.glb', onModel
 
 try{ $('guide').hidden = localStorage.getItem('vh-guide')==='1'; }catch(e){ $('guide').hidden=false; }
 $('guideX').addEventListener('click', ()=>{ $('guide').hidden=true; try{ localStorage.setItem('vh-guide','1'); }catch(e){} });
-/* ---------- Database balonu: takım arşivinde serbest arama ---------- */
-// Same index and scoring as the per-öncül box (ixSearch), but with the member's own words and no
-// item to lean on. A hit can be filed under any item: the item as a whole (items/<id>.found, shown
-// in the card) or one öncül (checks/<id>.f.<i>.found, same list as the öncül's "Ekle").
-let dbQ='', dbRes=null, dbOpen=null, dbSec={};
+/* ---------- Database balonu: Drive'da canlı arama + takım arşivi indeksi ---------- */
+// One query goes two ways: live to the team Drive through the Apps Script (file names and contents,
+// new files included; firebase.js → driveAra) and, synchronously, to the archive index (same scoring
+// family as the per-öncül box, plus the Teams map). Any hit can be filed under an item as a whole
+// (items/<id>.found, shown in the card) or under one öncül (checks/<id>.f.<i>.found).
+const DB_SVG_K = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v6.2c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8V5.5"/><path d="M4.5 11.7v6.6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-6.6"/></svg>';
+let dbQ='', dbRes=null, dbOpen=null, dbSec={}, dbCanli={durum:'yok', liste:[]}, dbSira=0, dbIptal=null;
 function ixSerbest(q){ if(!IDX||IDX.err) return null; const n=nrm(q); if(!n) return {drive:[],teams:[],n:0};
   const words=n.split(' ').filter(x=>x.length>=2 && !STOP.has(x)); if(!words.length) words.push(n);
   // every word that matches counts; files matching all words, or the whole phrase, rise to the top
@@ -1832,37 +1835,62 @@ function ixSerbest(q){ if(!IDX||IDX.err) return null; const n=nrm(q); if(!n) ret
   const perDir={}, drive=[]; for(const x of scored){ const d=x.r.p; perDir[d]=(perDir[d]||0)+1; if(perDir[d]<=3) drive.push(x.r); if(drive.length>=25) break; }
   const teams=IDX.teams.map(r=>{ const [a]=ixScore(r.sp,terms), [b]=ixScore(r.sf,terms); return {r, s:a*1.5+b}; }).filter(x=>x.s>=1.5).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.r);
   return {drive, teams, n:scored.length}; }
-// Items whose committee owns the file's folder come first in the "which item" list.
-const dbOneri = r => ITEMS.filter(it=>(KOMITE[it.id]||[]).includes(r.c)).map(it=>it.id);
+// Which items to offer first: index rows carry their committee (KOMITE); live rows only a folder
+// path, so items whose search words appear in the path or name are offered instead.
+function dbOneri(r){ if(r.c) return ITEMS.filter(it=>(KOMITE[it.id]||[]).includes(r.c)).map(it=>it.id);
+  const metin=nrm((r.p||'')+' '+r.n); return ITEMS.filter(it=>(it.q||[]).some(w=>{ const x=nrm(w); return x.length>=3 && metin.includes(x); })).map(it=>it.id); }
 function dbEklendi(r){ const out=[]; for(const it of ITEMS){ if((rec(it.id).found||[]).some(x=>x.u===r.u)) out.push(it.name);
     else if(it.reqs.some((_,i)=>(flowOf(it,i).found||[]).some(x=>x.u===r.u))) out.push(it.name); } return out; }
 function dbItemOpts(r, cur){ const on=dbOneri(r); const opt=it=>`<option value="${it.id}" ${it.id===cur?'selected':''}>${esc(it.name)}</option>`;
-  return (on.length?`<optgroup label="Önerilen (${esc(r.c||'')})">${ITEMS.filter(it=>on.includes(it.id)).map(opt).join('')}</optgroup><optgroup label="Diğer kalemler">`:'')
+  return (on.length?`<optgroup label="Önerilen${r.c?' ('+esc(r.c)+')':''}">${ITEMS.filter(it=>on.includes(it.id)).map(opt).join('')}</optgroup><optgroup label="Diğer kalemler">`:'')
     + ITEMS.filter(it=>!on.includes(it.id)).map(opt).join('') + (on.length?'</optgroup>':''); }
+const dbSatir = key => key[0]==='c' ? dbCanli.liste[+key.slice(1)] : dbRes?.drive?.[+key.slice(1)];
+function dbSatirHtml(r, key, ro){ const u=safeUrl(r.u); if(!u) return ''; const ekli=dbEklendi(r), sec=dbSec[key]||{}, on=dbOneri(r);
+  const cur=sec.it||(on.includes(selected)?selected:(on[0]||selected)), cit=byId(cur);
+  const alt = r.c ? `${esc(r.k)}${r.f?' · '+esc(r.f):''}${r.t?' · '+esc(ixDate(r.t)):''} · <span class="ixd ${r.d==='kullanışlı'?'ok':''}">${esc(r.d)}</span>`
+                  : `${r.f?esc(r.f)+' · ':''}${r.t?'değişti '+esc(ago(r.t)):''}`;
+  return `<div class="db-r"><div class="row1"><div class="ix-t"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(r.n)}</a>
+      <small>${esc(r.p||'')}</small><small>${alt}</small>${ekli.length?`<small class="ixd ok">${TICK} Eklendi: ${esc(ekli.join(', '))}</small>`:''}</div>
+      ${ro?'':`<button class="btn small" type="button" data-dbopen="${key}" aria-expanded="${dbOpen===key}">${dbOpen===key?'Vazgeç':'Kaleme ekle'}</button>`}</div>
+    ${!ro && dbOpen===key?`<div class="db-add"><select class="sel" data-dbit="${key}" aria-label="Kalem">${dbItemOpts(r,cur)}</select>
+      <select class="sel" data-dbreq="${key}" aria-label="Nereye"><option value="">Kalemin geneli</option>${cit.reqs.map((q,i)=>`<option value="${i}" ${String(sec.req)===String(i)?'selected':''}>Öncül: ${esc(q[0])}</option>`).join('')}</select>
+      <button class="btn primary small" type="button" data-dbadd="${key}">Ekle</button></div>`:''}</div>`; }
+const DB_HATA = { kurulmadi:'Canlı Drive araması henüz kurulmadı; şimdilik yalnız arşiv indeksinde aranıyor.', 'uye-degil':'Drive araması üyeliğini doğrulayamadı. Çıkış yapıp yeniden gir.',
+  http:'Drive aramasına ulaşılamadı; biraz sonra tekrar dene.', arama:'Drive araması başarısız oldu; biraz sonra tekrar dene.' };
+function dbCanliHtml(ro){ const c=dbCanli;
+  if(c.durum==='yok') return '';
+  const bas = `<div class="db-bas">${DB_SVG_K}<b>Drive'da</b><span class="when">${c.durum==='yukleniyor'?'aranıyor…':c.durum==='tamam'?`${c.liste.length}${c.kesildi?'+':''} dosya · adı ya da içeriği eşleşen`:''}</span></div>`;
+  if(c.durum==='yukleniyor') return bas;
+  if(c.durum==='hata') return bas + `<p class="when">${esc(DB_HATA[c.kod]||DB_HATA.http)}</p>`;
+  if(!c.liste.length) return bas + `<p class="when">Drive'da "${esc(dbQ)}" geçen dosya yok.</p>`;
+  return bas + c.liste.map((r,k)=>dbSatirHtml(r,'c'+k,ro)).join('') + (c.kesildi?`<p class="when">Daha fazlası var; aramayı daraltmak için kelime ekle.</p>`:''); }
 // Results change the window's height, so it is placed again after every render.
 function renderDb(){ renderDbIc(); dbpPlace(); }
 function renderDbIc(){
   const box=$('dbRes'), ro=readOnly(); $('dbVer').textContent = IDX&&!IDX.err ? 'indeks '+ixDate(IDX.ver) : '';
-  if(!IDX){ box.innerHTML='<p class="when">İndeks yükleniyor…</p>'; return; }
-  if(IDX.err){ box.innerHTML=`<p class="msg err">${mode==='db'?'Takım arşivi indeksi yüklenmemiş. Üye listesini yöneten hesap Üyeler → "Bir kerelik veri yükleme"den yüklemeli.':'Arşiv araması ortak kayıtla çalışır; bu görünümde açılamadı.'}</p>`; return; }
   if(!dbQ){ const it=byId(selected); const kws=[...new Set([...(BAK[it.id]?.isler||[]).flatMap(j=>j.q), ...(it.q||[])])].slice(0,6);
-    box.innerHTML=`<p class="help" style="margin:0">Drive'daki ${IDX.drive.length} dosya ve Teams'teki ${IDX.teams.length} klasör arasında arar. Bulduğunu ilgili kaleme ya da öncüle ekleyebilirsin.</p>
+    box.innerHTML=`<p class="help" style="margin:0">Takımın Drive'ında dosya adına ve içeriğine göre arar${IDX&&!IDX.err?`; arşiv indeksindeki ${IDX.drive.length} dosya ve Teams'teki ${IDX.teams.length} klasör de taranır`:''}. Bulduğunu ilgili kaleme ya da öncüle ekleyebilirsin.</p>
       <div class="dbp-chips"><span class="when">${esc(it.name)} için:</span>${kws.map(w=>`<button type="button" class="kw" data-dbkw="${esc(w)}">${esc(w)}</button>`).join('')}</div>`; return; }
-  const res=dbRes||{drive:[],teams:[],n:0};
-  if(!res.drive.length && !res.teams.length){ box.innerHTML=`<p class="when">"${esc(dbQ)}" için arşivde eşleşme yok. Daha kısa ya da farklı bir kelime dene (ör. Türkçe yerine İngilizce).</p>`; return; }
-  box.innerHTML = `<span class="when">${!res.drive.length?`Drive'da "${esc(dbQ)}" adında dosya yok; Teams'teki klasörlere bak ya da başka kelime dene (ör. BMS yerine BYS).`:res.n>res.drive.length?`${res.n} eşleşmeden en iyi ${res.drive.length} tanesi`:`${res.drive.length} dosya`}</span>`
-    + res.drive.map((r,k)=>{ const ekli=dbEklendi(r), sec=dbSec[k]||{}, cur=sec.it||(dbOneri(r).includes(selected)?selected:(dbOneri(r)[0]||selected)), cit=byId(cur);
-      return `<div class="db-r"><div class="row1"><div class="ix-t"><a href="${esc(r.u)}" target="_blank" rel="noopener">${esc(r.n)}</a>
-        <small>${esc(r.p)}</small><small>${esc(r.k)}${r.f?' · '+esc(r.f):''}${r.t?' · '+esc(ixDate(r.t)):''} · <span class="ixd ${r.d==='kullanışlı'?'ok':''}">${esc(r.d)}</span></small>
-        ${ekli.length?`<small class="ixd ok">${TICK} Eklendi: ${esc(ekli.join(', '))}</small>`:''}</div>
-        ${ro?'':`<button class="btn small" type="button" data-dbopen="${k}" aria-expanded="${dbOpen===k}">${dbOpen===k?'Vazgeç':'Kaleme ekle'}</button>`}</div>
-        ${!ro && dbOpen===k?`<div class="db-add"><select class="sel" data-dbit="${k}" aria-label="Kalem">${dbItemOpts(r,cur)}</select>
-          <select class="sel" data-dbreq="${k}" aria-label="Nereye"><option value="">Kalemin geneli</option>${cit.reqs.map((q,i)=>`<option value="${i}" ${String(sec.req)===String(i)?'selected':''}>Öncül: ${esc(q[0])}</option>`).join('')}</select>
-          <button class="btn primary small" type="button" data-dbadd="${k}">Ekle</button></div>`:''}</div>`; }).join('')
-    + (res.teams.length?`<details class="ix-tm"><summary>Teams'te olabilecek klasörler (${res.teams.length})</summary><ul>${res.teams.map(r=>`<li><b>${esc(r.p)}</b><br><span class="when">${r.nf} dosya · ${esc(r.feat)}${r.t?' · '+esc(ixDate(r.t)):''}</span><br><span class="when">Drive'da: ${esc(r.dd)}</span></li>`).join('')}</ul></details>`:''); }
-function dbAra(q){ dbQ=String(q||'').trim().slice(0,80); dbOpen=null; dbSec={}; dbRes=dbQ?ixSerbest(dbQ):null; renderDb(); }
-function dbEkle(k){ const r=dbRes?.drive?.[k]; if(!r) return; const sec=dbSec[k]||{};
-  const it=byId(sec.it||$('dbRes').querySelector(`[data-dbit="${k}"]`)?.value||selected); const req=$('dbRes').querySelector(`[data-dbreq="${k}"]`)?.value ?? '';
+  let ix;
+  if(!IDX) ix='<p class="when">Arşiv indeksi yükleniyor…</p>';
+  else if(IDX.err) ix = mode==='db' ? '<p class="when">Takım arşivi indeksi yüklenmemiş (Üyeler → "Bir kerelik veri yükleme").</p>' : '<p class="when">Arama ortak kayıtla çalışır; bu görünümde açılamadı.</p>';
+  else { const res=dbRes||{drive:[],teams:[],n:0};
+    ix = !res.drive.length && !res.teams.length ? `<p class="when">Arşiv indeksinde "${esc(dbQ)}" için eşleşme yok.</p>`
+      : (res.drive.length?`<span class="when">${res.n>res.drive.length?`${res.n} eşleşmeden en iyi ${res.drive.length} tanesi`:`${res.drive.length} dosya`}</span>`:'')
+        + res.drive.map((r,k)=>dbSatirHtml(r,'i'+k,ro)).join('')
+        + (res.teams.length?`<details class="ix-tm"><summary>Teams'te olabilecek klasörler (${res.teams.length})</summary><ul>${res.teams.map(r=>`<li><b>${esc(r.p)}</b><br><span class="when">${r.nf} dosya · ${esc(r.feat)}${r.t?' · '+esc(ixDate(r.t)):''}</span><br><span class="when">Drive'da: ${esc(r.dd)}</span></li>`).join('')}</ul></details>`:''); }
+  box.innerHTML = dbCanliHtml(ro) + `<div class="db-bas">${DB_SVG_K}<b>Arşiv indeksi</b><span class="when">${IDX&&!IDX.err?ixDate(IDX.ver)+' tarihli liste · Teams dahil':''}</span></div>` + ix; }
+async function dbAra(q){ dbQ=String(q||'').trim().slice(0,80); dbOpen=null; dbSec={}; dbRes=dbQ?ixSerbest(dbQ):null;
+  dbIptal?.abort(); dbIptal=null; const sira=++dbSira;
+  if(!dbQ || mode!=='db'){ dbCanli={durum:'yok', liste:[]}; renderDb(); return; }
+  dbCanli={durum:'yukleniyor', liste:[]}; renderDb();
+  const ac=new AbortController(); dbIptal=ac; const sure=setTimeout(()=>ac.abort(), 30000);
+  try{ const r=await fb.driveAra(dbQ, ac.signal); if(sira!==dbSira) return; dbCanli={durum:'tamam', liste:r.sonuc.filter(x=>x && typeof x.n==='string' && safeUrl(x.u)).slice(0,25), kesildi:r.kesildi}; }
+  catch(err){ if(sira!==dbSira) return; dbCanli={durum:'hata', liste:[], kod: err?.name==='AbortError' ? 'http' : err?.code}; }
+  finally{ clearTimeout(sure); }
+  renderDb(); }
+function dbEkle(key){ const r=dbSatir(key); if(!r) return; const sec=dbSec[key]||{};
+  const it=byId(sec.it||$('dbRes').querySelector(`[data-dbit="${key}"]`)?.value||selected); const req=$('dbRes').querySelector(`[data-dbreq="${key}"]`)?.value ?? '';
   const t=r.n.slice(0,140), u=safeUrl(r.u); if(!u) return;
   if(req===''){ const found=Array.isArray(rec(it.id).found)?rec(it.id).found:[]; if(found.some(x=>x.u===u)){ toast('Bu dosya bu kalemde zaten var.'); return; }
     patchItem(it.id, { found:[...found, {t, u, by:myId}].slice(-30) }, `Database'den dosya eklendi: ${t}`); }
@@ -1873,11 +1901,11 @@ $('dbForm').addEventListener('submit', e=>{ e.preventDefault(); dbAra($('dbQ').v
 $('dbClose').addEventListener('click', ()=>dbToggle(false));
 $('dbRes').addEventListener('click', e=>{
   const kw=e.target.closest('[data-dbkw]'); if(kw){ $('dbQ').value=kw.dataset.dbkw; dbAra(kw.dataset.dbkw); return; }
-  const op=e.target.closest('[data-dbopen]'); if(op){ const k=+op.dataset.dbopen; dbOpen = dbOpen===k ? null : k; renderDb(); return; }
-  const ad=e.target.closest('[data-dbadd]'); if(ad){ dbEkle(+ad.dataset.dbadd); } });
+  const op=e.target.closest('[data-dbopen]'); if(op){ const k=op.dataset.dbopen; dbOpen = dbOpen===k ? null : k; renderDb(); return; }
+  const ad=e.target.closest('[data-dbadd]'); if(ad){ dbEkle(ad.dataset.dbadd); } });
 $('dbRes').addEventListener('change', e=>{
-  const s1=e.target.closest('[data-dbit]'); if(s1){ const k=+s1.dataset.dbit; dbSec[k]={ it:s1.value, req:'' }; renderDb(); return; }
-  const s2=e.target.closest('[data-dbreq]'); if(s2){ const k=+s2.dataset.dbreq; dbSec[k]={ ...(dbSec[k]||{}), it:$('dbRes').querySelector(`[data-dbit="${k}"]`).value, req:s2.value }; } });
+  const s1=e.target.closest('[data-dbit]'); if(s1){ dbSec[s1.dataset.dbit]={ it:s1.value, req:'' }; renderDb(); return; }
+  const s2=e.target.closest('[data-dbreq]'); if(s2){ const k=s2.dataset.dbreq; dbSec[k]={ ...(dbSec[k]||{}), it:$('dbRes').querySelector(`[data-dbit="${k}"]`).value, req:s2.value }; } });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('dbPop').hidden){ dbToggle(false); $('dbBtn').focus(); } });
 
 // The bubble sticks to the left or right edge. Dragging moves it freely; letting go (or flicking)
