@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<title>Voltaris Hayalet Araç</title>
+<title>Voltaris Sanal Atölye</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Archivo:wght@500;600;800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: a plain workshop board. One header, five flat tabs. The Araç tab is the work surface:
    3D viewport + item list on the left, the open item's guided steps on the right.
@@ -523,13 +523,44 @@ summary{cursor:pointer}
 .db-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.db-add .sel{flex:1 1 140px;min-width:0;max-width:100%}
 @media (max-width:640px){ .dbp{left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom, 0px))!important;width:auto;max-height:78vh} }
 @media (prefers-reduced-motion:reduce){ .dbb{transition:none} }
-/* giriş kapısı: üye listesinde olmayan paneli hiç görmez */
-.gate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:var(--bg)}
-.gate[hidden],.wrap[hidden]{display:none}
-.gate-in{width:min(420px,100%);display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:28px 24px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
-.gate h1{margin:0;font-size:20px}.gate h1 span{color:var(--ink-3);font-weight:500}
-.gate p{margin:0;font-size:14px;line-height:1.5;color:var(--ink-2)}
-.gate a{font-size:13px;color:var(--link)}
+/* giriş kapısı: üye listesinde olmayan paneli hiç görmez. Görünüşü panelin değil sitenin (src/index.css):
+   koyu zemin, köşesiz kart, Archivo + JetBrains Mono, camgöbeği vurgu. Film koyu olduğu için her temada koyu. */
+.gate{--g-bg:#08090B;--g-surface:#101216;--g-border:#1E2228;--g-border-2:#2A2F37;--g-text:#F2F5F8;--g-muted:#8B949E;--g-accent:#22D3EE;--g-ink:#04121A;
+  --g-disp:'Archivo',system-ui,sans-serif;--g-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--g-ease:cubic-bezier(.23,1,.32,1);
+  position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;overflow:hidden;background:var(--g-bg);color:var(--g-text);font-family:var(--g-disp);color-scheme:dark;transition:opacity .7s ease}
+.gate[hidden],.wrap[hidden],.gate-btn[hidden]{display:none}
+.gate-in{position:relative;z-index:1;width:min(440px,100%);display:flex;flex-direction:column;align-items:stretch;padding:30px 32px 28px;background:color-mix(in srgb,var(--g-surface) 84%,transparent);border:1px solid color-mix(in srgb,var(--g-accent) 26%,var(--g-border));border-top:3px solid var(--g-accent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 40px 120px -40px rgba(34,211,238,.4),0 24px 60px -30px rgba(0,0,0,.7)}
+.gate-in::before{content:'';position:absolute;inset:0 0 auto;height:160px;background:radial-gradient(ellipse 70% 100% at 50% 0%,rgba(34,211,238,.14),transparent 70%);pointer-events:none}
+.gate-kick{position:relative;font:400 12px var(--g-mono);letter-spacing:.2em;color:var(--g-accent)}
+.gate h1{position:relative;margin:12px 0 0;font-size:clamp(1.9rem,7vw,2.4rem);font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.gate p{position:relative;margin:12px 0 22px;font-size:15px;line-height:1.6;color:var(--g-muted)}
+.gate-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:0 24px;border:1px solid var(--g-accent);border-radius:2px;background:var(--g-accent);color:var(--g-ink);font:600 15px/1.2 var(--g-disp);cursor:pointer;touch-action:manipulation;transition:background .2s ease,color .2s ease,transform .14s var(--g-ease)}
+.gate-btn.ghost{background:transparent;color:var(--g-accent)}
+.gate-btn:active{transform:scale(.97)}
+.gate-btn:disabled{opacity:.6;cursor:progress}
+.gate-btn:focus-visible,.gate .gate-geri:focus-visible{outline:2px solid var(--g-accent);outline-offset:3px}
+.gate .gate-geri{position:absolute;top:calc(16px + env(safe-area-inset-top, 0px));left:16px;z-index:2;display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:0 14px 0 10px;border:1px solid var(--g-border-2);background:color-mix(in srgb,var(--g-bg) 55%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:var(--g-muted);font:500 12px var(--g-mono);letter-spacing:.14em;text-transform:uppercase;text-decoration:none;transition:opacity .3s ease,border-color .2s ease,color .2s ease}
+.gate-geri svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (hover:hover) and (pointer:fine){ .gate-btn:hover{background:transparent;color:var(--g-accent)} .gate-btn.ghost:hover{background:var(--g-accent);color:var(--g-ink)} .gate .gate-geri:hover{border-color:var(--g-accent);color:var(--g-text)} }
+/* kapı filmi (public/panel/giris/): data-asama = bekle → yaklas → kapi (kart) → acil → ic */
+.gate-v,.gate-bas{display:none}
+.gate.film{background:#07090C}
+.gate.film .gate-v{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:filter .6s ease,transform .7s ease}
+.gate.film[data-asama="kapi"] .gate-v{filter:blur(12px) brightness(.45);transform:scale(1.06)}
+.gate.film .gate-in{transition:opacity .45s var(--g-ease),transform .45s var(--g-ease),visibility 0s}
+.gate.film:not([data-asama="kapi"]) .gate-in{opacity:0;visibility:hidden;transform:translateY(14px);transition:opacity .3s ease,transform .3s ease,visibility 0s linear .3s}
+.gate.film.hazir[data-asama="bekle"] .gate-bas{display:flex;position:absolute;inset:0;z-index:1;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding:0 16px calc(48px + env(safe-area-inset-bottom, 0px));border:0;background:linear-gradient(transparent 55%,rgba(0,0,0,.65));color:var(--g-text);font:inherit;cursor:pointer}
+.gate-bas b{font:500 12px var(--g-mono);letter-spacing:.32em;color:var(--g-accent)}
+.gate-bas span{font-size:16px;font-weight:500;animation:gate-nabiz 2.4s ease-in-out infinite}
+.gate-bas:focus-visible{outline:none}.gate-bas:focus-visible span{outline:2px solid var(--g-accent);outline-offset:6px}
+.gate.film[data-asama="acil"] .gate-geri,.gate.film[data-asama="ic"] .gate-geri{opacity:0;pointer-events:none}
+.gate.film[data-asama="acil"]{cursor:pointer}
+.gate.film[data-asama="ic"]{opacity:0;pointer-events:none}.gate.film[data-asama="ic"] .gate-v{transform:scale(1.08)}
+.gate.salla .gate-in{animation:gate-salla .4s ease}
+@keyframes gate-nabiz{50%{opacity:.45}}
+@keyframes gate-salla{20%,60%{translate:-6px 0}40%,80%{translate:6px 0}}
+@media (max-width:480px){ .gate-in{padding:26px 22px 22px} }
+@media (prefers-reduced-motion:reduce){ .gate,.gate.film .gate-v,.gate.film .gate-in{transition:none} .gate-bas span,.gate.salla .gate-in{animation:none} }
 /* yönetim: üye listesi */
 .ynt{width:min(860px,calc(100% - 32px));max-height:calc(100% - 32px);padding:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)}
 .ynt::backdrop{background:rgba(10,14,22,.55)}
@@ -542,13 +573,16 @@ summary{cursor:pointer}
 </head>
 <body>
 
-<div class="gate" id="gate" aria-live="polite">
+<div class="gate film" id="gate" data-asama="bekle" aria-live="polite">
+  <video class="gate-v" id="gateV" muted playsinline preload="auto" poster="/panel/giris/kapi.jpg" aria-hidden="true"></video>
+  <a class="gate-geri" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Siteye dön</a>
+  <button class="gate-bas" type="button" id="gateBas"><b>VOLTARIS</b><span>Sanal atölyeye girmek için dokun</span></button>
   <div class="gate-in">
-    <h1>Voltaris <span>· Hayalet Araç</span></h1>
+    <span class="gate-kick">/ VOLTARIS · ÜYE GİRİŞİ</span>
+    <h1>Sanal atölye</h1>
     <p id="gateMsg">Oturum kontrol ediliyor…</p>
-    <button class="btn primary" type="button" id="gateBtn" hidden>Google ile giriş yap</button>
-    <button class="btn" type="button" id="gateOut" hidden>Başka hesapla gir</button>
-    <a href="/">← Voltaris ana sayfa</a>
+    <button class="gate-btn" type="button" id="gateBtn" hidden>Google ile giriş yap</button>
+    <button class="gate-btn ghost" type="button" id="gateOut" hidden>Başka hesapla gir</button>
   </div>
 </div>
 
@@ -1937,16 +1971,52 @@ function dbToggle(open){ const p=$('dbPop'); open = open ?? p.hidden; p.hidden=!
 /* ---------- giriş kapısı ---------- */
 // Only members on the uyeler list get past this. Without a Firebase config (a local checkout with
 // no .env) the panel opens straight into its local mode, as it did outside Claude.
+// The gate is a film of the walk up to the workshop door. A tap plays the approach, which stops at
+// KAPI.durak with the sign-in card over the blurred frame; the rest (the door opening) only plays once
+// the account is let in. A session that is already signed in skips the tap and starts near the door.
+// The film is decoration: if it cannot load or play, the plain card does the job.
+const KAPI = { durak:3.2, donus:2.5 };   // seconds into giris/kapi-*.mp4
 function kapi(){
-  const ac = () => { $('gate').hidden=true; $('wrap').hidden=false; };
-  if(!fb.configured){ ac(); return Promise.resolve(null); }
-  return new Promise(resolve=>{ let acik=false;
+  const g=$('gate'), v=$('gateV'), msg=$('gateMsg');
+  const sade=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let asama='bekle', acik=false;
+  const set = a => { asama=a; g.dataset.asama=a; };
+  const ic = () => { if(asama==='ic') return; set('ic'); v.pause();
+    setTimeout(()=>{ g.hidden=true; v.removeAttribute('src'); v.load(); }, sade ? 0 : 750); };
+  const filmsiz = () => { g.classList.remove('film'); v.pause(); if(acik) ic(); else set('kapi'); };
+  const kapida = () => { set('kapi'); const b=[$('gateBtn'),$('gateOut')].find(x=>!x.hidden); if(b) b.focus({ preventScroll:true }); };
+  // timeupdate fires only every ~250 ms; watch each frame so the stop lands on the door
+  const bekci = () => { if(asama!=='yaklas') return;
+    if(v.currentTime>=KAPI.durak || v.ended){ v.pause(); kapida(); return; }
+    requestAnimationFrame(bekci); };
+  const yaklas = () => { if(asama!=='bekle') return; set('yaklas'); v.play().then(bekci, kapida); };   // autoplay refused (iOS Low Power): card over the still frame
+  const kapiyiAc = () => {
+    if(sade || !g.classList.contains('film')){ ic(); return; }
+    const once=asama; set('acil'); v.onended=ic;
+    const oyna = () => v.play().catch(ic);
+    if(once!=='bekle') oyna();
+    else if(v.readyState>=1){ v.currentTime=KAPI.donus; oyna(); }
+    else v.addEventListener('loadedmetadata', ()=>{ v.currentTime=KAPI.donus; oyna(); }, { once:true });
+  };
+  if(sade){ v.poster='/panel/giris/kapi-durak.jpg'; set('kapi'); }
+  else {
+    const buyuk=Math.max(innerWidth, innerHeight)*devicePixelRatio>1500 && !navigator.connection?.saveData;
+    v.addEventListener('error', filmsiz); v.src=`giris/kapi-${buyuk?1080:720}.mp4`;
+  }
+  g.addEventListener('click', e=>{ if(e.target.closest('a')) return; if(asama==='bekle') yaklas(); else if(asama==='acil') ic(); });   // a tap skips the door
+
+  const gir = o => { acik=true; $('wrap').hidden=false; kapiyiAc(); return o; };   // panel draws behind the door
+  if(!fb.configured) return Promise.resolve(gir(null));
+  return new Promise(resolve=>{
     fb.oturumuIzle(o=>{
       if(acik){ if(o.durum!=='giris') location.reload(); return; }   // signed out in another tab
-      const msg=$('gateMsg'); $('gateBtn').hidden=true; $('gateOut').hidden=true;
-      if(o.durum==='cikis'){ msg.textContent='Panel yalnızca Voltaris üyelerine açık. Takımın üye listesindeki Google hesabınla giriş yap.'; $('gateBtn').hidden=false; return; }
-      if(o.durum==='red'){ msg.textContent = o.pasif ? `${o.email} hesabı pasif durumda. Takım sorumlusuna sor.` : `${o.email} takımın üye listesinde yok. Takım sorumlusundan seni eklemesini iste ya da listedeki hesabınla gir.`; $('gateOut').hidden=false; return; }
-      acik=true; ac(); resolve(o);
+      $('gateBtn').hidden=true; $('gateOut').hidden=true;
+      if(o.durum==='giris'){ resolve(gir(o)); return; }
+      g.classList.add('hazir');
+      if(o.durum==='cikis'){ msg.textContent='Atölye yalnızca Voltaris üyelerine açık. Takımın üye listesindeki Google hesabınla giriş yap.'; $('gateBtn').hidden=false; }
+      else { msg.textContent = o.pasif ? `${o.email} hesabı pasif durumda. Takım sorumlusuna sor.` : `${o.email} takımın üye listesinde yok. Takım sorumlusundan seni eklemesini iste ya da listedeki hesabınla gir.`; $('gateOut').hidden=false;
+        g.classList.remove('salla'); void g.offsetWidth; g.classList.add('salla'); }   // the door stays shut
+      if(asama==='kapi') kapida();
     });
   }); }
 $('gateBtn').addEventListener('click', async ()=>{ $('gateBtn').disabled=true;

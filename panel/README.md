@@ -311,10 +311,10 @@ pasifse "üye listesinde yok" ve "Başka hesapla gir"; üyeyse panel açılır. 
 WhatsApp) açılır pencere engellenirse yönlendirmeli girişe düşer. Başka sekmede çıkış yapılırsa sayfa yenilenir.
 
 Kapı bir filmle açılır (`public/panel/giris/kapi-1080.mp4` / `kapi-720.mp4`, sessiz; ekrana göre biri seçilir).
-Dokununca kamera atölye kapısına yürür, `KAPI.durak` saniyesinde (3.75) durur; kare bulanıklaşır ve giriş kartı
+Dokununca kamera atölye kapısına yürür, `KAPI.durak` saniyesinde (3.2, kapılar aralanmadan biraz önce) durur; kare bulanıklaşır ve giriş kartı
 çıkar. Üye girince film kaldığı yerden sürer, kapı açılır, panel (arkada çoktan çizilmiş) belirir. Oturumu açık
 gelen üye dokunmaz: film `KAPI.donus`'ten (2.5) kendiliğinden başlar, dokunuş atlatır. Hareketi azalt açıksa film
-oynamaz, durak karesi (`kapi-durak.jpg`) bulanık arka plan olur. Video yüklenemezse eski düz kart kalır. Videoyu
+oynamaz, durak karesi (`kapi-durak.jpg`) bulanık arka plan olur. Sol üstteki "Siteye dön" ana sayfaya götürür. Video yüklenemezse eski düz kart kalır. Videoyu
 değiştirirken kapının kapalı göründüğü son saniyeyi `KAPI.durak`'a yaz ve iki posteri yeniden çıkar
 (`ffmpeg -ss <durak> -i … -frames:v 1 -vf scale=1280:-2 kapi-durak.jpg`).
 

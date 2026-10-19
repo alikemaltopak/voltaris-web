@@ -67,7 +67,7 @@ canvas), `SmoothScroll` (Lenis), `CustomCursor`.
   `items.js`/`bak.js`/`rapor.js` (modül değil; `vite.config.ts` bunları `/*__ITEMS__*/` yerine
   yapıştırır), `firebase.js` (Claude Artifact API'sini taklit eden Firebase katmanı), `yonetim.js`
   (üye listesi). Durum mantığına ve veri şekillerine dokunma; önce `panel/README.md`'yi oku.
-  Statik verisi `public/panel/data/`. `firestore.rules` + `firebase.json` kökte; kural değişince
+  Statik verisi `public/panel/data/`; giriş kapısının filmi `public/panel/giris/` (README §8). `firestore.rules` + `firebase.json` kökte; kural değişince
   Firebase'e yeniden yayınlanmalı. Ortam değişkenleri `VITE_FIREBASE_*` (`.env.example`).
   **Gizli:** takım arşivi indeksi (`indeks.json`) ve Claude dökümü (`data-export/`) depoya ve
   `public/`'e girmez (depo herkese açık); Firestore'a paneldeki Üyeler ekranından yüklenir.
