@@ -32,7 +32,8 @@ function kur(){
         <button class="btn small" type="button" id="yntDriveKaydet">Kaydet ve dene</button></div>
       <p class="when" id="yntDriveDurum"></p>
     </details>
-    <details class="ynt-aktar"><summary>Bir kerelik veri yükleme</summary>
+    <details class="ynt-aktar"><summary>Taşıma · Bir kerelik veri yükleme</summary>
+      <p class="help">Claude'daki eski panelden geçiş için. Bir kez yapıldıysa tekrar gerekmez; yalnız arşiv indeksi yeniden üretilirse onu yükle.</p>
       <p class="help"><b>Takım arşivi indeksi.</b> <code>build_indeks.py</code>'nin ürettiği <code>indeks.json</code>. Panelde "Takım arşivinde bulunanlar" bunu arar. Yenisi eskisinin yerine geçer.</p>
       <label class="btn small">indeks.json seç<input type="file" accept=".json,application/json" id="yntIdx" hidden></label>
       <p class="help"><b>Claude'daki eski kayıtlar.</b> <code>data-export</code> klasöründeki altı <code>.json</code> dosyasını birlikte seç. Aynı kalemlere ikinci kez yüklemek, o kalemlerde sonradan yapılan değişikliklerin üzerine yazar.</p>
