@@ -188,7 +188,8 @@ yapılır; bir arama iki yere gider:
   o üyenin kendi yetkisiyle okur. Kişisel veri desenleri ve Sponsorluk / Sosyal Medya klasörleri elenir. Script'in adresi
   `ayarlar/genel.driveArama`'da; Üyeler → "Drive araması"ndan girilir. Kurulum: `apps-script/DRIVE_ARAMA.md`.
 - **Arşiv indeksi:** `ixSerbest` (kelimelerden biri tutsa yeter, hepsi tutanlar üstte; dosya adı ×3, etiket ×2, klasör ×1.5,
-  konu ×1) + Teams klasörleri. Teams yalnız buradadır.
+  konu ×1) + Teams klasör haritası. Teams belgeleri Ekim 2026 itibarıyla Drive'a da taşınmış
+  (`Voltaris Teams belgeleri/…`), yani canlı aramada da çıkarlar.
 Her sonuç "Kaleme ekle" ile bir kaleme eklenir: **kalemin geneline** (`items/<id>.found`, kartta "Database'den eklenen
 dosyalar") ya da **bir öncüle** (`checks/<id>.f.<i>.found`, öncülün "Bulunan dosyalar" listesi). Kalem listesi dosyanın
 komitesine göre öneriyle başlar (`KOMITE`). Sohbet açıkken balon gizlenir; telefonda pencere alttan açılır.
@@ -309,6 +310,14 @@ Giriş kapısı (`kapi()`, `index.html` sonu): oturum yoksa "Google ile giriş y
 pasifse "üye listesinde yok" ve "Başka hesapla gir"; üyeyse panel açılır. Uygulama içi tarayıcılarda (Instagram,
 WhatsApp) açılır pencere engellenirse yönlendirmeli girişe düşer. Başka sekmede çıkış yapılırsa sayfa yenilenir.
 
+Kapı bir filmle açılır (`public/panel/giris/kapi-1080.mp4` / `kapi-720.mp4`, sessiz; ekrana göre biri seçilir).
+Dokununca kamera atölye kapısına yürür, `KAPI.durak` saniyesinde (3.75) durur; kare bulanıklaşır ve giriş kartı
+çıkar. Üye girince film kaldığı yerden sürer, kapı açılır, panel (arkada çoktan çizilmiş) belirir. Oturumu açık
+gelen üye dokunmaz: film `KAPI.donus`'ten (2.5) kendiliğinden başlar, dokunuş atlatır. Hareketi azalt açıksa film
+oynamaz, durak karesi (`kapi-durak.jpg`) bulanık arka plan olur. Video yüklenemezse eski düz kart kalır. Videoyu
+değiştirirken kapının kapalı göründüğü son saniyeyi `KAPI.durak`'a yaz ve iki posteri yeniden çıkar
+(`ffmpeg -ss <durak> -i … -frames:v 1 -vf scale=1280:-2 kapi-durak.jpg`).
+
 ---
 
 ## 9. Kurulum ve yayın
@@ -408,7 +417,7 @@ birebir yeniden üretildiği Claude sürümünde doğrulanmıştı.
 - Takvimde akademik takvim (sınav haftaları) yer tutucu.
 - Maliyet tablosu ve takım üye tablosu bilinçli olarak yok.
 - Etiket ↔ kalem eşlemesi şartnamede birebir yazmıyor; takımın yorumudur (`ITEMS[].ets`).
-- Canlı Drive araması yalnız voltaris.official'ın görebildiği dosyaları bulur; Teams'teki dosyalar Drive'a taşınana kadar yalnız indekste (klasör düzeyinde) vardır. Sonuçlar Drive'ın sırasıyla gelir (en fazla 25), alaka puanı yok.
+- Canlı Drive araması yalnız voltaris.official'ın görebildiği dosyaları bulur. İlk ölçüm (19.10.2026): 18.210 klasör, haritayı çıkarmak ~90 sn (4 saatte bir, tetikleyiciyle), "şasi" araması 5 sn'de 531 aday. Çok genel kelimelerde yalnız en iyi 25 gösterilir.
 - Fotoğraflar Firestore'da durduğu için ücretsiz kota (1 GiB) yaklaşık 3–4 bin fotoğraf taşır. Aşılırsa Blaze planına geçip `assetsApi()`'yi Firebase Storage'a çevirmek tek dosyalık iş.
 
 ### Sürüm notları

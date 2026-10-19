@@ -15,8 +15,9 @@
  *  2. Adı kelimelerden birini taşıyan klasörler — klasör haritasında, Türkçe harfe duyarsız.
  *  3. O klasörlerin (alt klasörleri dahil) içindeki dosyalar. CAD/STEP/ZIP gibi içi okunamayan
  *     dosyalar çoğunlukla ancak bu yoldan, bulundukları klasörün adıyla bulunur.
- * Klasör haritası (bütün klasörlerin adı ve üst klasörü) 6 saat önbellekte durur; kurulumda eklenen
- * saatlik tetikleyici onu tazeler, böylece aramalar beklemez.
+ * Klasör haritası (bütün klasörlerin adı ve üst klasörü; ~18 bin klasörde çıkarması ~90 sn sürer) bir
+ * aramayı bekletmemeli: önbellekte durur, önbellek boşalırsa Drive'daki kopyasından (HARITA_DOSYASI)
+ * bir saniyede okunur. Kurulumda eklenen tetikleyici onu 4 saatte bir yeniden çıkarır.
  *
  * Kişisel veri taşıyan dosyalar (başvuru, kimlik, fatura…) ve Sponsorluk / Sosyal Medya klasörleri,
  * takım arşivi indeksinde olduğu gibi (panel/scripts/build_indeks.py) sonuçlara girmez.
@@ -114,7 +115,12 @@ function uyeMi(token) {
 
 /* ---------- klasör haritası ---------- */
 
-// Drive'daki bütün klasörler: { id: [ad, üstKlasörId] }. Önbellekte parça parça durur (bir anahtar ≤100 KB).
+// Haritanın Drive'daki kopyası; kimliği script özelliklerinde. Yalnız voltaris.official görür.
+const HARITA_DOSYASI = 'voltaris-panel-klasor-haritasi.json';
+
+// Drive'daki bütün klasörler: { id: [ad, üstKlasörId] }.
+// Önbellekte parça parça durur (bir anahtar ≤100 KB). Google önbelleği vaktinden önce boşaltabilir;
+// o zaman Drive'daki kopyadan okunur. Yeniden çıkarmak yalnız `yenile` ile (tetikleyici, kurulum) olur.
 function klasorHaritasi(yenile) {
   const cache = CacheService.getScriptCache();
   if (!yenile) {
@@ -124,6 +130,12 @@ function klasorHaritasi(yenile) {
       if (Object.keys(parcalar).length === n) {
         return JSON.parse(Array.from({ length: n }, function (_, i) { return parcalar['kh:' + i]; }).join(''));
       }
+    }
+    const dosya = haritaDosyasi(false);
+    if (dosya) {
+      const metin = dosya.getBlob().getDataAsString();
+      onbellegeYaz(cache, metin);
+      return JSON.parse(metin);
     }
   }
   const harita = {};
@@ -136,13 +148,32 @@ function klasorHaritasi(yenile) {
     (r.files || []).forEach(function (f) { harita[f.id] = [f.name, (f.parents || [])[0] || '']; });
     sayfa = r.nextPageToken;
   } while (sayfa);
-  const metin = JSON.stringify(harita), parca = 90000, n = Math.ceil(metin.length / parca), yaz = { 'kh:n': String(n) };
-  for (let i = 0; i < n; i++) yaz['kh:' + i] = metin.slice(i * parca, (i + 1) * parca);
-  cache.putAll(yaz, 21600);
+  const metin = JSON.stringify(harita);
+  onbellegeYaz(cache, metin);
+  const dosya = haritaDosyasi(true);
+  dosya.setContent(metin);
   return harita;
 }
 
-// Saatlik tetikleyici bunu çağırır: harita hep sıcak kalır, ilk arama beklemez.
+function onbellegeYaz(cache, metin) {
+  const parca = 90000, n = Math.ceil(metin.length / parca), yaz = { 'kh:n': String(n) };
+  for (let i = 0; i < n; i++) yaz['kh:' + i] = metin.slice(i * parca, (i + 1) * parca);
+  cache.putAll(yaz, 21600);
+}
+
+// Drive'daki kopya; `olustur` ile yoksa açılır.
+function haritaDosyasi(olustur) {
+  const ozellik = PropertiesService.getScriptProperties();
+  const id = ozellik.getProperty('haritaDosyasi');
+  if (id) { try { const f = DriveApp.getFileById(id); if (!f.isTrashed()) return f; } catch (err) { /* silinmiş */ } }
+  if (!olustur) return null;
+  const f = DriveApp.createFile(HARITA_DOSYASI, '{}', 'application/json');
+  f.setDescription('Voltaris paneli Drive araması bu dosyayı kullanır (apps-script/DriveArama.gs). Silme; silinirse kendiliğinden yeniden oluşur.');
+  ozellik.setProperty('haritaDosyasi', f.getId());
+  return f;
+}
+
+// Tetikleyici bunu çağırır: harita güncel ve sıcak kalır, aramalar beklemez.
 function klasorHaritasiniYenile() { klasorHaritasi(true); }
 
 // Bir klasörün yolu ("A/B/C") ya da gizli bir klasörün altındaysa / kök klasörlerin dışındaysa null.
@@ -242,6 +273,7 @@ function ara(q) {
     const p = yol(a.ust);
     if (p === null) return;
     if (a.mime === KLASOR && yol(id) === null) return;   // gizli klasörün kendisi
+    if (a.ad === HARITA_DOSYASI) return;
     const na = norm(a.ad), nd = norm(a.aciklama), np = norm(p);
     if (GIZLI.test(na + ' ' + np)) return;
     let s = 0, tutan = 0;
@@ -275,15 +307,22 @@ function tur(mime, ad) {
 
 /* ---------- kurulum ---------- */
 
-// Kurulumda bir kez editörden çalıştır: izinleri sorar, klasör haritasını çıkarır, saatlik tazelemeyi kurar
-// ve bir deneme araması yapar. Tekrar çalıştırmak zararsızdır (tetikleyiciyi çoğaltmaz).
+// Kurulumda bir kez editörden çalıştır: izinleri sorar, klasör haritasını çıkarır, tazelemeyi kurar ve
+// bir deneme araması yapar. Tekrar çalıştırmak zararsızdır: eski tetikleyici silinip yenisi kurulur.
+// 4 saatte bir: harita ~90 sn sürüyor, ücretsiz hesapların günlük tetikleyici süresi 90 dakika ve
+// everyHours yalnız 1, 2, 4, 6, 8, 12 kabul ediyor. Önbellek 6 saat dayanır.
 function kurulum() {
   const t = Date.now();
   const harita = klasorHaritasi(true);
   Logger.log('Klasör haritası: ' + Object.keys(harita).length + ' klasör, ' + (Date.now() - t) + ' ms');
-  const var_ = ScriptApp.getProjectTriggers().some(function (x) { return x.getHandlerFunction() === 'klasorHaritasiniYenile'; });
-  if (!var_) ScriptApp.newTrigger('klasorHaritasiniYenile').timeBased().everyHours(1).create();
-  Logger.log('Saatlik tazeleme: ' + (var_ ? 'zaten kurulu' : 'kuruldu'));
+  ScriptApp.getProjectTriggers().forEach(function (x) { if (x.getHandlerFunction() === 'klasorHaritasiniYenile') ScriptApp.deleteTrigger(x); });
+  ScriptApp.newTrigger('klasorHaritasiniYenile').timeBased().everyHours(4).create();
+  Logger.log('Tazeleme: 4 saatte bir. Drive\'daki kopya: ' + HARITA_DOSYASI);
+  // önbellek boşalınca dosyadan okumanın süresi
+  const cache = CacheService.getScriptCache();
+  cache.remove('kh:n');
+  const d0 = Date.now(); klasorHaritasi(false);
+  Logger.log('Önbellek boşken haritayı dosyadan okuma: ' + (Date.now() - d0) + ' ms');
   const d = Date.now(), r = ara('şasi');
   Logger.log('Deneme araması "şasi": ' + r.toplam + ' sonuç, ' + (Date.now() - d) + ' ms. İlk üçü: ' +
     JSON.stringify(r.sonuc.slice(0, 3).map(function (x) { return x.p + '/' + x.n; })));

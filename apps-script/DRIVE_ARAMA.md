@@ -41,9 +41,11 @@ Soldaki **Hizmetler** (Services) yanındaki **+** → listeden **Drive API** →
 2. "Yetkilendirme gerekli" → **İzinleri incele** → voltaris.official hesabını seç.
 3. "Google bu uygulamayı doğrulamadı" çıkarsa: **Gelişmiş** → **Voltaris Panel Drive Araması'na git
    (güvenli değil)**. Bu uyarı kendi yazdığın script için normaldir.
-4. **İzin ver**. Alttaki "Yürütme günlüğü"nde üç satır görmelisin:
-   - `Klasör haritası: N klasör, … ms` — Drive'daki bütün klasörler çıkarıldı.
-   - `Saatlik tazeleme: kuruldu` — harita her saat kendiliğinden güncellenir (Tetikleyiciler ⏰ sekmesinde görünür).
+4. **İzin ver**. Alttaki "Yürütme günlüğü"nde şu satırları görmelisin:
+   - `Klasör haritası: N klasör, … ms` — Drive'daki bütün klasörler çıkarıldı (18 bin klasörde ~90 sn).
+   - `Tazeleme: 4 saatte bir…` — harita kendiliğinden güncellenir (Tetikleyiciler ⏰ sekmesinde görünür). Haritanın bir
+     kopyası Drive'ın köküne `voltaris-panel-klasor-haritasi.json` adıyla yazılır; **silme**, önbellek boşalınca arama onu okur.
+   - `Önbellek boşken haritayı dosyadan okuma: … ms` — birkaç saniyenin altında olmalı.
    - `Deneme araması "şasi": N sonuç, … ms. İlk üçü: [...]`
 
    Klasör sayısı ve deneme sonuçları beklediğin gibi değilse (ör. arşiv bir ortak drive'da ve hiç görünmüyorsa)
@@ -82,7 +84,7 @@ Yeni bir kod sürümünde `kurulum`'u bir kez daha çalıştırmak zararsızdır
 | "Script'e ulaşılamadı" | Dağıtımda "Erişimi olanlar: Herkes" seçili değil ya da adres yanlış kopyalandı. |
 | "Üyeliği doğrulayamadı" | `AYAR.firebaseApiKey` / `projeId` panelin `.env`'iyle aynı değil; ya da kişi üye listesinde değil / pasif. |
 | "Script Drive'da arayamadı" | Drive API hizmeti eklenmedi (2. adım) ya da `kurulum` çalıştırılmadı (3. adım). |
-| Yeni açılan bir klasör adıyla çıkmıyor | Klasör haritası saatte bir tazelenir; en geç bir saat sonra çıkar. Hemen gerekirse `kurulum`'u çalıştır. |
+| Yeni açılan bir klasör adıyla çıkmıyor | Klasör haritası 4 saatte bir tazelenir; en geç 4 saat sonra çıkar. Hemen gerekirse `kurulum`'u çalıştır. (Klasörün içindeki dosyalar, adları ya da içerikleriyle, beklemeden çıkar.) |
 | Bir dosya çıkmıyor | voltaris.official o dosyayı göremiyor (paylaşılmamış), adı/yolu gizli desene takılıyor, ya da Teams'te duruyor. Taranmış PDF'lerin ve CAD dosyalarının içi aranamaz: bunlar adı, klasörü ya da açıklamasıyla bulunur. Çok genel bir kelimede (ör. "mekanik") yüzlerce sonuç olur ve yalnız en iyi 25'i gösterilir; kelime ekle. |
 
 Kurucu hesaplar değişirse `AYAR.kurucular`'ı `firestore.rules` (`kurucu()`) ve `panel/firebase.js`
