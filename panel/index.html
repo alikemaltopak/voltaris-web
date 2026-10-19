@@ -855,13 +855,16 @@ const rapor = {};    // rapor/<itemId> -> {v:{alan:değer}}
 
 const rec = id => recs[id] || {};
 function reqState(it,i){ return checks[it.id]?.s?.[i] ?? 0; }
-// a madde that can only be checked on the finished car does not hold the item back
-function deferred(it,i){ const f=checks[it.id]?.f?.[i]; const v=f&&typeof f==='object'?f.v:undefined; if(v==='sonra') return true; if(v) return false; return reqState(it,i)===0 && (REQ_SON[it.id]||[]).includes(i); }
+// A madde someone has marked "Araç bitince" does not hold the item back, but it adds no progress either:
+// nothing about it has been checked yet. Until October 2026 the öncüller listed in REQ_SON counted as done
+// by default, so the car showed ~%11 before anyone had touched it. REQ_SON now only suggests the choice.
+function deferred(it,i){ const f=checks[it.id]?.f?.[i]; return !!f && typeof f==='object' && f.v==='sonra'; }
+const sonraOnerilir = (it,i) => (REQ_SON[it.id]||[]).includes(i);
 const reqOk = (it,i) => reqState(it,i)===2 || deferred(it,i);
 function checkRatio(it){ const n=it.reqs.length; return n? it.reqs.filter((_,i)=>reqOk(it,i)).length/n : 1; }
 function allChecksOk(it){ return it.reqs.every((_,i)=>reqOk(it,i)); }
 // An item's state comes from its öncüller (şartname maddeleri); each one runs its own durum tespiti.
-function reqProg(it,i){ if(reqOk(it,i)) return 1; const f=flowOf(it,i), s=reqState(it,i);
+function reqProg(it,i){ if(reqState(it,i)===2) return 1; if(deferred(it,i)) return 0; const f=flowOf(it,i), s=reqState(it,i);
   if(!f.v) return s===1 ? .1 : 0;
   if(f.v==='evet') return f.olc===false ? .5 : .85;
   return ({tasarim:.35, uretim:.6, test:.8})[f.asama] ?? (f.db ? .2 : .1); }
@@ -1149,8 +1152,9 @@ function reqFlowHtml(it, i, ro){ const q=it.reqs[i], A=q[2]==='A', f=flowOf(it,i
   const L = A ? {v:'Araçta karşılanıyor mu?', o:'Ölçüldü ya da denendi mi?', n:'Ölçüm ya da test sonucu: ne ölçüldü, kaç çıktı'} : {v:'Raporda hazır mı?', o:'Başka biri okuyup kontrol etti mi?', n:'Kim kontrol etti, ne düzeltildi'};
   const eksik = f.v==='kismen' || f.v==='hayir' || (f.v==='evet' && f.olc===false);
   let h = `<div class="rflow"><span class="sub-h">Durum tespiti</span>
-    <div class="q"><span>1. ${L.v}</span>${rseg(i,'v',[['evet','Evet','yes'],['kismen','Kısmen'],['hayir','Hayır','no'],['sonra','Araç bitince']],f.v ?? (deferred(it,i)?'sonra':undefined),ro)}</div>
-    ${deferred(it,i)?'<p class="help">Bu madde ancak araç tamamlanınca doğrulanabilir. Şimdilik kalemi bekletmiyor; araç bitince buradan Evet ya da Hayır işaretle.</p>':''}`;
+    <div class="q"><span>1. ${L.v}</span>${rseg(i,'v',[['evet','Evet','yes'],['kismen','Kısmen'],['hayir','Hayır','no'],['sonra','Araç bitince']],f.v,ro)}</div>
+    ${deferred(it,i)?'<p class="help">Araç bitince bakılacak: kalemi bekletmiyor ama ilerlemeye de sayılmıyor. Araç bitince buradan Evet ya da Hayır işaretle.</p>'
+      :(!f.v && sonraOnerilir(it,i))?'<p class="help">Şartnameye göre bu madde ancak araç tamamlanınca doğrulanabilir. Şimdi bakılamıyorsa "Araç bitince" seç: kalemi bekletmez, ilerlemeye de sayılmaz.</p>':''}`;
   if(f.v==='evet') h += `<div class="q"><span>2. ${L.o}</span>${rseg(i,'olc',[[true,'Evet','yes'],[false,'Hayır','no']],f.olc,ro)}</div>`;
   if(eksik){ let k = f.v==='evet' ? 3 : 2; const jobs=jobsFor(it,i); const ds=driveState[key]||{}; const found=Array.isArray(f.found)?f.found:[];
     h += `<div class="q"><span>${k++}. Ne yapacaksınız?<small>Database sorgusuna eklenir.</small></span></div>
@@ -1524,7 +1528,7 @@ function renderOzet(){
   const em=(SART.ceza||[]).filter(c=>c.em); const dq=em.filter(c=>isDQ(c.em));
   const riskDq=dq.filter(c=>!isDone(byId(cezaKalem(c))));
   const nReq=ITEMS.reduce((a,x)=>a+x.reqs.length,0); const okReq=ITEMS.reduce((a,x)=>a+x.reqs.filter((_,i)=>reqState(x,i)===2).length,0);
-  const broken=brokenCites(); const sonList=ITEMS.flatMap(it=>it.reqs.map((q,i)=>({it,q,i})).filter(x=>deferred(x.it,x.i)));
+  const broken=brokenCites(); const sonList=ITEMS.flatMap(it=>it.reqs.map((q,i)=>({it,q,i})).filter(x=>sonraOnerilir(x.it,x.i) || deferred(x.it,x.i)));
   $('reader').innerHTML = `<h2>Araç şartnameye ne kadar uygun?</h2><span class="rmeta">${sartYil} kitapçıklarına göre. Soldan bir kitapçık seç, yukarıdan ara ya da görsellere bak.</span>
     <div class="ozet">
       <div class="oz"><span class="eyebrow">Takip edilen maddeler</span><b class="big">${okReq} / ${nReq}</b><p>Kalemlerdeki şartname maddelerinden "uygun" işaretlenenler. Her maddenin kaynağına dokununca asıl metin açılır.</p></div>
@@ -1579,7 +1583,7 @@ async function renderFeed(){
   if(!logRows.length){ $('feed').innerHTML='<li class="empty">İlk değişiklik burada görünecek.</li>'; return; }
   const ps = await people(logRows.map(r=>r.by));
   $('feed').innerHTML = logRows.slice(0,30).map(r=>{ const it=byId(r.item); const p=ps[r.by];
-    return `<li>${p?.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="">`:''}<div><div><b>${esc(nameOf(ps,r.by))}</b> · ${it?`<button type="button" class="namebtn" style="font-size:13px" data-goto="${it.id}">${esc(it.name)}</button>`:''}: ${esc(r.text)}</div><span class="when">${ago(r.at)}</span></div></li>`; }).join('');
+    return `<li>${p?.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="">`:''}<div><div><b>${esc(nameOf(ps,r.by))}</b> · ${it?`<button type="button" class="namebtn" style="font-size:13px" data-goto="${it.id}">${esc(it.name)}</button>: `:''}${esc(r.text)}</div><span class="when">${ago(r.at)}</span></div></li>`; }).join('');
 }
 
 /* ---------- render: chat ---------- */
@@ -2119,7 +2123,7 @@ $('gateBtn').addEventListener('click', async ()=>{ $('gateBtn').disabled=true;
   $('gateBtn').disabled=false; });
 $('gateOut').addEventListener('click', ()=>fb.cikisYap());
 $('cikisBtn').addEventListener('click', ()=>fb.cikisYap().then(()=>location.reload()));
-$('yonetimBtn').addEventListener('click', ()=>yonetimiAc({ esc, toast }));
+$('yonetimBtn').addEventListener('click', ()=>yonetimiAc({ esc, toast, myId:()=>myId }));
 
 const oturum = await kapi();
 renderAll(); loadModel(); requestAnimationFrame(frame); connect(oturum); loadSart(sartYil);

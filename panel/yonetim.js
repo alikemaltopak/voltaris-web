@@ -1,14 +1,14 @@
 // Admin dialog: the member list (who may sign in) and the one-time loads that replace what the
 // Claude Artifact had built in — the archive index and the export of its shared records.
 // Firestore rules enforce the same limits (firestore.rules); this file is only the UI.
-import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra } from './firebase.js';
+import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra, ilerlemeyiSifirla } from './firebase.js';
 
 const BIRIM = { M:'Mekanik', E:'Elektrik-Elektronik', O:'Organizasyon ve Sosyal Medya' };
 const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-let dlg = null, esc, toast, uyeler = [], eski = null;
+let dlg = null, esc, toast, araclar, uyeler = [], eski = null;
 
-export function yonetimiAc(araclar){
-  ({ esc, toast } = araclar);
+export function yonetimiAc(a){
+  araclar = a; ({ esc, toast } = a);
   if(!dlg){ dlg = kur(); uyeleriIzle(l => { uyeler = l.sort((a, b) => String(a.ad || a.email).localeCompare(String(b.ad || b.email), 'tr')); liste(); }, () => toast('Üye listesi okunamadı.')); }
   try{ dlg.showModal(); }catch{ dlg.setAttribute('open', ''); }
 }
@@ -32,6 +32,11 @@ function kur(){
         <button class="btn small" type="button" id="yntDriveKaydet">Kaydet ve dene</button></div>
       <p class="when" id="yntDriveDurum"></p>
     </details>
+    <details class="ynt-aktar"><summary>İlerlemeyi sıfırla</summary>
+      <p class="help">Bütün kalemlerdeki öncül cevaplarını (karşılanıyor mu, ölçüldü mü, aşama, Database sonucu) ve katkı kayıtlarını siler; araç %0'dan başlar. Notlar, fotoğraflar, bulunan dosyalar, TTR değerleri ve üstlenilen kalemler kalır. Geri alınamaz.</p>
+      <button class="btn small" type="button" id="yntSifirla" style="align-self:flex-start;color:var(--bad);border-color:var(--bad)">İlerlemeyi sıfırla</button>
+      <p class="when" id="yntSifirlaDurum"></p>
+    </details>
     <details class="ynt-aktar"><summary>Taşıma · Bir kerelik veri yükleme</summary>
       <p class="help">Claude'daki eski panelden geçiş için. Bir kez yapıldıysa tekrar gerekmez; yalnız arşiv indeksi yeniden üretilirse onu yükle.</p>
       <p class="help"><b>Takım arşivi indeksi.</b> <code>build_indeks.py</code>'nin ürettiği <code>indeks.json</code>. Panelde "Takım arşivinde bulunanlar" bunu arar. Yenisi eskisinin yerine geçer.</p>
@@ -50,6 +55,7 @@ function kur(){
   d.querySelector('#yntEski').addEventListener('change', eskiOku);
   d.querySelector('#yntEsle').addEventListener('click', aktar);
   d.querySelector('#yntDriveKaydet').addEventListener('click', driveKaydet);
+  d.querySelector('#yntSifirla').addEventListener('click', sifirla);
   driveAdresi().then(u => { d.querySelector('#yntDriveUrl').value = u; d.querySelector('#yntDriveDurum').textContent = u ? 'Kurulu.' : 'Henüz kurulmadı.'; });
   return d;
 }
@@ -84,6 +90,18 @@ async function sil(e){
   const email = b.closest('tr').dataset.email;
   if(!confirm(`${email} listeden çıkarılsın mı? Bu hesap panele bir daha giremez; girdiği kayıtlar kalır.`)) return;
   try{ await uyeSil(email); }catch(err){ toast('Çıkarılamadı: ' + esc(err?.code || 'hata')); }
+}
+
+// Two steps on purpose: the confirm says what goes and what stays, the prompt makes it a deliberate act.
+async function sifirla(e){
+  const b = e.currentTarget, durum = dlg.querySelector('#yntSifirlaDurum');
+  if(!confirm('Bütün öncül cevapları ve katkı kayıtları silinecek; araç %0\'dan başlayacak. Notlar, fotoğraflar, bulunan dosyalar ve TTR değerleri kalacak. Bu geri alınamaz. Devam edilsin mi?')) return;
+  // "sıfırla", "sifirla", "SIFIRLA" all count: Turkish upper-casing turns a typed i into İ.
+  if((prompt('Onaylamak için SIFIRLA yaz') || '').trim().toLocaleLowerCase('tr').replace(/ı/g, 'i') !== 'sifirla'){ durum.textContent = 'Vazgeçildi.'; return; }
+  b.disabled = true; durum.textContent = 'Sıfırlanıyor…';
+  try{ const n = await ilerlemeyiSifirla(araclar.myId()); durum.textContent = `Sıfırlandı: ${n} kalemin öncülleri temizlendi.`; toast('<b>İlerleme sıfırlandı.</b> Araç %0\'dan başlıyor.'); }
+  catch(err){ durum.textContent = 'Sıfırlanamadı: ' + (err?.code || err?.message || 'hata'); }
+  b.disabled = false;
 }
 
 const SCRIPT_ADRESI = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/;

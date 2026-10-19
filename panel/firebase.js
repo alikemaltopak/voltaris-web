@@ -211,6 +211,29 @@ export async function driveAra(q, signal){
   return { sonuc, kesildi:!!d.kesildi, toplam:Number(d.toplam) || sonuc.length };
 }
 
+/* ---------- ilerlemeyi sıfırlama ---------- */
+
+// Clears every öncül's answers (karşılanıyor mu, ölçüldü mü, aşama, Database sonucu) and the contributors
+// credited for them, so the car starts again at 0. Notes, photos, found files and "ne yapacaksınız" stay:
+// they are work, not progress. Each checks document is replaced, not merged, so no answer survives.
+const KALIR = ['not', 'foto', 'found', 'is'];
+export async function ilerlemeyiSifirla(uid){
+  const q = await getDocs(collection(fs, 'checks'));
+  const b = writeBatch(fs);
+  q.docs.forEach(d => {
+    const f = {};
+    for(const [i, x] of Object.entries(d.data().f || {})){
+      if(!x || typeof x !== 'object') continue;
+      const k = Object.fromEntries(KALIR.filter(a => x[a] != null && x[a] !== '' && !(Array.isArray(x[a]) && !x[a].length)).map(a => [a, x[a]]));
+      if(Object.keys(k).length) f[i] = k;
+    }
+    b.set(d.ref, { s:{}, f, by:uid, at:nowIso() });
+  });
+  b.set(doc(collection(fs, 'log')), { by:uid, at:nowIso(), item:'', text:'Bütün öncüllerin ilerlemesi sıfırlandı' });
+  await b.commit();
+  return q.size;
+}
+
 /* ---------- katkı: profil penceresi için ---------- */
 
 // The whole activity feed, read once to credit öncüller recorded before checks/<id>.f.<i>.emek existed.

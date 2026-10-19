@@ -90,7 +90,7 @@ ekranından yüklenir (bölüm 9, adım 7).
 | **Öncül** (req) | Bir kalemin karşılaması gereken tek bir şartname maddesi. Örn. "Sürücü içindeyken yerden yükseklik ≥ 10 cm (B2 8.1.f)". | `ITEMS[].reqs` |
 | **Tür A / R** | A = araçta karşılanır (teknik kontrol ve videolarda bakılır). R = raporda sunulur (TTR). Sorular ve aşamalar türe göre değişir. | `reqs[i][2]` |
 | **Durum tespiti** | Her öncülün içindeki soru akışı: karşılanıyor mu → ölçüldü mü / ne yapılacak → arşivde var mı → aşama. | `reqFlowHtml()` |
-| **Araç bitince** | Ancak araç tamamlanınca doğrulanabilecek maddeler (ör. ağırlık ≤ 350 kg). Bunlar kalemi "eksik" göstermez. | `rapor.js` → `REQ_SON` |
+| **Araç bitince** | Ancak araç tamamlanınca doğrulanabilecek maddeler (ör. ağırlık ≤ 350 kg). `REQ_SON` bunları yalnız önerir (öncülde uyarı çıkar). Biri "Araç bitince" seçerse madde kalemi bekletmez ama ilerlemeye de sayılmaz. | `rapor.js` → `REQ_SON` |
 | **Bağımlılık** (deps) | Bir kalem başlamadan önce bitmesi gereken kalemler (ör. Roll Cage → Şasi). Bitmemişse kalem "kilitli" görünür. | `ITEMS[].deps` |
 | **Birim** | M = Mekanik, E = Elektrik-Elektronik, O = Organizasyon ve Sosyal Medya. Liste filtresi ve sohbet kanalları buna göre. | `BIRIM`, `CHANNELS` |
 | **Teknik kontrol etiketi** | 2026 yarış haftası plakasındaki 11 başlık (5/4/2 dizilim). Bağlı kalemlerin hepsi bitince kare dolar; 11'i dolunca yeşil "teknik kontrol başarılı" bandı yanar. | `ETIKETLER`, `PLATE_ROWS`, `ITEMS[].ets` |
@@ -114,7 +114,7 @@ ekranından yüklenir (bölüm 9, adım 7).
 1. Araçta karşılanıyor mu?   [Evet] [Kısmen] [Hayır] [Araç bitince]        (R türünde: "Raporda hazır mı?")
    ├─ Evet → 2. Ölçüldü ya da denendi mi?  [Evet] [Hayır]                 (R: "Kontrol edildi mi?")
    │        Evet + ölçüldü  ⇒ öncül UYGUN
-   ├─ Araç bitince ⇒ öncül kalemi bekletmez (saat simgesi)
+   ├─ Araç bitince ⇒ öncül kalemi bekletmez (saat simgesi), ilerlemeye sayılmaz
    └─ Kısmen / Hayır →
         2. Ne yapacaksınız?  (serbest metin, sorguya ve arşiv aramasına eklenir)
            "Database'e sor" kutusu:
@@ -135,15 +135,20 @@ ekranından yüklenir (bölüm 9, adım 7).
 
 Kalemin durumu **elle seçilmez**; tamamen öncüllerinden hesaplanır (`panel/index.html` → "state" bölümü).
 
+**Ekim 2026 değişikliği:** önceden `REQ_SON`'daki maddeler kimse dokunmadan "tamam" (`reqProg` = 1) sayılıyordu;
+araç hiç kayıt yokken %11,4 hazır görünüyordu. Artık "araç bitince" yalnız açıkça seçilince geçerli ve hiçbir zaman
+ilerleme vermez (kalemi yine bekletmez). Bütün ilerleme Üyeler → "İlerlemeyi sıfırla" ile silinebilir: öncül
+cevapları ve `emek` gider; not, fotoğraf, bulunan dosya, "ne yapacaksınız", TTR değerleri ve üstlenmeler kalır.
+
 ```js
 // öncülün saklanan durumu: checks/<kalem>.s[i]  → 0 bakılmadı, 1 eksik, 2 uygun
 deriveS(f) = (f.v==='evet' && f.olc===true) || f.asama==='uygun' ? 2 : (f.v ? 1 : 0)
 
-deferred(it,i)  = f.v==='sonra'  ||  (hiç cevaplanmamış && REQ_SON[it.id] içinde i)
+deferred(it,i)  = f.v==='sonra'          // yalnız biri seçtiyse; REQ_SON varsayılan saymaz (aşağıdaki not)
 reqOk(it,i)     = s===2 || deferred(it,i)
 
 // öncül ilerlemesi (0..1)
-reqProg = reqOk ? 1
+reqProg = s===2 ? 1 : deferred ? 0
         : !f.v ? (s===1 ? .1 : 0)
         : f.v==='evet' ? (f.olc===false ? .5 : .85)
         : { tasarim:.35, uretim:.6, test:.8 }[f.asama] ?? (f.db ? .2 : .1)
