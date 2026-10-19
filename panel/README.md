@@ -176,6 +176,16 @@ Kalem bitince ya da bir kalemin kilidi açılınca `announce()` kısa bir bildir
 | **Birimler** | Birim başına ilerleme, kim neyi üstlendi, son hareketler akışı (`log`). | `renderUnits`, `renderFeed` |
 | **Rapor** | TTR verileri: şablondaki tablolar (Tablo 1–9), her değerin kaynağı / gireni / doğrulayanı, "Boş" ve "Doğrulanmamış" filtreleri, tabloyu Word/Docs'a yapıştırılacak TSV olarak kopyalama, metin bölümü notları, raporda anlatılacak R-türü öncüller. | `renderRapor`, `tableTSV` |
 
+### Profil: araca katkı
+Başlıktaki ada dokununca açılır. Her öncülün araçtaki payı `1 / (kalem sayısı × o kalemin öncül sayısı)`; başlıktaki
+"Araç %x hazır" da aynı ortalamadır. Öncülün şu anki ilerlemesi (`reqProg`) o öncülde değişiklik yapan herkese
+(`checks/<id>.f.<i>.emek`, `setFlow`/`setReq` yazar, en fazla 12 kişi) eşit bölünür; böylece bütün üyelerin payları
+ile "kimseye yazılamayan" kısım toplanınca başlıktaki yüzde çıkar. `emek` alanından önceki öncüller hareket
+geçmişinden (`log`, `Şartname: "<öncül>" → …` satırları) bir kez paylaştırılır ve `emek` olarak geri yazılır.
+Yanında sayılar: emeği geçen / uygun öncül, üstlenilen kalem, girilen / doğrulanan TTR değeri, Database'den eklenen
+dosya, toplam hareket (sayım sorgusu). Üye yalnız kendi profilini görür; kurucular üye seçip bakabilir ve "Ekip
+özeti"ni görür. Bu bir arayüz sınırıdır: kayıtları her üye okuyabildiği için gizli bilgi değildir.
+
 ### Database balonu
 Her sekmede ekranın kenarında duran yuvarlak düğme (veritabanı simgesi). Sürüklenir; bırakınca ya da fırlatınca sağ veya
 sol kenara yapışır, yeri tarayıcıda hatırlanır (`vh-dbb`). Dokununca açılan pencerede takım arşivi indeksinde serbest arama
@@ -265,7 +275,7 @@ Kullanıcı kimlikleri Firebase uid'leridir (Claude'dan aktarılıp eşlenmeyenl
 | Yol | Belge şekli | Yazan |
 |---|---|---|
 | `items/<kalemId>` | `{ owner:uid?, testNot, testFoto:[assetId], not, by, at }` + eski sürümden kalan alanlar (`v, cal, test, asama, karar, is, tas, dok, har` — artık durum hesabında kullanılmıyor) | `patchItem()` |
-| `checks/<kalemId>` | `{ s:{ "<i>":0\|1\|2 }, f:{ "<i>":{ v:'evet'\|'kismen'\|'hayir'\|'sonra', olc:bool, is:metin, db:'var'\|'yok', found:[{t,u}], asama:'tasarim'\|'uretim'\|'test'\|'uygun', not, foto:[assetId] } }, by, at }` | `setFlow()` |
+| `checks/<kalemId>` | `{ s:{ "<i>":0\|1\|2 }, f:{ "<i>":{ v:'evet'\|'kismen'\|'hayir'\|'sonra', olc:bool, is:metin, db:'var'\|'yok', found:[{t,u}], asama:'tasarim'\|'uretim'\|'test'\|'uygun', not, foto:[assetId], emek:[uid] } }, by, at }` | `setFlow()` |
 | `rapor/<kalemId>` | `{ f:{ "<alan>":{ v, by, at, src, ok:{by,at}\|null, h:[{v,by,at}] } }, by, at }` (eski biçim: `v:{alan:"değer"}` — okunur) | `setRapor()` |
 | `log/<auto>` | `{ by, at, item, text }` — son hareketler akışı | `logIt()` |
 | `chat/<kanal>/m/<auto>` | `{ text≤1000, by, at, item? }` — kanallar: `genel, M, E, O` | sohbet formu |

@@ -523,6 +523,20 @@ summary{cursor:pointer}
 .db-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.db-add .sel{flex:1 1 140px;min-width:0;max-width:100%}
 @media (max-width:640px){ .dbp{left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom, 0px))!important;width:auto;max-height:78vh} }
 @media (prefers-reduced-motion:reduce){ .dbb{transition:none} }
+/* profil: araca katkı */
+.mebtn{background:none;border:1px solid transparent;border-radius:8px;padding:3px 8px 3px 4px;cursor:pointer;font:inherit;color:var(--ink-2)}
+.mebtn:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){ .mebtn:hover{border-color:var(--line);background:var(--sunk);color:var(--ink)} }
+.prf-h{display:flex;align-items:center;gap:12px}.prf-h img{width:44px;height:44px;border-radius:50%}
+.prf-h h2{margin:0;font-size:18px}.prf-h .when{font-size:12.5px}.prf-h .btn{margin-left:auto}
+.prf-big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.prf-big b{font-size:34px;line-height:1;color:var(--real);font-variant-numeric:tabular-nums}
+.prf-bar{height:10px;border-radius:5px;background:var(--line-2);overflow:hidden;display:flex}.prf-bar span{background:var(--real)}.prf-bar i{background:var(--holo);opacity:.5}
+.prf-lej{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-3)}.prf-lej i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.prf-say{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.prf-say div{background:var(--sunk);border:1px solid var(--line-2);border-radius:8px;padding:8px 10px}.prf-say b{display:block;font-size:18px;font-variant-numeric:tabular-nums}.prf-say small{color:var(--ink-3);font-size:12px}
+.prf-kal{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.prf-kal li{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;padding:6px 8px;border-radius:6px;background:var(--sunk)}.prf-kal li b{font-variant-numeric:tabular-nums}
+.prf-tbl td,.prf-tbl th{white-space:nowrap}.prf-tbl td.num,.prf-tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
 /* giriş kapısı: üye listesinde olmayan paneli hiç görmez. Görünüşü panelin değil sitenin (src/index.css):
    koyu zemin, köşesiz kart, Archivo + JetBrains Mono, camgöbeği vurgu. Film koyu olduğu için her temada koyu. */
 .gate{--g-bg:#08090B;--g-surface:#101216;--g-border:#1E2228;--g-border-2:#2A2F37;--g-text:#F2F5F8;--g-muted:#8B949E;--g-accent:#22D3EE;--g-ink:#04121A;
@@ -593,7 +607,7 @@ summary{cursor:pointer}
       <div class="real-pct" id="realPct"><b>%0</b> hazır</div>
       <label class="me" for="myBirim">Birimim</label>
       <select class="sel" id="myBirim"><option value="">Seçilmedi</option><option value="M">Mekanik</option><option value="E">Elektrik-Elektronik</option><option value="O">Organizasyon ve Sosyal Medya</option></select>
-      <div class="me" id="me" hidden></div>
+      <button class="me mebtn" id="me" type="button" hidden title="Profilim: araca katkın" aria-haspopup="dialog"></button>
       <button class="btn" id="yonetimBtn" type="button" hidden>Üyeler</button>
       <button class="btn" id="chatBtn" type="button" aria-expanded="false">Sohbet <span class="count" id="chatCount" hidden></span></button>
       <button class="btn" id="cikisBtn" type="button" hidden>Çıkış</button>
@@ -748,6 +762,7 @@ summary{cursor:pointer}
   <form class="dbp-f" id="dbForm" role="search"><input class="inp" id="dbQ" type="search" maxlength="80" autocomplete="off" placeholder="Takım arşivinde ara: jant CAD, BMS şema…" aria-label="Takım arşivinde ara"><button class="btn primary" type="submit">Ara</button></form>
   <div class="dbp-b" id="dbRes" aria-live="polite"></div>
 </div>
+<dialog class="ynt prf" id="prfDlg" aria-labelledby="prfAd"><div class="ynt-in" id="prfIc"></div></dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script type="module">
@@ -1055,12 +1070,16 @@ async function patchItem(id, patch, logText){
   const ok = await writeDoc('items', id, full, exists.items);
   if(ok && logText) logIt(id, logText);
 }
+// Everyone who changes an öncül is recorded on it (checks/<id>.f.<i>.emek); the profile window splits the
+// öncül's progress equally among them. At most 12, the most recent kept.
+const emekle = e => [...new Set([...(Array.isArray(e)?e:[]).filter(x=>typeof x==='string'), myId])].slice(-12);
 async function setReq(id, i, v){
   const it = byId(id); const before = isDone(it); const lockedBefore = ITEMS.filter(x=>stateOf(x)==='lock').map(x=>x.id);
   const cur = checks[id] || {s:{}};
-  checks[id] = { ...cur, s:{ ...cur.s, [i]:v }, by:myId, at:new Date().toISOString() };
+  const ef = myId ? { [i]:{ ...flowOf(it,i), emek:emekle(flowOf(it,i).emek) } } : {};
+  checks[id] = { ...cur, s:{ ...cur.s, [i]:v }, f:{ ...(cur.f||{}), ...ef }, by:myId, at:new Date().toISOString() };
   renderAll(); announce(id, before, lockedBefore);
-  const ok = await writeDoc('checks', id, { s:{ [i]:v }, by:myId, at:checks[id].at }, exists.checks);
+  const ok = await writeDoc('checks', id, { s:{ [i]:v }, ...(myId?{ f:{ [i]:{ emek:ef[i].emek } } }:{}), by:myId, at:checks[id].at }, exists.checks);
   if(ok) logIt(id, `Şartname: "${it.reqs[i][0]}" → ${['bakılmadı','eksik','uygun'][v]}`);
 }
 // Every şartname maddesi follows the same pattern as an item:
@@ -1069,7 +1088,7 @@ function flowOf(it,i){ const f=checks[it.id]?.f?.[i]; return f && typeof f==='ob
 function deriveS(f){ if((f.v==='evet' && f.olc===true) || f.asama==='uygun') return 2; if(f.v) return 1; return 0; }
 async function setFlow(id, i, patch, logText){
   const it = byId(id); const before = isDone(it); const lockedBefore = ITEMS.filter(x=>stateOf(x)==='lock').map(x=>x.id);
-  const cur = checks[id] || {s:{}}; const nf = { ...flowOf(it,i), ...patch }; const v = deriveS(nf); const at = new Date().toISOString();
+  const cur = checks[id] || {s:{}}; const nf = { ...flowOf(it,i), ...patch, ...(myId?{ emek:emekle(flowOf(it,i).emek) }:{}) }; const v = deriveS(nf); const at = new Date().toISOString();
   checks[id] = { ...cur, s:{ ...(cur.s||{}), [i]:v }, f:{ ...(cur.f||{}), [i]:nf }, by:myId, at };
   renderAll(); announce(id, before, lockedBefore);
   const ok = await writeDoc('checks', id, { s:{ [i]:v }, f:{ [i]:nf }, by:myId, at }, exists.checks);
@@ -1734,7 +1753,7 @@ async function connect(oturum){
   ({ db, user, assets } = oturum); myId=oturum.me.id; canWrite=true; mode='db';
   if(!myBirim && ['M','E','O'].includes(oturum.birim)) myBirim=oturum.birim;
   const el=$('me'); el.hidden=false; el.innerHTML=oturum.me.avatarUrl?`<img src="${esc(oturum.me.avatarUrl)}" alt="" referrerpolicy="no-referrer"><span></span>`:'<span></span>'; el.querySelector('span').textContent=oturum.me.name;
-  $('cikisBtn').hidden=false; $('yonetimBtn').hidden=!oturum.yonetici;
+  $('cikisBtn').hidden=false; $('yonetimBtn').hidden=!oturum.yonetici; benKurucu=!!oturum.yonetici;
   db.collection('items').onSnapshot(snap=>{
     snap.docs.forEach(doc=>{ exists.items.add(doc.id); if(byId(doc.id)) recs[doc.id] = clean(doc.data()); });
     renderAll();
@@ -1967,6 +1986,82 @@ function dbToggle(open){ const p=$('dbPop'); open = open ?? p.hidden; p.hidden=!
   // click also comes from the keyboard; after a drag it must not open the window
   b.addEventListener('click', e=>{ if(moved){ moved=false; e.preventDefault(); return; } dbToggle(); });
   addEventListener('resize', dbbPlace); })();
+
+/* ---------- profil: araca katkı ---------- */
+// An öncül's share of the car is 1 / (items × öncüller of its item) — the same average behind the header's
+// "Araç %x hazır" — and its current progress (reqProg) is split equally among those who worked on it.
+// So every member's share plus the unattributed rest adds up to the header figure. Öncüller from before
+// the emek field existed are credited from the activity feed once, and that is written back.
+let benKurucu=false, emekGecmis=null, emekGecmisP=null, prfUid=null, prfUyeler=null, prfSayac=null;
+const BIRIM_AD = {M:'Mekanik', E:'Elektrik-Elektronik', O:'Organizasyon ve Sosyal Medya'};
+const yuzde = x => '%' + (x*100).toLocaleString('tr', { minimumFractionDigits:1, maximumFractionDigits:1 });
+const isimli = (it,i) => !!flowOf(it,i).v || reqState(it,i)>0;   // someone answered it (not a default "araç bitince")
+function emekOf(it,i){ const e=flowOf(it,i).emek; if(Array.isArray(e) && e.length) return e.filter(x=>typeof x==='string');
+  return isimli(it,i) ? (emekGecmis?.[it.id+':'+i] || []) : []; }
+async function emekGecmisi(){
+  if(emekGecmis) return;
+  if(!ITEMS.some(it=>it.reqs.some((_,i)=>isimli(it,i) && !(flowOf(it,i).emek||[]).length))){ emekGecmis={}; return; }
+  emekGecmisP ??= fb.tumHareketler().then(rows=>{ const m={};
+    for(const r of rows){ const it=byId(r.item); const x=/^Şartname: "(.+?)" → /.exec(r.text); if(!it || !x) continue;
+      const i=it.reqs.findIndex(q=>q[0]===x[1]); if(i<0) continue; (m[it.id+':'+i] ??= new Set()).add(r.by); }
+    emekGecmis=Object.fromEntries(Object.entries(m).map(([k,v])=>[k,[...v].slice(-12)]));
+    if(readOnly()) return;
+    for(const it of ITEMS){ const f={};
+      it.reqs.forEach((_,i)=>{ const e=emekGecmis[it.id+':'+i]; if(e && isimli(it,i) && !(flowOf(it,i).emek||[]).length) f[i]={ emek:e }; });
+      if(!Object.keys(f).length) continue;
+      const cur=checks[it.id]||{s:{}}; checks[it.id]={ ...cur, f:{ ...(cur.f||{}), ...Object.fromEntries(Object.entries(f).map(([i,x])=>[i,{ ...flowOf(it,+i), ...x }])) } };
+      writeDoc('checks', it.id, { f }, exists.checks); }
+  }).catch(()=>{ emekGecmis={}; });
+  await emekGecmisP; }
+function katkilar(){ const pay={}, kalem={}; let atanmamis=0, arac=0; const n=ITEMS.length;
+  for(const it of ITEMS){ const m=it.reqs.length; if(!m) continue;
+    it.reqs.forEach((_,i)=>{ const p=reqProg(it,i)/(n*m); if(!p) return; arac+=p; const e=emekOf(it,i);
+      if(!e.length){ atanmamis+=p; return; }
+      for(const u of e){ pay[u]=(pay[u]||0)+p/e.length; (kalem[u] ??= {})[it.id]=(kalem[u][it.id]||0)+p/e.length; } }); }
+  return { pay, kalem, atanmamis, arac }; }
+function sayilar(uid){ let oncul=0, uygun=0, girdi=0, dogruladi=0, dosya=0;
+  for(const it of ITEMS){ it.reqs.forEach((_,i)=>{ if(emekOf(it,i).includes(uid)){ oncul++; if(reqState(it,i)===2) uygun++; } });
+    for(const x of Object.values(rapor[it.id]?.f||{})) if(x && typeof x==='object'){ if(x.by===uid) girdi++; if(x.ok?.by===uid) dogruladi++; }
+    dosya += (Array.isArray(rec(it.id).found) ? rec(it.id).found : []).filter(x=>x?.by===uid).length; }
+  return { oncul, uygun, girdi, dogruladi, dosya, ustlendi:ITEMS.filter(it=>rec(it.id).owner===uid) }; }
+async function profilAc(uid){ prfUid=uid||myId; const d=$('prfDlg'); try{ d.showModal(); }catch(e){ d.setAttribute('open',''); }
+  $('prfIc').innerHTML='<p class="when">Hesaplanıyor…</p>'; await emekGecmisi();
+  prfSayac=null; if(benKurucu) prfUyeler=(await fb.profiller().catch(()=>[])).filter(x=>x.ad);
+  renderProfil(); }
+async function renderProfil(){
+  const uid=prfUid, k=katkilar(), s=sayilar(uid), ben=uid===myId, kendi=k.pay[uid]||0;
+  const ps=await people([uid, ...Object.keys(k.pay)]), p=ps[uid]||{}, uye=prfUyeler?.find(x=>x.id===uid);
+  const birim = ben ? myBirim : uye?.birim; const ad = p.name || uye?.ad || 'Bir ekip üyesi';
+  const kal=Object.entries(k.kalem[uid]||{}).sort((a,b)=>b[1]-a[1]);
+  const hareket=await fb.hareketSayisi(uid);
+  let h=`<div class="prf-h">${p.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="" referrerpolicy="no-referrer">`:''}<div><h2 id="prfAd">${ben?'Profilim':esc(ad)}</h2>
+      <span class="when">${ben?esc(ad)+' · ':''}${birim?esc(BIRIM_AD[birim]||''):'Birim seçilmedi'}</span></div>
+      <button class="btn small" type="button" data-kapat>Kapat</button></div>`;
+  if(benKurucu){ const ids=[...new Set([myId, ...(prfUyeler||[]).map(x=>x.id), ...Object.keys(k.pay)])];
+    h+=`<label class="row" style="gap:8px;font-size:13px">Üye: <select class="sel" id="prfSec">${ids.map(id=>`<option value="${esc(id)}" ${id===uid?'selected':''}>${esc(ps[id]?.name || prfUyeler?.find(x=>x.id===id)?.ad || 'Bir ekip üyesi')}${id===myId?' (sen)':''}</option>`).join('')}</select></label>`; }
+  h+=`<div class="prf-big"><b>${yuzde(kendi)}</b><span>araca katkı${ben?'n':''}</span></div>
+    <div class="prf-bar" role="img" aria-label="Aracın ${yuzde(k.arac)} hazırlığının ${yuzde(kendi)} kısmı"><span style="width:${(kendi*100).toFixed(2)}%"></span><i style="width:${((k.arac-kendi)*100).toFixed(2)}%"></i></div>
+    <div class="prf-lej"><span><i style="background:var(--real)"></i>${ben?'Senin':'Bu üyenin'} emeği</span><span><i style="background:var(--holo);opacity:.5"></i>Ekibin geri kalanı</span><span>Araç şu an ${yuzde(k.arac)} hazır</span></div>
+    <p class="help" style="margin:0">Bir öncülün ilerlemesi, o öncülde değişiklik yapan herkes arasında eşit bölünür. Bütün üyelerin payları toplanınca aracın hazırlık yüzdesi çıkar.</p>
+    <div class="prf-say">
+      <div><b>${s.oncul}</b><small>öncülde emeği var${s.uygun?` · ${s.uygun} tanesi uygun`:''}</small></div>
+      <div><b>${s.ustlendi.length}</b><small>kalemi üstlendi${s.ustlendi.length?': '+esc(s.ustlendi.map(it=>it.name).join(', ')):''}</small></div>
+      <div><b>${s.girdi} / ${s.dogruladi}</b><small>TTR değeri girdi / doğruladı</small></div>
+      <div><b>${s.dosya}</b><small>dosyayı Database'den kaleme ekledi</small></div>
+      <div><b>${hareket ?? '—'}</b><small>toplam hareket</small></div>
+    </div>`;
+  h+= kal.length ? `<h3 style="margin:4px 0 0;font-size:14px">Kalemlere göre</h3><ul class="prf-kal">${kal.map(([id,v])=>`<li><span>${esc(byId(id).name)}</span><b>${yuzde(v)}</b></li>`).join('')}</ul>`
+                 : `<p class="when">${ben?'Henüz bir öncülde değişiklik yapmadın. Bir kalemde durum tespitine başlayınca katkın burada görünür.':'Bu üyenin henüz bir öncülde değişikliği yok.'}</p>`;
+  if(benKurucu){ prfSayac ??= Object.fromEntries(await Promise.all([...new Set([...(prfUyeler||[]).map(x=>x.id), ...Object.keys(k.pay)])].map(async id=>[id, await fb.hareketSayisi(id)])));
+    const satir=[...new Set([...(prfUyeler||[]).map(x=>x.id), ...Object.keys(k.pay)])].map(id=>({ id, ad:ps[id]?.name || prfUyeler?.find(x=>x.id===id)?.ad || 'Bir ekip üyesi', b:prfUyeler?.find(x=>x.id===id)?.birim||'', pay:k.pay[id]||0, o:sayilar(id).oncul, hr:prfSayac[id] })).sort((a,b)=>b.pay-a.pay);
+    h+=`<details class="ynt-aktar"><summary>Ekip özeti (yalnız kurucular görür)</summary><div class="hscroll"><table class="tbl prf-tbl"><thead><tr><th>Üye</th><th>Birim</th><th class="num">Katkı</th><th class="num">Öncül</th><th class="num">Hareket</th></tr></thead><tbody>
+      ${satir.map(x=>`<tr><td><button type="button" class="namebtn" data-prf="${esc(x.id)}">${esc(x.ad)}</button></td><td>${esc(BIRIM_AD[x.b]||'—')}</td><td class="num">${yuzde(x.pay)}</td><td class="num">${x.o}</td><td class="num">${x.hr ?? '—'}</td></tr>`).join('')}
+      <tr><td colspan="2" class="when">Kimseye yazılamayan (eski kayıtlar, araç bitince maddeleri)</td><td class="num">${yuzde(k.atanmamis)}</td><td></td><td></td></tr></tbody></table></div></details>`; }
+  $('prfIc').innerHTML=h; }
+$('me').addEventListener('click', ()=>profilAc(myId));
+$('prfDlg').addEventListener('click', e=>{ if(e.target===$('prfDlg') || e.target.closest('[data-kapat]')){ $('prfDlg').close(); return; }
+  const b=e.target.closest('[data-prf]'); if(b){ prfUid=b.dataset.prf; renderProfil(); } });
+$('prfDlg').addEventListener('change', e=>{ if(e.target.id==='prfSec'){ prfUid=e.target.value; renderProfil(); } });
 
 /* ---------- giriş kapısı ---------- */
 // Only members on the uyeler list get past this. Without a Firebase config (a local checkout with

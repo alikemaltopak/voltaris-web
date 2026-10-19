@@ -11,7 +11,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
 import {
   initializeFirestore, connectFirestoreEmulator, doc, collection, query, orderBy, limit,
-  getDoc, getDocs, setDoc, addDoc, deleteDoc, onSnapshot, writeBatch, Bytes,
+  getDoc, getDocs, setDoc, addDoc, deleteDoc, onSnapshot, writeBatch, Bytes, where, getCountFromServer,
 } from 'firebase/firestore';
 
 // Must match `kurucu()` in firestore.rules: only these two accounts manage the member list and load
@@ -209,6 +209,18 @@ export async function driveAra(q, signal){
   if(!d?.ok) throw hata(d?.hata || 'arama', d?.mesaj);
   const sonuc = Array.isArray(d.sonuc) ? d.sonuc : [];
   return { sonuc, kesildi:!!d.kesildi, toplam:Number(d.toplam) || sonuc.length };
+}
+
+/* ---------- katkı: profil penceresi için ---------- */
+
+// The whole activity feed, read once to credit öncüller recorded before checks/<id>.f.<i>.emek existed.
+export async function tumHareketler(){
+  const q = await getDocs(collection(fs, 'log'));
+  return q.docs.map(d => d.data()).filter(r => typeof r.by === 'string' && typeof r.text === 'string' && typeof r.item === 'string');
+}
+// A count query costs one read per thousand entries instead of downloading them.
+export async function hareketSayisi(uid){
+  try{ return (await getCountFromServer(query(collection(fs, 'log'), where('by', '==', uid)))).data().count; }catch{ return null; }
 }
 
 /* ---------- yönetim: üye listesi ve bir kerelik veri aktarımı ---------- */
