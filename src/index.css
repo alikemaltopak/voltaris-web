@@ -858,6 +858,20 @@ button,
   width: var(--panel-w);
   background: var(--surface);
   border: 1px solid var(--border);
+  transition: transform 0.3s var(--ease-out), border-color 0.3s ease, background 0.3s ease;
+}
+
+/* Same lift as the site's other cards; pointer devices only (see .stat-card). */
+@media (hover: hover) and (pointer: fine) {
+  .lineup__panel:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-dim);
+    background: var(--surface-2);
+  }
+
+  .lineup__panel:hover .lineup__bar {
+    box-shadow: 0 0 22px var(--accent-glow), 0 0 6px var(--accent);
+  }
 }
 
 .lineup__media {
