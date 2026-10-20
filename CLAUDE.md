@@ -26,7 +26,7 @@ taramadan işe başlayabilmen için yazıldı. Değişiklik yapınca güncel tut
 | Yol | Dosya | Ne var |
 |---|---|---|
 | `/` | `pages/Home.tsx` | Kaydırmayla birleşen araç (HeroAssembly), kurum logoları, `Announcements`, hakkımızda, vizyon/misyon, katılım çağrısı (→ `/iletisim`) |
-| `/takim` | `pages/Team.tsx` | Üç birim (Mekanik/Elektrik/Destek), yönetim kurulu kartları: veri `data/team.ts`, portreler `public/team/` (15 Eki 2026 Instagram gönderisinden kırpıldı) |
+| `/takim` | `pages/Team.tsx` | Üç birim (Mekanik/Elektrik/Destek) + `TeamLineup`: yönetim kurulu, kaydırdıkça birim birim gelen sabitlenmiş "kadro" sahnesi (La Liga kadro grafiği esinli). Veri `data/team.ts` (isteğe bağlı `video`, `links`), portreler `public/team/` (15 Eki 2026 Instagram gönderisinden kırpıldı), klipler `public/team/video/` |
 | `/arac` | `pages/Vehicle.tsx` | `CarViewer` (3D model + parça bilgisi), teknik özellikler, zaman çizelgesi, galeri (placeholder) |
 | `/sponsorlar` | `pages/Sponsors.tsx` | Kayan sponsor bantları, paket kartları → `SponsorPackageModal` → `/iletisim?paket=<id>` |
 | `/iletisim` | `pages/Contact.tsx` | İletişim formu (Apps Script'e gider) |
@@ -47,6 +47,8 @@ canvas), `SmoothScroll` (Lenis), `CustomCursor`.
   - `Announcements.tsx`: Instagram gönderisi carousel'i + eski duyurular
     (medya: `public/announcements/basvuru-2026/`).
   - `Reveal.tsx` (fade-up / stagger), `SectionHeading`, `PageHero`.
+  - `TeamLineup.tsx`: takım sayfasındaki kadro sahnesi; geçişler kaydırmaya bağlı değil, kendi
+    süresinde oynar (yarım kalmasın diye). Hareket azaltılmışsa birimler alt alta, yalnız fotoğraf.
   - Kullanılmayan ama duran: `AssemblyReveal.tsx`, `ChassisViewer.tsx`,
     `three/EnergyOrb.tsx` (+ shader'lar).
 - `src/i18n/tr.ts` / `en.ts` — **tüm metinler burada.** `Dictionary = typeof tr`,

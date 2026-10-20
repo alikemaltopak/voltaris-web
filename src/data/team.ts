@@ -1,16 +1,30 @@
 /** The 2026–27 board, as introduced on Instagram on 15 October 2026. Names
  *  stay as written; unit, major and role labels live in the i18n files so
  *  they switch with the language. Portraits are cropped from that post's
- *  slides into `public/team/`. */
+ *  slides into `public/team/`.
+ *
+ *  `video`: a 2–3 s muted clip (e.g. `/team/video/ali-kemal-topak.mp4`) that
+ *  plays when the member's unit comes up on the team page; until one is
+ *  set, the photo stands in. `links`: only the ones filled in are shown. */
 export type UnitId = "leadership" | "electrical" | "mechanical" | "support";
 export type MajorId = "mechanicalDept" | "mechanical" | "computer" | "electronics" | "energy";
 export type RoleId = "advisor" | "captain" | "lead";
 
+export type MemberLinks = {
+  linkedin?: string;
+  instagram?: string;
+  github?: string;
+  /** A plain address; rendered as a mailto: link. */
+  mail?: string;
+};
+
 export type TeamMember = {
   name: string;
   photo: string;
+  video?: string;
   major: MajorId;
   role?: RoleId;
+  links?: MemberLinks;
 };
 
 export const TEAM_UNITS: { id: UnitId; members: TeamMember[] }[] = [

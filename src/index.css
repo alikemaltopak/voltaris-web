@@ -688,10 +688,9 @@ button,
 }
 
 /* Card — the one shared card treatment used everywhere (stats, departments,
-   members, timeline, tiers) */
+   timeline, tiers) */
 .stats__grid,
 .departments__grid,
-.members__grid,
 .timeline,
 .tiers__grid {
   display: grid;
@@ -703,8 +702,7 @@ button,
   margin-top: 48px;
 }
 
-.departments__grid,
-.members__grid {
+.departments__grid {
   grid-template-columns: repeat(3, 1fr);
 }
 
@@ -716,7 +714,6 @@ button,
 
 .stat-card,
 .department-card,
-.member-card,
 .timeline__step,
 .tier-card {
   background: var(--surface);
@@ -730,7 +727,6 @@ button,
 @media (hover: hover) and (pointer: fine) {
   .stat-card:hover,
   .department-card:hover,
-  .member-card:hover,
   .timeline__step:hover,
   .tier-card:hover {
     transform: translateY(-8px);
@@ -791,13 +787,9 @@ button,
   margin-bottom: 0;
 }
 
-/* Units hold two or four people, so fixed-width columns centred on the row
-   keep a two-person unit from leaving a gap where a third card would sit. */
-.members__grid {
-  grid-template-columns: repeat(auto-fit, minmax(200px, 250px));
-  justify-content: center;
-}
 
+/* Team lineup — the board as a broadcast lineup (TeamLineup.tsx). Without
+   .lineup--stage (reduced motion) the units simply stack. */
 .members__intro {
   max-width: 620px;
   margin: 0 auto;
@@ -805,57 +797,292 @@ button,
   color: var(--text-muted);
 }
 
-.members__unit {
-  margin-top: 56px;
+.lineup {
+  --panel-w: 220px;
+  margin-top: 40px;
 }
 
-.members__unit-title {
-  margin-bottom: 20px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+.lineup__stage {
+  padding: 0 20px;
+}
+
+.lineup__group + .lineup__group {
+  margin-top: 64px;
+}
+
+.lineup__head {
   text-align: center;
+  margin-bottom: 28px;
+}
+
+.lineup__kicker,
+.lineup__role,
+.lineup__nav {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
   color: var(--accent);
 }
 
-.member-card {
-  text-align: center;
-  padding: 0 0 24px;
-  overflow: hidden;
+.lineup__kicker {
+  font-size: 12px;
+  letter-spacing: 0.18em;
 }
 
-.member-card__photo {
+.lineup__title {
+  margin: 10px 0 8px;
+  font-size: clamp(2rem, 4.4vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.lineup__title::after {
+  content: ".";
+  color: var(--accent);
+}
+
+.lineup__tagline {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.lineup__panels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.lineup__panel {
+  width: var(--panel-w);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.lineup__media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: #0d1a2e;
+}
+
+.lineup__still {
   display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 1;
+  height: 100%;
   object-fit: cover;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  object-position: center 30%;
 }
 
-.member-card__role {
+/* Squad number over the shoulder, as on the lineup graphic. */
+.lineup__number {
+  position: absolute;
+  left: 12px;
+  bottom: 6px;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+
+.lineup__bar {
   display: block;
-  margin-bottom: 8px;
-  font-family: var(--font-mono);
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 14px var(--accent-glow);
+  transform-origin: left center;
+}
+
+.lineup__info {
+  padding: 14px 14px 16px;
+  text-align: left;
+}
+
+.lineup__role {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+}
+
+.lineup__name {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.lineup__major {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.lineup__links {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lineup__links a {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lineup__links a:hover {
+    color: var(--accent);
+    border-color: var(--accent-dim);
+    background: var(--surface-2);
+  }
+}
+
+.lineup__links a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lineup__nav {
+  display: none;
+}
+
+/* Stage mode: one unit on screen at a time while the section is pinned. The
+   panel width is capped by the viewport height so a four-person unit plus
+   its heading always fits between the navbar and the progress row. */
+.lineup--stage {
+  --panel-w: min(240px, 20vw, (100svh - 380px) * 0.75);
+  margin-top: 0;
+}
+
+.lineup--stage .lineup__stage {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100svh;
+  padding: 88px 20px 22px;
+}
+
+.lineup--stage .lineup__groups {
+  position: relative;
+  flex: 1;
+}
+
+.lineup--stage .lineup__group {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0;
+  visibility: hidden;
+}
+
+.lineup--stage .lineup__panels {
+  flex-wrap: nowrap;
+}
+
+.lineup--stage .lineup__nav {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin: 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
   font-size: 11px;
   letter-spacing: 0.14em;
-  text-transform: uppercase;
+}
+
+.lineup__nav-item {
+  color: var(--text-dim);
+  transition: color 0.3s ease;
+}
+
+.lineup__nav-item span {
+  color: inherit;
+  opacity: 0.6;
+}
+
+.lineup__nav-item.is-active {
   color: var(--accent);
 }
 
-.member-card h4 {
-  margin: 0 16px 4px;
-  color: var(--text);
-  font-size: 1rem;
+@media (max-width: 760px) {
+  .lineup--stage {
+    --panel-w: min(44vw, ((100svh - 330px) / 2 - 78px) * 0.75);
+  }
+
+  .lineup--stage .lineup__panels {
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: calc(var(--panel-w) * 2 + 10px);
+    margin: 0 auto;
+  }
+
+  .lineup--stage .lineup__head {
+    margin-bottom: 16px;
+  }
+
+  .lineup--stage .lineup__tagline {
+    font-size: 12px;
+  }
+
+  /* Four panels share half a phone screen; the major is on the static
+     layout, and the name has to fit on two lines. */
+  .lineup--stage .lineup__major {
+    display: none;
+  }
+
+  .lineup--stage .lineup__info {
+    padding: 10px 10px 12px;
+  }
+
+  .lineup--stage .lineup__name {
+    font-size: 0.9rem;
+  }
+
+  .lineup--stage .lineup__links {
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .lineup--stage .lineup__links a {
+    width: 28px;
+    height: 28px;
+  }
+
+  .lineup--stage .lineup__nav {
+    gap: 14px;
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+  }
+
+  .lineup--stage .lineup__nav-item span {
+    display: none;
+  }
 }
 
-.member-card p {
-  margin: 0 16px;
-  font-size: 0.85rem;
-  color: var(--text-dim);
+@media (max-width: 560px) {
+  .lineup {
+    --panel-w: calc(50% - 7px);
+  }
+
+  .lineup--stage {
+    --panel-w: min(44vw, ((100svh - 330px) / 2 - 78px) * 0.75);
+  }
 }
 
 /* About */
@@ -2564,7 +2791,6 @@ button.tier-card:focus-visible {
   /* minmax(0, 1fr): a plain 1fr won't shrink below its longest word, and
      "Elektroniği" in a 160px card pushed the team page 6px off the screen. */
   .stats__grid,
-  .members__grid,
   .timeline,
   .tiers__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2581,12 +2807,6 @@ button.tier-card:focus-visible {
   .timeline__step,
   .tier-card {
     padding: 26px 20px 24px;
-  }
-
-  .member-card h4,
-  .member-card p {
-    margin-left: 12px;
-    margin-right: 12px;
   }
 
   .sponsor-band {
