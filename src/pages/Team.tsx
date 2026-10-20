@@ -2,8 +2,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { SectionHeading } from "../components/SectionHeading";
 import { PageHero } from "../components/PageHero";
 import { Reveal } from "../components/Reveal";
-
-const MEMBER_PLACEHOLDER_COUNT = 6;
+import { TEAM_UNITS } from "../data/team";
 
 export function Team() {
   const { t } = useLanguage();
@@ -37,16 +36,30 @@ export function Team() {
       <section className="section">
         <div className="container">
           <SectionHeading title={t.team.membersTitle} align="center" />
-          <Reveal className="members__grid" stagger=".member-card">
-            {Array.from({ length: MEMBER_PLACEHOLDER_COUNT }).map((_, index) => (
-              <div className="member-card" key={index}>
-                <div className="member-card__avatar" aria-hidden="true" />
-                <h4>{t.team.memberPlaceholder}</h4>
-                <p>{t.team.rolePlaceholder}</p>
-              </div>
-            ))}
-          </Reveal>
-          <p className="note note--center">{t.team.membersNote}</p>
+          <p className="members__intro">{t.team.membersIntro}</p>
+          {TEAM_UNITS.map((unit) => (
+            <div className="members__unit" key={unit.id}>
+              <h3 className="members__unit-title">{t.team.units[unit.id]}</h3>
+              <Reveal className="members__grid" stagger=".member-card">
+                {unit.members.map((member) => (
+                  <div className="member-card" key={member.name}>
+                    <img
+                      className="member-card__photo"
+                      src={member.photo}
+                      alt={member.name}
+                      width={320}
+                      height={320}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {member.role && <span className="member-card__role">{t.team.roles[member.role]}</span>}
+                    <h4>{member.name}</h4>
+                    <p>{t.team.majors[member.major]}</p>
+                  </div>
+                ))}
+              </Reveal>
+            </div>
+          ))}
         </div>
       </section>
     </>

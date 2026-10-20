@@ -26,7 +26,7 @@ taramadan işe başlayabilmen için yazıldı. Değişiklik yapınca güncel tut
 | Yol | Dosya | Ne var |
 |---|---|---|
 | `/` | `pages/Home.tsx` | Kaydırmayla birleşen araç (HeroAssembly), kurum logoları, `Announcements`, hakkımızda, vizyon/misyon, katılım çağrısı (→ `/iletisim`) |
-| `/takim` | `pages/Team.tsx` | Departmanlar, üye kartları (placeholder) |
+| `/takim` | `pages/Team.tsx` | Üç birim (Mekanik/Elektrik/Destek), yönetim kurulu kartları: veri `data/team.ts`, portreler `public/team/` (15 Eki 2026 Instagram gönderisinden kırpıldı) |
 | `/arac` | `pages/Vehicle.tsx` | `CarViewer` (3D model + parça bilgisi), teknik özellikler, zaman çizelgesi, galeri (placeholder) |
 | `/sponsorlar` | `pages/Sponsors.tsx` | Kayan sponsor bantları, paket kartları → `SponsorPackageModal` → `/iletisim?paket=<id>` |
 | `/iletisim` | `pages/Contact.tsx` | İletişim formu (Apps Script'e gider) |

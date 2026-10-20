@@ -103,38 +103,42 @@ const tr = {
     heroSubtitle: "Farklı disiplinlerden, tek hedef için bir araya gelen ekip.",
     introTitle: "Voltaris Ailesi",
     introText:
-      "Makine, elektrik-elektronik, endüstriyel tasarım, bilgisayar mühendisliği ve işletme gibi birçok bölümden öğrenci; ortak tutku olan elektrikli araç mühendisliğinde bir araya geliyor.",
-    departmentsTitle: "Departmanlarımız",
+      "Makine, elektronik ve haberleşme, bilgisayar ve enerji sistemleri mühendisliğinden öğrenciler; TEKNOFEST Efficiency Challenge pistine kendi elektrikli aracımızı çıkarmak için üç birimde birlikte çalışıyor.",
+    departmentsTitle: "Birimlerimiz",
     departments: [
       {
-        name: "Şasi & Aerodinamik",
-        description: "Aracın gövde tasarımı, hafif malzeme seçimi ve aerodinamik optimizasyon.",
+        name: "Mekanik",
+        description: "Şasi ve roll cage, fren ve direksiyon, powertrain ve kabuk: aracın gövdesi şasiden kabuğa kadar burada tasarlanıp üretiliyor.",
       },
       {
-        name: "Batarya & Enerji Yönetimi",
-        description: "Batarya paketi tasarımı, BMS ve enerji verimliliği çalışmaları.",
+        name: "Elektrik",
+        description: "Araç kontrol sistemi, gömülü yazılım, batarya ve BYS: aracın enerjisi ve beyni burada kuruluyor.",
       },
       {
-        name: "Güç Elektroniği & Motor Kontrol",
-        description: "Motor sürücü tasarımı, invertör ve kontrol algoritmaları.",
-      },
-      {
-        name: "Yazılım & Telemetri",
-        description: "Araç içi yazılımlar, sensör entegrasyonu ve canlı veri takibi.",
-      },
-      {
-        name: "Tasarım & Modelleme",
-        description: "3D modelleme, simülasyon ve görsel kimlik çalışmaları.",
-      },
-      {
-        name: "Organizasyon & Sponsorluk",
-        description: "Takım yönetimi, bütçe planlama ve sponsor ilişkileri.",
+        name: "Destek",
+        description: "Sosyal medya ve web, sponsorluk, Ar-Ge ve doküman: takımın sesi, bütçesi ve hafızası.",
       },
     ],
-    membersTitle: "Ekip Üyeleri",
-    membersNote: "Üye fotoğraflarınızı ve isimlerinizi paylaştığınızda bu alanı güncelleyeceğiz.",
-    memberPlaceholder: "İsim Soyisim",
-    rolePlaceholder: "Departman / Rol",
+    membersTitle: "Yönetim Kurulu",
+    membersIntro: "TEKNOFEST 2027 yolculuğumuzda takıma yön veren ekip: danışmanımız, kaptanımız ve üç birimimiz.",
+    units: {
+      leadership: "Danışman & Kaptan",
+      electrical: "Elektrik",
+      mechanical: "Mekanik",
+      support: "Destek",
+    },
+    roles: {
+      advisor: "Akademik Danışman",
+      captain: "Takım Kaptanı",
+      lead: "Komite Başkanı",
+    },
+    majors: {
+      mechanicalDept: "İYTE Makine Mühendisliği Bölümü",
+      mechanical: "Makine Mühendisliği",
+      computer: "Bilgisayar Mühendisliği",
+      electronics: "Elektronik ve Haberleşme Mühendisliği",
+      energy: "Enerji Sistemleri Mühendisliği",
+    },
   },
   vehicle: {
     heroTitle: "Yarış Aracımız",

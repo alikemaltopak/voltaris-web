@@ -106,38 +106,42 @@ const en: Dictionary = {
     heroSubtitle: "Different disciplines, one shared goal.",
     introTitle: "The Voltaris Family",
     introText:
-      "Students from mechanical, electrical-electronics, industrial design, computer engineering, and business departments come together around a shared passion for electric vehicle engineering.",
-    departmentsTitle: "Our Departments",
+      "Students of mechanical, electronics and communication, computer, and energy systems engineering work across three units to put an electric vehicle of our own on the TEKNOFEST Efficiency Challenge track.",
+    departmentsTitle: "Our Units",
     departments: [
       {
-        name: "Chassis & Aerodynamics",
-        description: "Vehicle body design, lightweight material selection, and aerodynamic optimization.",
+        name: "Mechanical",
+        description: "Chassis and roll cage, brakes and steering, powertrain and body: the car's structure, designed and built from chassis to shell.",
       },
       {
-        name: "Battery & Energy Management",
-        description: "Battery pack design, BMS, and energy efficiency studies.",
+        name: "Electrical",
+        description: "Vehicle control system, embedded software, battery and BMS: where the car's energy and brain come together.",
       },
       {
-        name: "Power Electronics & Motor Control",
-        description: "Motor driver design, inverters, and control algorithms.",
-      },
-      {
-        name: "Software & Telemetry",
-        description: "On-board software, sensor integration, and live data tracking.",
-      },
-      {
-        name: "Design & Modeling",
-        description: "3D modeling, simulation, and visual identity work.",
-      },
-      {
-        name: "Organization & Sponsorship",
-        description: "Team management, budget planning, and sponsor relations.",
+        name: "Support",
+        description: "Social media and web, sponsorship, R&D and documentation: the team's voice, budget, and memory.",
       },
     ],
-    membersTitle: "Team Members",
-    membersNote: "We'll update this section once you share member photos and names.",
-    memberPlaceholder: "Full Name",
-    rolePlaceholder: "Department / Role",
+    membersTitle: "Board",
+    membersIntro: "The people steering our TEKNOFEST 2027 run: our advisor, our captain, and our three units.",
+    units: {
+      leadership: "Advisor & Captain",
+      electrical: "Electrical",
+      mechanical: "Mechanical",
+      support: "Support",
+    },
+    roles: {
+      advisor: "Academic Advisor",
+      captain: "Team Captain",
+      lead: "Committee Lead",
+    },
+    majors: {
+      mechanicalDept: "IZTECH Department of Mechanical Engineering",
+      mechanical: "Mechanical Engineering",
+      computer: "Computer Engineering",
+      electronics: "Electronics and Communication Engineering",
+      energy: "Energy Systems Engineering",
+    },
   },
   vehicle: {
     heroTitle: "Our Race Vehicle",

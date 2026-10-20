@@ -791,26 +791,69 @@ button,
   margin-bottom: 0;
 }
 
-.member-card {
-  text-align: center;
+/* Units hold two or four people, so fixed-width columns centred on the row
+   keep a two-person unit from leaving a gap where a third card would sit. */
+.members__grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 250px));
+  justify-content: center;
 }
 
-.member-card__avatar {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 16px;
-  background: var(--surface-2);
-  border: 1px dashed var(--border-strong);
+.members__intro {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.members__unit {
+  margin-top: 56px;
+}
+
+.members__unit-title {
+  margin-bottom: 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--accent);
+}
+
+.member-card {
+  text-align: center;
+  padding: 0 0 24px;
+  overflow: hidden;
+}
+
+.member-card__photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.member-card__role {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .member-card h4 {
-  margin-bottom: 4px;
+  margin: 0 16px 4px;
   color: var(--text);
   font-size: 1rem;
 }
 
 .member-card p {
-  margin: 0;
+  margin: 0 16px;
   font-size: 0.85rem;
   color: var(--text-dim);
 }
@@ -2486,7 +2529,6 @@ button.tier-card:focus-visible {
 
   .stats__grid,
   .departments__grid,
-  .members__grid,
   .timeline,
   .tiers__grid {
     grid-template-columns: repeat(2, 1fr);
@@ -2536,10 +2578,15 @@ button.tier-card:focus-visible {
 
   .stat-card,
   .department-card,
-  .member-card,
   .timeline__step,
   .tier-card {
     padding: 26px 20px 24px;
+  }
+
+  .member-card h4,
+  .member-card p {
+    margin-left: 12px;
+    margin-right: 12px;
   }
 
   .sponsor-band {
