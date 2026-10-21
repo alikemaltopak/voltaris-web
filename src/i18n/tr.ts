@@ -134,6 +134,7 @@ const tr = {
       github: "GitHub",
       mail: "E-posta",
     },
+    linkSoon: "Yakında",
     units: {
       leadership: "Danışman & Kaptan",
       electrical: "Elektrik",

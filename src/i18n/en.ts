@@ -137,6 +137,7 @@ const en: Dictionary = {
       github: "GitHub",
       mail: "Email",
     },
+    linkSoon: "Coming soon",
     units: {
       leadership: "Advisor & Captain",
       electrical: "Electrical",

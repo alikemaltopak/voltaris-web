@@ -6,6 +6,11 @@ import { TEAM_UNITS, type MemberLinks } from "../data/team";
 
 const LINK_ORDER = ["linkedin", "instagram", "github", "mail"] as const;
 
+/** While members' addresses are still being collected, every panel shows all
+ *  four icons and the missing ones sit dimmed as "coming soon". Set to false
+ *  once the links are in, so a member without, say, GitHub shows no icon. */
+const SHOW_LINK_SLOTS = true;
+
 /** Members are numbered straight through the board, like squad numbers. */
 const UNIT_OFFSETS = TEAM_UNITS.map((_, i) =>
   TEAM_UNITS.slice(0, i).reduce((sum, unit) => sum + unit.members.length, 0),
@@ -172,7 +177,7 @@ export function TeamLineup() {
               <div className="lineup__panels">
                 {unit.members.map((member, memberIndex) => {
                   const number = UNIT_OFFSETS[unitIndex] + memberIndex + 1;
-                  const links = LINK_ORDER.filter((key) => member.links?.[key]);
+                  const links = LINK_ORDER.filter((key) => SHOW_LINK_SLOTS || member.links?.[key]);
                   return (
                     <article className="lineup__panel" key={member.name}>
                       <div className="lineup__media">
@@ -209,7 +214,22 @@ export function TeamLineup() {
                         {links.length > 0 && (
                           <ul className="lineup__links">
                             {links.map((key) => {
-                              const value = member.links![key]!;
+                              const value = member.links?.[key];
+                              if (!value) {
+                                return (
+                                  <li key={key}>
+                                    <span
+                                      className="lineup__link-slot"
+                                      title={`${t.team.linkLabels[key]} · ${t.team.linkSoon}`}
+                                      aria-hidden="true"
+                                    >
+                                      <svg viewBox="0 0 24 24" width="16" height="16">
+                                        {ICONS[key]}
+                                      </svg>
+                                    </span>
+                                  </li>
+                                );
+                              }
                               return (
                                 <li key={key}>
                                   <a
