@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { gsap, ScrollTrigger } from "../lib/gsapSetup";
-import { refreshScrollLimits } from "../lib/lenisInstance";
+import { refreshScrollLimits, scrollToY } from "../lib/lenisInstance";
 import { useLanguage } from "../context/LanguageContext";
 import { TEAM_UNITS, type MemberLinks } from "../data/team";
 
@@ -10,6 +10,9 @@ const LINK_ORDER = ["linkedin", "instagram", "github", "mail"] as const;
  *  four icons and the missing ones sit dimmed as "coming soon". Set to false
  *  once the links are in, so a member without, say, GitHub shows no icon. */
 const SHOW_LINK_SLOTS = true;
+
+/** How long the outgoing unit takes to clear before the next one draws. */
+const OUT_S = 0.18;
 
 /** Members are numbered straight through the board, like squad numbers. */
 const UNIT_OFFSETS = TEAM_UNITS.map((_, i) =>
@@ -70,36 +73,35 @@ export function TeamLineup() {
 
       const timelines = groups.map((group) => {
         const tl = gsap.timeline({ paused: true });
-        tl.set(group, { autoAlpha: 1 })
-          .fromTo(
-            group.querySelectorAll(".lineup__head > *"),
-            { y: 24, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out", stagger: 0.06 },
-          )
+        tl.fromTo(
+          group.querySelectorAll(".lineup__head > *"),
+          { y: 20, autoAlpha: 0 },
+          { y: 0, autoAlpha: 1, duration: 0.4, ease: "power3.out", stagger: 0.04 },
+        )
           .fromTo(
             group.querySelectorAll(".lineup__bar"),
             { scaleX: 0 },
-            { scaleX: 1, duration: 0.4, ease: "power2.out", stagger: 0.07 },
-            0.1,
+            { scaleX: 1, duration: 0.3, ease: "power2.out", stagger: 0.05 },
+            0.05,
           )
           .fromTo(
             group.querySelectorAll(".lineup__media"),
             { clipPath: "inset(100% 0% 0% 0%)" },
-            { clipPath: "inset(0% 0% 0% 0%)", duration: 0.7, ease: "power3.inOut", stagger: 0.08 },
-            0.35,
+            { clipPath: "inset(0% 0% 0% 0%)", duration: 0.55, ease: "power3.inOut", stagger: 0.06 },
+            0.15,
           )
           .fromTo(
             group.querySelectorAll(".lineup__number, .lineup__info > *"),
-            { y: 14, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 0.45, ease: "power3.out", stagger: 0.025 },
-            0.75,
+            { y: 12, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.35, ease: "power3.out", stagger: 0.02 },
+            0.4,
           )
           // The slow push-in stands in for a clip until the member has one.
           .fromTo(
             group.querySelectorAll("img.lineup__still"),
             { scale: 1.14 },
-            { scale: 1, duration: 2.6, ease: "power2.out" },
-            0.35,
+            { scale: 1, duration: 2.4, ease: "power2.out" },
+            0.15,
           );
         return tl;
       });
@@ -108,28 +110,40 @@ export function TeamLineup() {
       let pending: gsap.core.Tween | null = null;
       const videosOf = (i: number) => Array.from(groups[i].querySelectorAll<HTMLVideoElement>("video"));
 
+      // The outgoing unit is cleared before the next one starts drawing: both
+      // sit in the same spot, and playing the entrance backwards left the old
+      // panels on screen under the new ones for over a second.
+      const hide = (i: number) => {
+        timelines[i].pause();
+        gsap.killTweensOf(groups[i]);
+        gsap.to(groups[i], { autoAlpha: 0, y: -14, duration: OUT_S, ease: "power2.in" });
+        videosOf(i).forEach((v) => v.pause());
+      };
+      const reveal = (i: number) => {
+        gsap.killTweensOf(groups[i]);
+        gsap.set(groups[i], { autoAlpha: 1, y: 0 });
+        timelines[i].play(0);
+        videosOf(i).forEach((v) => {
+          v.currentTime = 0;
+          v.play().catch(() => {});
+        });
+      };
+
       const show = (next: number) => {
         if (next === active) return;
         const prev = active;
         active = next;
         pending?.kill();
-        if (prev >= 0) {
-          timelines[prev].timeScale(2.4).reverse();
-          videosOf(prev).forEach((v) => v.pause());
-        }
+        pending = null;
+        if (prev >= 0) hide(prev);
         navItems.forEach((item, i) => item.classList.toggle("is-active", i === next));
         if (next < 0) return;
-        pending = gsap.delayedCall(prev >= 0 ? 0.3 : 0, () => {
-          timelines[next].timeScale(1).play(0);
-          videosOf(next).forEach((v) => {
-            v.currentTime = 0;
-            v.play().catch(() => {});
-          });
-        });
+        if (prev >= 0) pending = gsap.delayedCall(OUT_S, () => reveal(next));
+        else reveal(next);
       };
 
-      const stepPx = () => window.innerHeight * (window.innerWidth < 760 ? 0.75 : 0.9);
-      ScrollTrigger.create({
+      const stepPx = () => window.innerHeight * (window.innerWidth < 760 ? 0.6 : 0.7);
+      const pin = ScrollTrigger.create({
         trigger: stage,
         start: "top top",
         end: () => "+=" + stepPx() * groups.length,
@@ -151,8 +165,14 @@ export function TeamLineup() {
       });
       refreshScrollLimits();
 
+      // The progress row doubles as a jump menu: each unit owns one step of
+      // the pinned scroll, so land a third of the way into its step.
+      const jumps = navItems.map((_, i) => () => scrollToY(pin.start + stepPx() * (i + 0.35)));
+      navItems.forEach((item, i) => item.addEventListener("click", jumps[i]));
+
       return () => {
         pending?.kill();
+        navItems.forEach((item, i) => item.removeEventListener("click", jumps[i]));
         root.classList.remove("lineup--stage");
         navItems.forEach((item) => item.classList.remove("is-active"));
       };
@@ -255,10 +275,12 @@ export function TeamLineup() {
             </div>
           ))}
         </div>
-        <ol className="lineup__nav" aria-hidden="true">
+        <ol className="lineup__nav" aria-label={t.team.lineupNavLabel}>
           {TEAM_UNITS.map((unit, i) => (
-            <li className="lineup__nav-item" key={unit.id}>
-              <span>{String(i + 1).padStart(2, "0")}</span> {t.team.units[unit.id]}
+            <li key={unit.id}>
+              <button type="button" className="lineup__nav-item">
+                <span>{String(i + 1).padStart(2, "0")}</span> {t.team.units[unit.id]}
+              </button>
             </li>
           ))}
         </ol>

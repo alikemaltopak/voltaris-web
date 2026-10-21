@@ -122,6 +122,7 @@ const tr = {
     membersTitle: "Yönetim Kurulu",
     membersIntro: "TEKNOFEST 2027 yolculuğumuzda takıma yön veren ekip: danışmanımız, kaptanımız ve üç birimimiz.",
     lineupKicker: "Kadro",
+    lineupNavLabel: "Birimlere git",
     unitTaglines: {
       leadership: "Takımın akademik rehberi ve sahadaki lideri.",
       electrical: "Araç Kontrol Sistemi · Gömülü Yazılım · Batarya & BYS",

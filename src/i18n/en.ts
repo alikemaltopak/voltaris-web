@@ -125,6 +125,7 @@ const en: Dictionary = {
     membersTitle: "Board",
     membersIntro: "The people steering our TEKNOFEST 2027 run: our advisor, our captain, and our three units.",
     lineupKicker: "Lineup",
+    lineupNavLabel: "Jump to a unit",
     unitTaglines: {
       leadership: "The team's academic guide and its leader on the ground.",
       electrical: "Vehicle Control System · Embedded Software · Battery & BMS",

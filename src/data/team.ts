@@ -32,7 +32,18 @@ export const TEAM_UNITS: { id: UnitId; members: TeamMember[] }[] = [
     id: "leadership",
     members: [
       { name: "Prof. Dr. Erdal Çetkin", photo: "/team/erdal-cetkin.webp", major: "mechanicalDept", role: "advisor" },
-      { name: "Ali Kemal Topak", photo: "/team/ali-kemal-topak.webp", major: "computer", role: "captain" },
+      {
+        name: "Ali Kemal Topak",
+        photo: "/team/ali-kemal-topak.webp",
+        major: "computer",
+        role: "captain",
+        links: {
+          linkedin: "https://www.linkedin.com/in/ali-kemal-topak-abb18a350/",
+          instagram: "https://www.instagram.com/alikemaltopak/",
+          github: "https://github.com/alikemaltopak",
+          mail: "alikemaltopak@gmail.com",
+        },
+      },
     ],
   },
   {

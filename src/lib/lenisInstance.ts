@@ -42,3 +42,12 @@ export function unlockScroll() {
   document.documentElement.style.overflow = "";
   instance?.start();
 }
+
+/** Smooth-scroll to an absolute page offset, through Lenis when it is running. */
+export function scrollToY(y: number) {
+  if (instance) {
+    instance.scrollTo(y);
+  } else {
+    window.scrollTo({ top: y, behavior: "smooth" });
+  }
+}

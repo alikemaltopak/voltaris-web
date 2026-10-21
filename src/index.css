@@ -1028,8 +1028,26 @@ button,
 }
 
 .lineup__nav-item {
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
   color: var(--text-dim);
+  cursor: pointer;
   transition: color 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lineup__nav-item:hover {
+    color: var(--text);
+  }
+}
+
+.lineup__nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 .lineup__nav-item span {
