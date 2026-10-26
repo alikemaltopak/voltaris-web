@@ -1,7 +1,7 @@
 // Admin dialog: the member list (who may sign in) and the one-time loads that replace what the
 // Claude Artifact had built in — the archive index and the export of its shared records.
 // Firestore rules enforce the same limits (firestore.rules); this file is only the UI.
-import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra, driveEsitle, ilerlemeyiSifirla } from './firebase.js';
+import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra, driveEsitle, ilerlemeyiSifirla, uyeleriTopluYaz } from './firebase.js';
 
 const BIRIM = { M:'Mekanik', E:'Elektrik-Elektronik', O:'Organizasyon ve Sosyal Medya' };
 const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,6 +29,12 @@ function kur(){
     <p class="help">Takım Drive'ında aktif üyeler yalnız okuyucudur; pasife alınan ya da listeden çıkarılan üyenin erişimi kaldırılır. Listede bir değişiklik olunca kendiliğinden eşitlenir (kurulum: <code>apps-script/DRIVE_ARAMA.md</code>, "Drive erişimi").</p>
     <div class="row"><button class="btn small" type="button" id="yntErisim">Drive erişimini şimdi eşitle</button></div>
     <div class="when" id="yntErisimDurum"></div>
+    <details class="ynt-aktar"><summary>Toplu ekle · başvuru tablosundan</summary>
+      <p class="help">"Voltaris Başvuruları" tablosunda Komite, Ad Soyad ve E-posta sütunlarını (başlıklar dahil olabilir) seçip kopyala, buraya yapıştır. Sütun sırası önemli değil; birim komiteden gelir (Mekanik → Mekanik, Elektrik → Elektrik-Elektronik, Destek → Organizasyon). Listede zaten olanlar atlanır.</p>
+      <textarea class="inp" id="yntToplu" rows="5" placeholder="Mekanik&#9;Ad Soyad&#9;ad@gmail.com" aria-label="Yapıştırılan satırlar" style="font-family:var(--mono, monospace);font-size:12px"></textarea>
+      <div class="row"><button class="btn small" type="button" id="yntTopluOnizle">Önizle</button></div>
+      <div id="yntTopluSonuc"></div>
+    </details>
     <details class="ynt-aktar" id="yntDrive"><summary>Drive araması</summary>
       <p class="help">Database balonundaki canlı Drive araması bu adresteki Apps Script'e sorar (kurulum: <code>apps-script/DRIVE_ARAMA.md</code>). Script yeniden dağıtılıp adresi değişirse buradan güncelle.</p>
       <div class="row"><input class="inp" id="yntDriveUrl" type="url" maxlength="300" placeholder="https://script.google.com/macros/s/…/exec" aria-label="Apps Script adresi" style="flex:1 1 260px;min-width:0">
@@ -60,6 +66,8 @@ function kur(){
   d.querySelector('#yntDriveKaydet').addEventListener('click', driveKaydet);
   d.querySelector('#yntSifirla').addEventListener('click', sifirla);
   d.querySelector('#yntErisim').addEventListener('click', () => erisimiEsitle(0));
+  d.querySelector('#yntTopluOnizle').addEventListener('click', topluOnizle);
+  d.querySelector('#yntTopluSonuc').addEventListener('click', topluEkle);
   driveAdresi().then(u => { d.querySelector('#yntDriveUrl').value = u; d.querySelector('#yntDriveDurum').textContent = u ? 'Kurulu.' : 'Henüz kurulmadı.'; });
   return d;
 }
@@ -94,6 +102,52 @@ async function sil(e){
   const email = b.closest('tr').dataset.email;
   if(!confirm(`${email} listeden çıkarılsın mı? Bu hesap panele bir daha giremez; girdiği kayıtlar kalır.`)) return;
   try{ await uyeSil(email); erisimiEsitle(); }catch(err){ toast('Çıkarılamadı: ' + esc(err?.code || 'hata')); }
+}
+
+// Rows pasted from the application sheet (tab separated) or typed as "e-posta, ad, birim". The e-mail
+// and committee cells are recognised by their content, so the column order does not matter.
+const KOMITE = [[/^(mekanik|mechanical)/, 'M'], [/^(elektrik|electrical|elektronik)/, 'E'], [/^(destek|support|organizasyon)/, 'O']];
+// "osman seyran" → "Osman Seyran"; names already capitalised by their owner stay as written
+const adDuzelt = a => a.trim().replace(/\s+/g, ' ').split(' ').map(k => k === k.toLocaleLowerCase('tr') ? k.charAt(0).toLocaleUpperCase('tr') + k.slice(1) : k).join(' ');
+let toplu = [];
+function topluOku(metin){
+  const gorulen = new Set(uyeler.map(u => u.email)), sonuc = { yeni:[], var:[], tekrar:[], bozuk:[] };
+  for(const satir of metin.split(/\r?\n/)){
+    if(!satir.trim()) continue;
+    const hucre = satir.split(satir.includes('\t') ? '\t' : /[;,]/).map(x => x.trim()).filter(Boolean);
+    const email = hucre.find(x => EPOSTA.test(x))?.toLowerCase();
+    if(!email){ if(!/e-?posta|email/i.test(satir)) sonuc.bozuk.push(satir.slice(0, 80)); continue; }
+    const kom = hucre.map(x => x.toLocaleLowerCase('tr')).map(x => KOMITE.find(([d]) => d.test(x))?.[1]).find(Boolean)
+      || (['M', 'E', 'O'].includes(hucre.at(-1)) ? hucre.at(-1) : '');
+    const ad = hucre.find(x => x.toLowerCase() !== email && /\p{L}/u.test(x) && !KOMITE.some(([d]) => d.test(x.toLocaleLowerCase('tr'))) && !/^\d|^[MEO]$/.test(x)) || email.split('@')[0];
+    const kisi = { email, ad:adDuzelt(ad).slice(0, 80), birim:kom };
+    if(uyeler.some(u => u.email === email)) sonuc.var.push(kisi);
+    else if(gorulen.has(email)) sonuc.tekrar.push(kisi);
+    else { gorulen.add(email); sonuc.yeni.push(kisi); }
+  }
+  return sonuc;
+}
+
+function topluOnizle(){
+  const r = topluOku(dlg.querySelector('#yntToplu').value), kutu = dlg.querySelector('#yntTopluSonuc');
+  toplu = r.yeni;
+  // Panel sign-in is "Sign in with Google": an address that is not a Google account cannot get in.
+  const googleDegil = r.yeni.filter(u => !/@(gmail|googlemail)\.com$/.test(u.email));
+  const ayniAd = r.yeni.filter((u, i, a) => a.findIndex(x => x.ad.toLocaleLowerCase('tr') === u.ad.toLocaleLowerCase('tr')) !== i);
+  kutu.innerHTML = `<p class="help"><b>${r.yeni.length} yeni kişi</b>${r.var.length ? ` · ${r.var.length} zaten listede (atlanacak)` : ''}${r.tekrar.length ? ` · ${r.tekrar.length} tekrar eden satır` : ''}${r.bozuk.length ? ` · ${r.bozuk.length} satırda e-posta yok` : ''}</p>
+    ${googleDegil.length ? `<p class="help" style="color:var(--bad)">Gmail olmayan ${googleDegil.length} adres: bu kişiler panele ancak bu adresle açılmış bir Google hesabıyla girebilir; yoksa Google e-postalarını sorup sonra düzelt. ${googleDegil.map(u => esc(u.email)).join(', ')}</p>` : ''}
+    ${ayniAd.length ? `<p class="help">Aynı adla iki adres: ${ayniAd.map(u => esc(u.ad)).join(', ')}. İkisi de eklenir; kullanılmayanı sonra çıkar.</p>` : ''}
+    ${r.yeni.length ? `<div class="hscroll"><table class="tbl"><thead><tr><th>Ad</th><th>E-posta</th><th>Birim</th></tr></thead><tbody>${r.yeni.map(u => `<tr><td>${esc(u.ad)}</td><td class="mono">${esc(u.email)}</td><td>${esc(BIRIM[u.birim] || '—')}</td></tr>`).join('')}</tbody></table></div>
+      <button class="btn primary small" type="button" data-topluekle>${r.yeni.length} kişiyi ekle</button>` : ''}`;
+}
+
+async function topluEkle(e){
+  const b = e.target.closest('[data-topluekle]'); if(!b || !toplu.length) return;
+  if(!confirm(`${toplu.length} kişi üye listesine eklenecek ve panele girebilecek. Drive erişimi kuruluysa takım klasörlerinde okuyucu olacaklar. Devam edilsin mi?`)) return;
+  b.disabled = true; b.textContent = 'Ekleniyor…';
+  try{ const n = await uyeleriTopluYaz(toplu); toplu = []; dlg.querySelector('#yntToplu').value = '';
+    dlg.querySelector('#yntTopluSonuc').innerHTML = `<p class="msg">${n} kişi eklendi.</p>`; toast(`<b>${n} kişi eklendi.</b>`); erisimiEsitle(); }
+  catch(err){ toast('Eklenemedi: ' + esc(err?.code || err?.message || 'hata')); b.disabled = false; b.textContent = `${toplu.length} kişiyi ekle`; }
 }
 
 // Several ticks in a row make one sync; the script reads the list itself, so the last state wins.

@@ -356,6 +356,8 @@ ikisi `firestore.rules`'taki `kurucu()` ve `firebase.js`'teki `KURUCULAR` listes
    `projectId`, `appId` değerlerini `.env`'e (`.env.example`'daki adlarla) **ve** Vercel → Settings → Environment Variables'a
    gir. Vercel'de yeniden deploy et. Bu değerler gizli değildir (derlemeye gömülür); veriyi kurallar korur.
 6. **Üyeler.** `/panel/`'e `voltaris.official` ile gir → **Üyeler** → her üyenin Google e-postası, adı, birimi.
+   Çok kişi için **Toplu ekle**: "Voltaris Başvuruları" tablosundan Komite, Ad Soyad, E-posta sütunlarını kopyalayıp yapıştır;
+   önizleme Gmail olmayan adresleri ve aynı adla iki adresi gösterir, listede olanları atlar.
    Ayrılan üyeyi "Aktif"ten çıkar ya da sil; girdiği kayıtlar kalır.
 7. **Veriler (bir kez).** Üyeler → "Bir kerelik veri yükleme": `indeks.json`'ı ve `data-export` klasöründeki altı `.json`'ı seç.
    Eski kayıtları aktarmadan önce o kişilerin panele bir kez girmiş olması, adlarının eşlenebilmesini sağlar.

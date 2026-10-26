@@ -273,6 +273,16 @@ export async function hareketSayisi(uid){
 
 export const uyeleriIzle = (cb, err) => onSnapshot(collection(fs, 'uyeler'), s => cb(s.docs.map(d => ({ email:d.id, ...d.data() }))), err);
 export const uyeYaz = (email, v) => setDoc(doc(fs, 'uyeler', emailKey(email)), { ...v, at:nowIso() }, { merge:true });
+// Many at once (the bulk add from the application sheet), one batch per 400. The dialog leaves out
+// addresses already on the list, so nobody's unit or active flag is overwritten.
+export async function uyeleriTopluYaz(liste){
+  for(let i = 0; i < liste.length; i += 400){
+    const b = writeBatch(fs);
+    liste.slice(i, i+400).forEach(u => b.set(doc(fs, 'uyeler', emailKey(u.email)), { ad:u.ad, birim:u.birim, aktif:true, at:nowIso() }, { merge:true }));
+    await b.commit();
+  }
+  return liste.length;
+}
 export const uyeSil = email => deleteDoc(doc(fs, 'uyeler', emailKey(email)));
 export async function profiller(){ const q = await getDocs(collection(fs, 'members')); return q.docs.map(d => ({ id:d.id, ...d.data() })); }
 
