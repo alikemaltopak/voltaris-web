@@ -13,6 +13,38 @@ service cloud.firestore {
     function uye() { return kurucu() || (girdi() && exists(kayit()) && get(kayit()).data.get('aktif', true) != false); }
     function yazan() { return request.resource.data.get('by', null) == request.auth.uid; }
 
+    // Files and photos filed under an item or an öncül may be taken off only by whoever added them or
+    // by a founder. Rules cannot loop, so a member's write may drop at most one entry from each list;
+    // the panel removes them one at a time and no longer pushes out the oldest when a list is full.
+    // A file entry names its adder in `by`; a photo is an id whose fotolar/<id> holds `by`. Entries
+    // saved before `by` was recorded can be taken off only by a founder.
+    function liste(v) { return v is list ? v : []; }
+    function foto(id) { return /databases/$(database)/documents/fotolar/$(id); }
+    function ekleyen(x) {
+      return x is map ? x.get('by', '') == request.auth.uid
+        : !exists(foto(x)) || get(foto(x)).data.get('by', '') == request.auth.uid;
+    }
+    function kaldirmaUygun(eski, yeni) {
+      let giden = liste(eski).removeAll(liste(yeni));
+      return giden.size() == 0 || (giden.size() == 1 && ekleyen(giden[0]));
+    }
+    function oncul(k) {
+      let e = resource.data.get('f', {}).get(k, {});
+      let y = request.resource.data.get('f', {}).get(k, {});
+      return kaldirmaUygun(e.get('found', []), y.get('found', [])) && kaldirmaUygun(e.get('foto', []), y.get('foto', []));
+    }
+    // Öncül keys are their index in items.js (at most 9 today). A key past this list is refused, so a
+    // longer item fails loudly instead of slipping past the check; extend the list if that happens.
+    function oncullerUygun() {
+      let ak = request.resource.data.get('f', {}).diff(resource.data.get('f', {})).affectedKeys();
+      return ak.hasOnly(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'])
+        && (!('0' in ak) || oncul('0')) && (!('1' in ak) || oncul('1')) && (!('2' in ak) || oncul('2')) && (!('3' in ak) || oncul('3'))
+        && (!('4' in ak) || oncul('4')) && (!('5' in ak) || oncul('5')) && (!('6' in ak) || oncul('6')) && (!('7' in ak) || oncul('7'))
+        && (!('8' in ak) || oncul('8')) && (!('9' in ak) || oncul('9')) && (!('10' in ak) || oncul('10')) && (!('11' in ak) || oncul('11'))
+        && (!('12' in ak) || oncul('12')) && (!('13' in ak) || oncul('13')) && (!('14' in ak) || oncul('14')) && (!('15' in ak) || oncul('15'))
+        && (!('16' in ak) || oncul('16')) && (!('17' in ak) || oncul('17')) && (!('18' in ak) || oncul('18')) && (!('19' in ak) || oncul('19'));
+    }
+
     // A signed-in non-member may read only their own entry, so the gate can say "inactive".
     match /uyeler/{email} {
       allow read: if uye() || (girdi() && email == eposta());
@@ -23,9 +55,22 @@ service cloud.firestore {
       allow read: if uye();
       allow write: if (uye() && request.auth.uid == uid) || kurucu();
     }
-    match /items/{id}  { allow read, write: if uye(); }
-    match /checks/{id} { allow read, write: if uye(); }
-    match /rapor/{id}  { allow read, write: if uye(); }
+    // Members fill these in together; only a founder deletes a whole record (the panel never does).
+    match /items/{id} {
+      allow read, create: if uye();
+      allow update: if uye() && (kurucu() || (kaldirmaUygun(resource.data.get('found', []), request.resource.data.get('found', []))
+        && kaldirmaUygun(resource.data.get('testFoto', []), request.resource.data.get('testFoto', []))));
+      allow delete: if kurucu();
+    }
+    match /checks/{id} {
+      allow read, create: if uye();
+      allow update: if uye() && (kurucu() || oncullerUygun());
+      allow delete: if kurucu();
+    }
+    match /rapor/{id} {
+      allow read, create, update: if uye();
+      allow delete: if kurucu();
+    }
     // the activity feed and chat are append-only and signed by their author
     match /log/{id} {
       allow read: if uye();
@@ -38,8 +83,9 @@ service cloud.firestore {
       allow update, delete: if kurucu();
     }
     match /fotolar/{id} {
-      allow read, delete: if uye();
+      allow read: if uye();
       allow create: if uye() && yazan() && request.resource.data.veri is bytes && request.resource.data.veri.size() <= 1000000;
+      allow delete: if uye() && (resource.data.get('by', '') == request.auth.uid || kurucu());
     }
     // panel settings, e.g. the address of the Drive search script (apps-script/DriveArama.gs)
     match /ayarlar/{id} {

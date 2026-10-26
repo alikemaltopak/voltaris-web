@@ -142,6 +142,7 @@ async function kucult(blob){
 function assetsApi(u){
   const urls = new Map();   // id → Promise<objectURL>
   const hazir = new Map();  // id → objectURL, for synchronous rendering
+  const sahip = new Map();  // id → uid of whoever uploaded it: only they or a founder may remove it
   return {
     async upload(blob, { type } = {}){
       let b = blob.size > FOTO_SINIR ? await kucult(blob) : blob;
@@ -149,18 +150,28 @@ function assetsApi(u){
       const id = rastgeleId();
       try{ await setDoc(doc(fs, 'fotolar', id), { veri:Bytes.fromUint8Array(new Uint8Array(await b.arrayBuffer())), tur:b.type || type || 'image/jpeg', by:u.uid, at:nowIso() }); }
       catch(e){ throw Object.assign(new Error('upload'), { code: e?.code === 'permission-denied' ? 'not_granted' : e?.code }); }
+      sahip.set(id, u.uid);
       return { id };
     },
     url(id){
       if(!urls.has(id)) urls.set(id, getDoc(doc(fs, 'fotolar', id)).then(s => {
-        if(!s.exists()) throw new Error('yok'); const d = s.data();
+        if(!s.exists()) throw new Error('yok'); const d = s.data(); sahip.set(id, d.by);
         const url = URL.createObjectURL(new Blob([d.veri.toUint8Array()], { type:d.tur || 'image/jpeg' })); hazir.set(id, url); return url;
       }).catch(e => { urls.delete(id); throw e; }));
       return urls.get(id);
     },
     cached:id => hazir.get(id) || null,
+    sahibi:id => sahip.get(id),
     delete:id => deleteDoc(doc(fs, 'fotolar', id)),
   };
+}
+
+// After a refused write: has this account lost its membership, or did the write only try to take off
+// someone else's file or photo?
+export async function uyeligimSurer(){
+  const u = auth?.currentUser; if(!u) return false;
+  const email = emailKey(u.email); if(KURUCULAR.includes(email)) return true;
+  try{ const s = await getDoc(doc(fs, 'uyeler', email)); return s.exists() && s.data().aktif !== false; }catch{ return false; }
 }
 
 /* ---------- takım arşivi indeksi ---------- */
@@ -196,19 +207,31 @@ export const driveAdresi = () => (driveAdresP ??= getDoc(doc(fs, 'ayarlar', 'gen
 export async function driveAdresiYaz(url){ await setDoc(doc(fs, 'ayarlar', 'genel'), { driveArama:url, at:nowIso() }, { merge:true }); driveAdresP = null; }
 
 const hata = (code, mesaj) => Object.assign(new Error(mesaj || code), { code });
+async function scripteSor(url, govde, signal){
+  // A bare string body keeps this a CORS simple request; Apps Script cannot answer a preflight
+  // (see src/lib/formEndpoint.ts).
+  const istek = () => fetch(url, { method:'POST', body:JSON.stringify(govde), signal })
+    .then(r => { if(!r.ok) throw hata('http', 'HTTP '+r.status); return r.json(); });
+  // Apps Script hands the reply over on a second hop that now and then answers 404; once more is enough.
+  try{ return await istek(); }catch(e){ if(e?.name === 'AbortError') throw e; return istek(); }
+}
 export async function driveAra(q, signal){
   const url = await driveAdresi(); if(!url) throw hata('kurulmadi');
   const token = await auth.currentUser.getIdToken();
-  // A bare string body keeps this a CORS simple request; Apps Script cannot answer a preflight
-  // (see src/lib/formEndpoint.ts).
-  const istek = () => fetch(url, { method:'POST', body:JSON.stringify({ token, q }), signal })
-    .then(r => { if(!r.ok) throw hata('http', 'HTTP '+r.status); return r.json(); });
-  let d;
-  // Apps Script hands the reply over on a second hop that now and then answers 404; once more is enough.
-  try{ d = await istek(); }catch(e){ if(e?.name === 'AbortError') throw e; d = await istek(); }
+  const d = await scripteSor(url, { token, q }, signal);
   if(!d?.ok) throw hata(d?.hata || 'arama', d?.mesaj);
   const sonuc = Array.isArray(d.sonuc) ? d.sonuc : [];
   return { sonuc, kesildi:!!d.kesildi, toplam:Number(d.toplam) || sonuc.length };
+}
+
+// Founders only: the same script makes the team folders' sharing follow the member list (active members
+// read, inactive or removed ones lose access). The script reads the list itself with the founder's token.
+export async function driveEsitle(){
+  const url = await driveAdresi(); if(!url) throw hata('kurulmadi');
+  const token = await auth.currentUser.getIdToken();
+  const d = await scripteSor(url, { token, islem:'esitle' }, AbortSignal.timeout(180_000));
+  if(!d?.ok) throw hata(d?.hata || 'esitleme', d?.mesaj);
+  return d;
 }
 
 /* ---------- ilerlemeyi sıfırlama ---------- */

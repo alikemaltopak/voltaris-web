@@ -1,7 +1,7 @@
 // Admin dialog: the member list (who may sign in) and the one-time loads that replace what the
 // Claude Artifact had built in — the archive index and the export of its shared records.
 // Firestore rules enforce the same limits (firestore.rules); this file is only the UI.
-import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra, ilerlemeyiSifirla } from './firebase.js';
+import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra, driveEsitle, ilerlemeyiSifirla } from './firebase.js';
 
 const BIRIM = { M:'Mekanik', E:'Elektrik-Elektronik', O:'Organizasyon ve Sosyal Medya' };
 const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -26,6 +26,9 @@ function kur(){
       <button class="btn primary" type="submit">Ekle</button>
     </form>
     <div class="hscroll"><table class="tbl ynt-tbl"><thead><tr><th>Ad</th><th>E-posta</th><th>Birim</th><th>Aktif</th><th></th></tr></thead><tbody id="yntList"></tbody></table></div>
+    <p class="help">Takım Drive'ında aktif üyeler yalnız okuyucudur; pasife alınan ya da listeden çıkarılan üyenin erişimi kaldırılır. Listede bir değişiklik olunca kendiliğinden eşitlenir (kurulum: <code>apps-script/DRIVE_ARAMA.md</code>, "Drive erişimi").</p>
+    <div class="row"><button class="btn small" type="button" id="yntErisim">Drive erişimini şimdi eşitle</button></div>
+    <div class="when" id="yntErisimDurum"></div>
     <details class="ynt-aktar" id="yntDrive"><summary>Drive araması</summary>
       <p class="help">Database balonundaki canlı Drive araması bu adresteki Apps Script'e sorar (kurulum: <code>apps-script/DRIVE_ARAMA.md</code>). Script yeniden dağıtılıp adresi değişirse buradan güncelle.</p>
       <div class="row"><input class="inp" id="yntDriveUrl" type="url" maxlength="300" placeholder="https://script.google.com/macros/s/…/exec" aria-label="Apps Script adresi" style="flex:1 1 260px;min-width:0">
@@ -56,6 +59,7 @@ function kur(){
   d.querySelector('#yntEsle').addEventListener('click', aktar);
   d.querySelector('#yntDriveKaydet').addEventListener('click', driveKaydet);
   d.querySelector('#yntSifirla').addEventListener('click', sifirla);
+  d.querySelector('#yntErisim').addEventListener('click', () => erisimiEsitle(0));
   driveAdresi().then(u => { d.querySelector('#yntDriveUrl').value = u; d.querySelector('#yntDriveDurum').textContent = u ? 'Kurulu.' : 'Henüz kurulmadı.'; });
   return d;
 }
@@ -75,21 +79,60 @@ async function ekle(e){
   const f = new FormData(e.target), email = String(f.get('email')).trim().toLowerCase(), ad = String(f.get('ad')).trim();
   if(!EPOSTA.test(email) || !ad) return;
   if(uyeler.some(u => u.email === email)){ toast('Bu e-posta zaten listede.'); return; }
-  try{ await uyeYaz(email, { ad, birim:String(f.get('birim')), aktif:true }); e.target.reset(); toast(`<b>Eklendi:</b> ${esc(ad)}`); }
+  try{ await uyeYaz(email, { ad, birim:String(f.get('birim')), aktif:true }); e.target.reset(); toast(`<b>Eklendi:</b> ${esc(ad)}`); erisimiEsitle(); }
   catch(err){ toast('Eklenemedi: ' + esc(err?.code || 'hata')); }
 }
 
 async function degistir(e){
   const tr = e.target.closest('tr[data-email]'), alan = e.target.dataset.alan; if(!tr || !alan) return;
   const v = alan === 'aktif' ? e.target.checked : e.target.value;
-  try{ await uyeYaz(tr.dataset.email, { [alan]:v }); }catch(err){ toast('Kaydedilemedi: ' + esc(err?.code || 'hata')); liste(); }
+  try{ await uyeYaz(tr.dataset.email, { [alan]:v }); if(alan === 'aktif') erisimiEsitle(); }catch(err){ toast('Kaydedilemedi: ' + esc(err?.code || 'hata')); liste(); }
 }
 
 async function sil(e){
   const b = e.target.closest('[data-sil]'); if(!b) return;
   const email = b.closest('tr').dataset.email;
   if(!confirm(`${email} listeden çıkarılsın mı? Bu hesap panele bir daha giremez; girdiği kayıtlar kalır.`)) return;
-  try{ await uyeSil(email); }catch(err){ toast('Çıkarılamadı: ' + esc(err?.code || 'hata')); }
+  try{ await uyeSil(email); erisimiEsitle(); }catch(err){ toast('Çıkarılamadı: ' + esc(err?.code || 'hata')); }
+}
+
+// Several ticks in a row make one sync; the script reads the list itself, so the last state wins.
+let esitleSaat = null, esitleniyor = false, yeniden = false;
+function erisimiEsitle(bekle = 1500){
+  clearTimeout(esitleSaat);
+  esitleSaat = setTimeout(async () => {
+    if(esitleniyor){ yeniden = true; return; }
+    const durum = dlg.querySelector('#yntErisimDurum'), b = dlg.querySelector('#yntErisim');
+    esitleniyor = true; b.disabled = true; durum.textContent = 'Drive erişimi eşitleniyor…';
+    try{ durum.innerHTML = erisimRaporu(await driveEsitle()); }
+    catch(err){
+      durum.textContent = { kurulmadi:'Drive araması kurulmadığı için Drive erişimi eşitlenmedi.', 'paylasim-yok':'Script\'te AYAR.paylasim boş: takım klasörünün kimliği yazılmadan erişime dokunulmaz.',
+        'kurucu-degil':'Eşitlemeyi yalnız kurucu hesaplar yapabilir.', mesgul:'Başka bir eşitleme sürüyor; biraz sonra tekrar dene.',
+        'uye-degil':'Script üyeliği doğrulayamadı (AYAR.firebaseApiKey / projeId).' }[err?.code]
+        || 'Drive erişimi eşitlenemedi: ' + (err?.message || err?.code || 'hata') + '. Script güncel sürümle yeniden dağıtıldı mı?';
+    }
+    esitleniyor = false; b.disabled = false;
+    if(yeniden){ yeniden = false; erisimiEsitle(0); }
+  }, bekle);
+}
+
+const kisiler = a => a.map(esc).join(', ');
+function erisimRaporu(r){
+  const ad = e => esc(uyeler.find(u => u.email === e)?.ad || e);
+  const satir = [`<b>Eşitlendi</b> (${new Date().toLocaleTimeString('tr', { hour:'2-digit', minute:'2-digit' })}): ${r.uye} aktif üye okuyucu.`];
+  if(r.eklenen?.length) satir.push(`Erişim verildi: ${r.eklenen.map(ad).join(', ')}.`);
+  if(r.okuraCekilen?.length) satir.push(`Düzenleme yetkisi okumaya çekildi: ${r.okuraCekilen.map(ad).join(', ')}.`);
+  if(r.cikarilan?.length) satir.push(`Erişimi kaldırıldı: ${r.cikarilan.map(ad).join(', ')}.`);
+  const dsy = r.dosya || {};
+  if(dsy.kaldirilan || dsy.okuraCekilen) satir.push(`Ayrıca paylaşılmış dosyalarda: ${dsy.kaldirilan || 0} izin kaldırıldı, ${dsy.okuraCekilen || 0} izin okumaya çekildi.`);
+  if(dsy.bekleyen) satir.push('Dosyaların bir kısmı saatlik denetime kaldı.');
+  if(r.gizli?.length) satir.push(`<span style="color:var(--bad)"><b>Kimseye yeni erişim verilmedi:</b> paylaşılan klasörün altında kişisel veri taşıyabilecek klasörler var: ${kisiler(r.gizli)}. Bunları paylaşımın dışına taşı ya da kişisel veri yoksa kimliklerini script'te AYAR.gizliDegil'e yaz.</span>`);
+  const sahip = Object.entries(dsy.sahip || {});
+  if(sahip.length) satir.push(`Sahibi oldukları dosyaları üyeler yine değiştirip silebilir, ayrılınca da onlarda kalır: ${sahip.map(([e, n]) => `${ad(e)} (${n})`).join(', ')}. Bu dosyaların sahipliği ${esc(KURUCULAR[0])}'a devredilmeli.`);
+  if(r.disaridaYazar?.length) satir.push(`Listede olmayan ama düzenleyebilen hesaplar (dokunulmadı): ${kisiler(r.disaridaYazar)}.`);
+  if(r.herkeseAcik?.length) satir.push('Uyarı: takım klasörü "bağlantıya sahip herkes" ile paylaşılmış; erişimi kaldırılan üye bağlantıyla yine açabilir. Drive\'da paylaşımı "Kısıtlı" yap.');
+  if(r.hatalar?.length) satir.push(`Hatalar: ${kisiler(r.hatalar)}`);
+  return satir.map(x => `<p style="margin:4px 0">${x}</p>`).join('');
 }
 
 // Two steps on purpose: the confirm says what goes and what stays, the prompt makes it a deliberate act.

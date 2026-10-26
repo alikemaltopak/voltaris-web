@@ -72,6 +72,8 @@ canvas), `SmoothScroll` (Lenis), `CustomCursor`.
   **Gizli:** takım arşivi indeksi (`indeks.json`) ve Claude dökümü (`data-export/`) depoya ve
   `public/`'e girmez (depo herkese açık); Firestore'a paneldeki Üyeler ekranından yüklenir.
   Üye listesini yalnız `voltaris.official` ve `alikemaltopak` (gmail) yönetir; yönetici rolü yok.
+  Eklenen dosya/fotoğrafı yalnız ekleyen ya da bu iki hesap kaldırır (kural düzeyinde). Takım Drive'ında üyeler
+  okuyucu; Üyeler ekranındaki değişiklik `DriveArama.gs` üzerinden paylaşımı eşitler.
 - `cad-assets/` — CAD → Blender → kare/GLB üretim betikleri (Python). Sitenin
   çalışma zamanının parçası değil; Vercel'e gitmez (`.vercelignore`).
 

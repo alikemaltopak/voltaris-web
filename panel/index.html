@@ -1002,14 +1002,15 @@ const FOTO_MAX = 8; const uploading = {};
 // Photos arrive from Firestore as blobs (firebase.js): draw a blank first and swap the image in once it lands.
 const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 function blobSrc(id){ const u=assets?.cached(id); if(u) return u;
-  assets?.url(id).then(url=>document.querySelectorAll(`img[data-blob="${id}"]`).forEach(im=>{ im.src=url; })).catch(()=>{});
+  assets?.url(id).then(url=>{ document.querySelectorAll(`img[data-blob="${id}"]`).forEach(im=>{ im.src=url; });
+    document.querySelectorAll(`button[data-fid="${id}"]`).forEach(b=>{ b.hidden=!fotoKaldirabilir(id); }); }).catch(()=>{});
   return BLANK; }
 const okIds = a => (Array.isArray(a) ? a : []).filter(x=>typeof x==='string' && /^[A-Za-z0-9_-]{16,64}$/.test(x));
 const fotos = r => okIds(r.testFoto);
 const fotoList = (it, slot) => slot==='t' ? fotos(rec(it.id)) : okIds(flowOf(it, +slot).foto);
 const slotName = (it, slot) => slot==='t' ? 'Test fotoğrafı' : it.reqs[+slot][0];
 function photoBlock(it, ro, slot='t'){ const list=fotoList(it,slot), key=it.id+':f'+slot, nm=slotName(it,slot);
-  return `<div class="photos">${list.map((id,k)=>`<span class="ph-it"><button type="button" class="ph-img" data-foto="${esc(id)}" data-fslot="${slot}" aria-label="${esc(nm)}: fotoğraf ${k+1}, büyüt"><img src="${blobSrc(id)}" data-blob="${esc(id)}" alt="${esc(nm)}: fotoğraf ${k+1}" loading="lazy"></button>${ro||!assets?'':`<button type="button" class="xbtn" data-delfoto="${slot}|${k}" aria-label="Fotoğrafı kaldır">×</button>`}</span>`).join('')}
+  return `<div class="photos">${list.map((id,k)=>`<span class="ph-it"><button type="button" class="ph-img" data-foto="${esc(id)}" data-fslot="${slot}" aria-label="${esc(nm)}: fotoğraf ${k+1}, büyüt"><img src="${blobSrc(id)}" data-blob="${esc(id)}" alt="${esc(nm)}: fotoğraf ${k+1}" loading="lazy"></button>${ro||!assets?'':`<button type="button" class="xbtn" data-delfoto="${slot}|${k}" data-fid="${esc(id)}" aria-label="Fotoğrafı kaldır" ${fotoKaldirabilir(id)?'':'hidden'}>×</button>`}</span>`).join('')}
     ${ro?'':(assets?(list.length<FOTO_MAX?`<label class="btn small ph-add ${uploading[key]?'is-busy':''}">${uploading[key]?'Yükleniyor…':(slot==='t'?'Fotoğraf ekle':'Bu öncüle fotoğraf ekle')}<input type="file" accept="image/*" multiple data-fotoin="${slot}" ${uploading[key]?'disabled':''} hidden></label>`:`<span class="when">En fazla ${FOTO_MAX} fotoğraf.</span>`):`<span class="when">${mode==='db'?'Fotoğraf yüklemek için panelde düzenleme yetkin olmalı.':'Fotoğraf yükleme ortak kayıtla çalışır.'}</span>`)}</div>`; }
 function allPhotos(it){ const out=fotos(rec(it.id)).map(id=>({id, slot:'t'}));
   it.reqs.forEach((q,i)=>okIds(flowOf(it,i).foto).forEach(id=>out.push({id, slot:String(i)}))); return out; }
@@ -1057,7 +1058,10 @@ async function writeDoc(coll, id, patch, set){
   if(mode!=='db'){ saveLocal(); return true; }
   try{ await db.doc(coll+'/'+id).update(patch); set.add(id); return true; }
   catch(err){
-    if(err?.code==='invalid_argument'){ canWrite=false; renderAll(); toast('Bu panelde değişiklik yapma yetkin yok. Üyeliğin kaldırılmış olabilir; takım sorumlusuna sor.'); return false; }
+    if(err?.code==='invalid_argument'){
+      // The rules also refuse taking off someone else's file or photo (firestore.rules); that must not lock the panel.
+      if(await fb.uyeligimSurer()){ toast('Kaydedilmedi: bir dosyayı ya da fotoğrafı yalnız onu ekleyen ya da yönetici kaldırabilir.'); return false; }
+      canWrite=false; renderAll(); toast('Bu panelde değişiklik yapma yetkin yok. Üyeliğin kaldırılmış olabilir; takım sorumlusuna sor.'); return false; }
     toast('Kaydedilemedi, bağlantını kontrol edip tekrar dene.'); return false;
   }
 }
@@ -1072,6 +1076,7 @@ async function patchItem(id, patch, logText){
   renderAll(); announce(id, before, lockedBefore);
   const ok = await writeDoc('items', id, full, exists.items);
   if(ok && logText) logIt(id, logText);
+  return ok;
 }
 // Everyone who changes an öncül is recorded on it (checks/<id>.f.<i>.emek); the profile window splits the
 // öncül's progress equally among them. At most 12, the most recent kept.
@@ -1096,6 +1101,7 @@ async function setFlow(id, i, patch, logText){
   renderAll(); announce(id, before, lockedBefore);
   const ok = await writeDoc('checks', id, { s:{ [i]:v }, f:{ [i]:nf }, by:myId, at }, exists.checks);
   if(ok && logText) logIt(id, `Şartname: "${it.reqs[i][0]}" → ${logText}`);
+  return ok;
 }
 const RSTAGE = A => [['tasarim',A?'Tasarım':'Taslak'],['uretim',A?'Üretim':'Yazım'],['test',A?'Test':'Kontrol'],['uygun','Uygun','yes']];
 function reqStatus(it,i){ const f=flowOf(it,i), v=reqState(it,i), A=it.reqs[i][2]==='A';
@@ -1167,13 +1173,13 @@ function reqFlowHtml(it, i, ro){ const q=it.reqs[i], A=q[2]==='A', f=flowOf(it,i
         ${reqCopy[key]?`<textarea class="inp" readonly style="min-height:110px" aria-label="Database sorgusu">${esc(reqCopy[key])}</textarea>`:''}
         ${ds.msg?`<div class="msg ${ds.err?'err':''}">${esc(ds.msg)}</div>`:''}
       <div class="q"><span>${k++}. Database'de önceki çalışma bulundu mu?</span>${rseg(i,'db',[['var','Var','yes'],['yok','Yok','no']],f.db,ro)}</div>
-      ${found.length?`<ul class="found">${found.map((x,m)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro?'':`<button class="xbtn" type="button" data-rdelfound="${i}|${m}" aria-label="Kaldır">×</button>`}</li>`).join('')}</ul>`:''}
+      ${found.length?`<ul class="found">${found.map((x,m)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro||!kaldirabilir(x.by)?'':`<button class="xbtn" type="button" data-rdelfound="${i}|${m}" aria-label="Kaldır">×</button>`}</li>`).join('')}</ul>`:''}
       ${ro?'':`<div class="row"><input class="inp" data-rft="${i}" placeholder="Bulunan dosyanın adı" maxlength="120"><input class="inp" data-rfu="${i}" placeholder="Linki" maxlength="500">${justAdded[key]&&Date.now()-justAdded[key]<4000?`<button class="btn small added" type="button" data-rfadd="${i}">${TICK} Eklendi</button>`:`<button class="btn small" type="button" data-rfadd="${i}">Ekle</button>`}</div>`}
       <div class="q"><span>${k}. Şu an hangi aşamada?<small>"Uygun" seçince öncül tamamlanır.</small></span>${rseg(i,'asama',RSTAGE(A),f.asama,ro)}</div>`; }
   if(f.v) h += `<input class="inp" data-rnot="${i}" maxlength="300" placeholder="${eksik?'Not: eksik olan ya da yapılacak iş':L.n}" value="${esc(f.not||'')}" ${ro?'disabled':''}>`;
   // Files can be filed under an öncül from the Database bubble whatever its state; the list above only
   // shows while the öncül is missing something, so show it here otherwise.
-  if(!eksik){ const fl=Array.isArray(f.found)?f.found:[]; if(fl.length) h += `<div class="rfound"><span class="sub-h">Bulunan dosyalar</span><ul class="found">${fl.map((x,m)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro?'':`<button class="xbtn" type="button" data-rdelfound="${i}|${m}" aria-label="Kaldır">×</button>`}</li>`).join('')}</ul></div>`; }
+  if(!eksik){ const fl=Array.isArray(f.found)?f.found:[]; if(fl.length) h += `<div class="rfound"><span class="sub-h">Bulunan dosyalar</span><ul class="found">${fl.map((x,m)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro||!kaldirabilir(x.by)?'':`<button class="xbtn" type="button" data-rdelfound="${i}|${m}" aria-label="Kaldır">×</button>`}</li>`).join('')}</ul></div>`; }
   h += `<div class="rfoto"><span class="sub-h">Fotoğraflar <small>bu öncülle ilgili: montaj yeri, ölçüm, parça</small></span>${photoBlock(it, ro, String(i))}</div>`;
   return h + '</div>'; }
 function reqQuery(it, i){ const q=it.reqs[i], A=q[2]==='A', f=flowOf(it,i);
@@ -1279,10 +1285,17 @@ async function renderCard(){
     ${galleryBlock(it)}`;
 }
 
+// Only whoever filed a file or photo, or a founder, may take it off (firestore.rules). File entries name
+// their adder in `by`; entries from before that was recorded can only be taken off by a founder.
+const kaldirabilir = by => mode!=='db' || benKurucu || (!!by && by===myId);
+const fotoKaldirabilir = id => mode!=='db' || benKurucu || assets?.sahibi(id)===myId;
+// A full list no longer pushes out its oldest entry: that entry may be someone else's.
+const DOSYA_MAX = { kalem:30, oncul:12 };
+function yerVar(list, yer){ if(list.length < DOSYA_MAX[yer]) return true; toast(`Burada en fazla ${DOSYA_MAX[yer]} dosya olabilir; önce birini kaldır.`); return false; }
 // items/<id>.found: files filed under the item as a whole from the Database bubble
 function foundBlock(r, ro){ const list=Array.isArray(r.found)?r.found:[]; if(!list.length) return '';
   return `<section class="sect"><h3>Database'den eklenen dosyalar <span class="mono">${list.length}</span></h3>
-    <ul class="found">${list.map((x,k)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro?'':`<button class="xbtn" type="button" data-delfound="${k}" aria-label="Kaldır: ${esc(x.t||x.u)}">×</button>`}</li>`).join('')}</ul></section>`; }
+    <ul class="found">${list.map((x,k)=>`<li>${safeUrl(x.u)?`<a href="${esc(safeUrl(x.u))}" target="_blank" rel="noopener">${esc(x.t||x.u)}</a>`:`<span style="flex:1">${esc(x.t)}</span>`}${ro||!kaldirabilir(x.by)?'':`<button class="xbtn" type="button" data-delfound="${k}" aria-label="Kaldır: ${esc(x.t||x.u)}">×</button>`}</li>`).join('')}</ul></section>`; }
 
 /* ---------- rapor verileri ---------- */
 // rapor/<itemId>.f.<alan> = {v, by, at, src, ok:{by,at}|null, h:[önceki değerler]}; eski kayıtlar rapor/<id>.v.<alan> düz metin.
@@ -1654,12 +1667,15 @@ $('card').addEventListener('click', async e=>{
     const lab = {v:{evet:'karşılanıyor',kismen:'kısmen',hayir:'karşılanmıyor'},olc:{true:'ölçüldü',false:'ölçülmedi'},db:{var:'Database\'de çalışma bulundu',yok:'Database\'de çalışma yok'}}[field]?.[String(nv)] || (field==='asama' ? 'aşama: '+(RSTAGE(it.reqs[+i][2]==='A').find(x=>x[0]===nv)?.[1]||'-') : 'sıfırlandı');
     setFlow(it.id, +i, {[field]:nv}, lab); return; }
   const rixa=e.target.closest('[data-rixadd]'); if(rixa){ const s0=rixa.dataset.rixadd; const k=s0.indexOf('|'); const i=+s0.slice(0,k), u=safeUrl(s0.slice(k+1)), t=(rixa.dataset.rixn||'').slice(0,140); if(!u) return;
-    const found=[...(flowOf(it,i).found||[]), {t, u}].slice(-12); setFlow(it.id, i, {found}, `arşivden dosya eklendi: ${t}`); toast(`<b>Eklendi:</b> ${esc(t)}`); return; }
+    const prev=flowOf(it,i).found||[]; if(!yerVar(prev,'oncul')) return;
+    setFlow(it.id, i, {found:[...prev, {t, u, by:myId}]}, `arşivden dosya eklendi: ${t}`); toast(`<b>Eklendi:</b> ${esc(t)}`); return; }
   const rfa=e.target.closest('[data-rfadd]'); if(rfa){ const i=+rfa.dataset.rfadd; const t=document.querySelector(`#card [data-rft="${i}"]`).value.trim(), u=document.querySelector(`#card [data-rfu="${i}"]`).value.trim(); if(!t && !u) return;
     if(u && !safeUrl(u)){ toast('Link http veya https ile başlamalı.'); return; }
-    const found=[...(flowOf(it,i).found||[]), {t:(t||u).slice(0,120), u:u.slice(0,500)}].slice(-12); const key=it.id+':'+i; justAdded[key]=Date.now(); setTimeout(()=>{ if(selected===it.id) renderCard(); }, 4100);
+    const prev=flowOf(it,i).found||[]; if(!yerVar(prev,'oncul')) return;
+    const found=[...prev, {t:(t||u).slice(0,120), u:u.slice(0,500), by:myId}]; const key=it.id+':'+i; justAdded[key]=Date.now(); setTimeout(()=>{ if(selected===it.id) renderCard(); }, 4100);
     setFlow(it.id, i, {found}, `dosya eklendi: ${t||u}`); toast(`<b>Eklendi:</b> ${esc(t||u)}`); return; }
-  const rdf=e.target.closest('[data-rdelfound]'); if(rdf){ const [i,m]=rdf.dataset.rdelfound.split('|').map(Number); const found=(flowOf(it,i).found||[]).filter((_,k)=>k!==m); setFlow(it.id, i, {found}, 'dosya kaldırıldı'); return; }
+  const rdf=e.target.closest('[data-rdelfound]'); if(rdf){ const [i,m]=rdf.dataset.rdelfound.split('|').map(Number); const all=flowOf(it,i).found||[]; if(!all[m] || !kaldirabilir(all[m].by)) return;
+    setFlow(it.id, i, {found:all.filter((_,k)=>k!==m)}, 'dosya kaldırıldı'); return; }
   const rqb=e.target.closest('button[data-rq]'); if(rqb){ const i=+rqb.dataset.rq; const txt=reqQuery(it,i);
     try{ await navigator.clipboard.writeText(txt); toast('Sorgu kopyalandı. Database projesindeki sohbete yapıştır.'); }
     catch(err){ reqCopy[it.id+':'+i]=txt; renderCard(); toast('Otomatik kopyalanamadı; metni seçip kopyala.'); } return; }
@@ -1667,14 +1683,17 @@ $('card').addEventListener('click', async e=>{
   if(e.target.closest('#talkBtn')){ attachItem=it.id; chan = it.birim; toggleChat(true); renderAttach(); $('chatText').focus(); return; }
   if(e.target.closest('#fAdd')){ const t=$('fT').value.trim(), u=$('fU').value.trim(); if(!t && !u) return;
     if(u && !safeUrl(u)){ toast('Link http veya https ile başlamalı.'); return; }
-    const found=[...(Array.isArray(r.found)?r.found:[]), {t:(t||u).slice(0,120), u:u.slice(0,500), by:myId}].slice(-30);
+    const prev=Array.isArray(r.found)?r.found:[]; if(!yerVar(prev,'kalem')) return;
+    const found=[...prev, {t:(t||u).slice(0,120), u:u.slice(0,500), by:myId}];
     justAdded[it.id]=Date.now(); setTimeout(()=>{ if(selected===it.id) renderCard(); }, 4100);
     patchItem(it.id, { found }, `Bulunan dosya eklendi: ${t||u}`); toast(`<b>Eklendi:</b> ${esc(t||u)}`); return; }
   const fo=e.target.closest('[data-foto]'); if(fo){ openPhoto(fo.dataset.foto, fo.dataset.fslot||'t'); return; }
-  const dfo=e.target.closest('[data-delfoto]'); if(dfo){ const [slot,k]=dfo.dataset.delfoto.split('|'); const list=fotoList(it,slot); const id=list[+k]; if(!id) return; const rest=list.filter((_,j)=>j!==+k);
-    if(slot==='t') patchItem(it.id,{testFoto:rest},'Test fotoğrafı kaldırıldı'); else setFlow(it.id, +slot, {foto:rest}, 'fotoğraf kaldırıldı');
-    assets?.delete(id).catch(()=>{}); return; }
-  const df=e.target.closest('[data-delfound]'); if(df){ const found=(r.found||[]).filter((_,i)=>i!==+df.dataset.delfound); patchItem(it.id,{found},'Bulunan dosya kaldırıldı'); return; }
+  const dfo=e.target.closest('[data-delfoto]'); if(dfo){ const [slot,k]=dfo.dataset.delfoto.split('|'); const list=fotoList(it,slot); const id=list[+k]; if(!id || !fotoKaldirabilir(id)) return; const rest=list.filter((_,j)=>j!==+k);
+    // the photo itself goes only once the record no longer points to it
+    const ok = slot==='t' ? await patchItem(it.id,{testFoto:rest},'Test fotoğrafı kaldırıldı') : await setFlow(it.id, +slot, {foto:rest}, 'fotoğraf kaldırıldı');
+    if(ok) assets?.delete(id).catch(()=>{}); return; }
+  const df=e.target.closest('[data-delfound]'); if(df){ const all=Array.isArray(r.found)?r.found:[], k=+df.dataset.delfound; if(!all[k] || !kaldirabilir(all[k].by)) return;
+    patchItem(it.id,{found:all.filter((_,i)=>i!==k)},'Bulunan dosya kaldırıldı'); return; }
   if(e.target.closest('#copyQ')){ copyQuery(it); return; }
 });
 $('card').addEventListener('toggle', e=>{ const d=e.target.closest?.('[data-rdet]'); if(d){ d.open?openRap.add(d.dataset.rdet):openRap.delete(d.dataset.rdet); } }, true);
@@ -1950,9 +1969,11 @@ function dbEkle(key){ const r=dbSatir(key); if(!r) return; const sec=dbSec[key]|
   const it=byId(sec.it||$('dbRes').querySelector(`[data-dbit="${key}"]`)?.value||selected); const req=$('dbRes').querySelector(`[data-dbreq="${key}"]`)?.value ?? '';
   const t=r.n.slice(0,140), u=safeUrl(r.u); if(!u) return;
   if(req===''){ const found=Array.isArray(rec(it.id).found)?rec(it.id).found:[]; if(found.some(x=>x.u===u)){ toast('Bu dosya bu kalemde zaten var.'); return; }
-    patchItem(it.id, { found:[...found, {t, u, by:myId}].slice(-30) }, `Database'den dosya eklendi: ${t}`); }
+    if(!yerVar(found,'kalem')) return;
+    patchItem(it.id, { found:[...found, {t, u, by:myId}] }, `Database'den dosya eklendi: ${t}`); }
   else { const i=+req, found=flowOf(it,i).found||[]; if(found.some(x=>x.u===u)){ toast('Bu dosya bu öncülde zaten var.'); return; }
-    setFlow(it.id, i, { found:[...found, {t, u}].slice(-12) }, `arşivden dosya eklendi: ${t}`); }
+    if(!yerVar(found,'oncul')) return;
+    setFlow(it.id, i, { found:[...found, {t, u, by:myId}] }, `arşivden dosya eklendi: ${t}`); }
   toast(`<b>${esc(it.name)}</b>${req===''?'':' · öncül'}: ${esc(t)} eklendi`); dbOpen=null; renderDb(); }
 $('dbForm').addEventListener('submit', e=>{ e.preventDefault(); dbAra($('dbQ').value); });
 $('dbClose').addEventListener('click', ()=>dbToggle(false));

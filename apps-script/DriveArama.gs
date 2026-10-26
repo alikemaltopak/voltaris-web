@@ -21,6 +21,9 @@
  *
  * Kişisel veri taşıyan dosyalar (başvuru, kimlik, fatura…) ve Sponsorluk / Sosyal Medya klasörleri,
  * takım arşivi indeksinde olduğu gibi (panel/scripts/build_indeks.py) sonuçlara girmez.
+ *
+ * Aynı script takım klasörlerinin paylaşımını üye listesine uydurur (aşağıda "Drive erişimi"): aktif
+ * üyeler yalnız okuyucu, pasife alınan ya da listeden çıkarılan üyenin erişimi kaldırılır.
  */
 
 const AYAR = {
@@ -33,6 +36,11 @@ const AYAR = {
   // Kimlik, klasörün Drive adresindeki /folders/ sonrasındaki kısımdır.
   kokKlasorler: [],
   enFazla: 25,
+  // Üyelerin okuyucu olacağı takım klasörleri (kimlikler, kokKlasorler gibi). Boşsa paylaşıma dokunulmaz.
+  paylasim: [],
+  // Paylaşılan klasörlerin altında kişisel veri adlı bir klasör (GIZLI, GIZLI_KLASOR) varsa kimseye erişim
+  // verilmez. Adı yanlışlıkla desene takılan bir klasör ("Telefon tutucu") kontrol edilip buraya yazılır.
+  gizliDegil: [],
 };
 
 // build_indeks.py'deki SENS ile aynı kelimeler: adında ya da yolunda bunlar geçen dosya gösterilmez.
@@ -57,6 +65,14 @@ function doPost(e) {
   try { istek = JSON.parse(e.postData.contents); } catch (err) { return cevap({ ok: false, hata: 'istek' }); }
   const email = uyeMi(String(istek.token || ''));
   if (!email) return cevap({ ok: false, hata: 'uye-degil' });
+  if (istek.islem === 'esitle') {
+    if (AYAR.kurucular.indexOf(email) < 0) return cevap({ ok: false, hata: 'kurucu-degil' });
+    try {
+      return cevap(Object.assign({ ok: true }, esitle(String(istek.token))));
+    } catch (err) {
+      return cevap({ ok: false, hata: err.kod || 'esitleme', mesaj: String(err && err.message || err).slice(0, 300) });
+    }
+  }
   const q = String(istek.q || '').trim().slice(0, 80);
   if (q.length < 2) return cevap({ ok: true, sonuc: [], kesildi: false });
   try {
@@ -305,6 +321,187 @@ function tur(mime, ad) {
     'application/vnd.google-apps.presentation': 'sunu', 'application/pdf': 'pdf' }[mime] || '';
 }
 
+/* ---------- Drive erişimi: üyeler yalnız okuyucu ---------- */
+
+// Kurucu panelde bir üyeyi ekleyince, pasife alınca ya da listeden çıkarınca panel buraya `islem: 'esitle'`
+// gönderir. Script üye listesini o kurucunun kimliğiyle Firestore'dan okur ve AYAR.paylasim klasörlerinde:
+//  - aktif üyeyi okuyucu yapar (yoksa ekler, düzenleyiciyse okuyucuya çeker; bildirim e-postası gitmez),
+//  - pasif ya da listeden çıkarılmış üyenin erişimini kaldırır.
+// Kurucuların ve listede hiç olmamış kişilerin (danışman, eski kaptan…) erişimine dokunmaz, yalnız raporlar.
+// Klasörü paylaşmak altındakileri de paylaşır; ama bir alt klasör ya da dosya bir üyeyle ayrıca
+// paylaşılmışsa o izin kökten bağımsızdır. Onları denetle() bulur: eşitlemenin sonunda kısa bir tur,
+// sonra saatte bir tetikleyiciyle (kurulum). Çıkarılan bir üye, ağaçta bir izni kalmayana kadar izlenir.
+const YAZAR = { writer: true, fileOrganizer: true, organizer: true };
+const ESITLEME_SURE_MS = 20000, DENETIM_SURE_MS = 60000;
+
+function hataKod(kod, mesaj) { const e = new Error(mesaj || kod); e.kod = kod; return e; }
+const kurucuMu = function (e) { return AYAR.kurucular.indexOf(e) >= 0; };
+const tekil = function (a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); };
+// Drive sorgusunda tırnak içine girecek metin
+const sorguMetni = function (k) { return String(k).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); };
+
+// Eşitlemeler arasında saklanan durum: verilen = aktif üyeler, cekilecek = erişimi kaldırılacaklar.
+function paylasimDurumu() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('paylasim') || '') || { verilen: [], cekilecek: [] }; }
+  catch (err) { return { verilen: [], cekilecek: [] }; }
+}
+function paylasimDurumuYaz(d) { PropertiesService.getScriptProperties().setProperty('paylasim', JSON.stringify(d)); }
+
+function esitle(token) {
+  if (!AYAR.paylasim.length) throw hataKod('paylasim-yok');
+  const kilit = LockService.getScriptLock();
+  if (!kilit.tryLock(30000)) throw hataKod('mesgul');
+  try {
+    const liste = uyeListesi(token);
+    const aktif = liste.filter(function (u) { return u.aktif && !kurucuMu(u.email); }).map(function (u) { return u.email; });
+    const pasif = liste.filter(function (u) { return !u.aktif; }).map(function (u) { return u.email; });
+    const onceki = paylasimDurumu();
+    // Listeden silinen üye artık listede görünmez; daha önce erişim verildiyse `verilen`den hatırlanır.
+    const cekilecek = tekil(onceki.verilen.concat(onceki.cekilecek, pasif))
+      .filter(function (e) { return aktif.indexOf(e) < 0 && !kurucuMu(e); });
+    const listede = {}; liste.forEach(function (u) { listede[u.email] = true; });
+
+    const harita = klasorHaritasi(false);
+    const gizli = gizliAltKlasorler(harita);
+    const r = { uye: aktif.length, eklenen: [], okuraCekilen: [], cikarilan: [], disaridaYazar: [], herkeseAcik: [], gizli: gizli, hatalar: [] };
+    AYAR.paylasim.forEach(function (kok) {
+      let izinler;
+      try { izinler = kokIzinleri(kok); } catch (err) { r.hatalar.push(kok + ': ' + err.message); return; }
+      aktif.forEach(function (e) {
+        const p = izinler.kisi[e];
+        // kişisel veri adlı bir klasör paylaşımın altındaysa kimseye yeni erişim verilmez
+        if (!p) { if (!gizli.length) dene(r, function () { Drive.Permissions.create({ type: 'user', role: 'reader', emailAddress: e }, kok, { sendNotificationEmail: false, supportsAllDrives: true }); r.eklenen.push(e); }); }
+        else if (YAZAR[p.role]) dene(r, function () { Drive.Permissions.update({ role: 'reader' }, kok, p.id, { supportsAllDrives: true }); r.okuraCekilen.push(e); });
+      });
+      cekilecek.forEach(function (e) {
+        const p = izinler.kisi[e];
+        if (p && p.role !== 'owner') dene(r, function () { Drive.Permissions.remove(kok, p.id, { supportsAllDrives: true }); r.cikarilan.push(e); });
+      });
+      Object.keys(izinler.kisi).forEach(function (e) {
+        if (!listede[e] && !kurucuMu(e) && YAZAR[izinler.kisi[e].role]) r.disaridaYazar.push(e);
+      });
+      if (izinler.herkes) r.herkeseAcik.push(kok);
+    });
+    ['eklenen', 'okuraCekilen', 'cikarilan', 'disaridaYazar'].forEach(function (k) { r[k] = tekil(r[k]); });
+    paylasimDurumuYaz({ verilen: aktif, cekilecek: cekilecek });
+    const d = denetle(harita, ESITLEME_SURE_MS);
+    r.dosya = d; r.hatalar = r.hatalar.concat(d.hatalar).slice(0, 10);
+    return r;
+  } finally { kilit.releaseLock(); }
+}
+
+function dene(r, is) { try { is(); } catch (err) { if (r.hatalar.length < 10) r.hatalar.push(String(err && err.message || err).slice(0, 200)); } }
+
+// Üye listesi, kurucunun kendi kimliğiyle: firestore.rules uyeler'i yalnız üyelere okutur.
+function uyeListesi(token) {
+  const liste = [];
+  let sayfa = '';
+  do {
+    const f = UrlFetchApp.fetch('https://firestore.googleapis.com/v1/projects/' + AYAR.projeId + '/databases/(default)/documents/uyeler?pageSize=300' +
+      (sayfa ? '&pageToken=' + encodeURIComponent(sayfa) : ''), { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+    if (f.getResponseCode() !== 200) throw hataKod('uye-listesi', 'Üye listesi okunamadı (HTTP ' + f.getResponseCode() + ')');
+    const d = JSON.parse(f.getContentText());
+    (d.documents || []).forEach(function (x) {
+      const alan = x.fields || {};
+      liste.push({ email: decodeURIComponent(x.name.split('/').pop()).toLowerCase(), aktif: !(alan.aktif && alan.aktif.booleanValue === false) });
+    });
+    sayfa = d.nextPageToken;
+  } while (sayfa);
+  return liste;
+}
+
+// Bir kök klasörün izinleri: { kisi: { e-posta: { id, role } }, herkes: bağlantıya sahip herkese açık mı }
+function kokIzinleri(kok) {
+  const kisi = {};
+  let herkes = false, sayfa;
+  do {
+    const r = Drive.Permissions.list(kok, { fields: 'nextPageToken, permissions(id, type, role, emailAddress)', pageSize: 100, pageToken: sayfa, supportsAllDrives: true });
+    (r.permissions || []).forEach(function (p) {
+      if (p.type === 'anyone') herkes = true;
+      if (p.type === 'user' && p.emailAddress) kisi[String(p.emailAddress).toLowerCase()] = { id: p.id, role: p.role };
+    });
+    sayfa = r.nextPageToken;
+  } while (sayfa);
+  return { kisi: kisi, herkes: herkes };
+}
+
+// Klasör kimliği → paylaşılan bir kökün altında mı (klasör haritasından)
+function agacBulucu(harita) {
+  const bellek = {}, kok = AYAR.paylasim;
+  function bak(id, derinlik) {
+    if (!id) return false;
+    if (kok.indexOf(id) >= 0) return true;
+    if (id in bellek) return bellek[id];
+    return (bellek[id] = derinlik < 60 && !!harita[id] && bak(harita[id][1], derinlik + 1));
+  }
+  return function (id) { return bak(id, 0); };
+}
+
+// Paylaşımın altında adı kişisel veriyi andıran klasörler, yollarıyla
+function gizliAltKlasorler(harita) {
+  const agacta = agacBulucu(harita);
+  const yolu = function (id) { const p = []; for (let x = id, d = 0; x && harita[x] && d < 60; x = harita[x][1], d++) p.unshift(harita[x][0]); return p.join('/'); };
+  return Object.keys(harita).filter(function (id) {
+    const ad = norm(harita[id][0]).trim();
+    return (GIZLI_KLASOR.test(ad) || GIZLI.test(ad)) && AYAR.gizliDegil.indexOf(id) < 0 && agacta(id);
+  }).map(yolu).slice(0, 20);
+}
+
+// Ağaçtaki dosya ve klasörlerde kökten bağımsız kalmış izinleri düzeltir, süre yettiğince:
+// çekilecekler için her izni kaldırır, aktif üyelerin yazma izinlerini okumaya çeker. Bir de aktif üyelerin
+// sahibi olduğu dosyaları sayar: sahip kendi dosyasını her zaman değiştirip silebilir ve ayrılınca da tutar.
+function denetle(harita, sureMs) {
+  const t0 = Date.now(), vakit = function () { return Date.now() - t0 < sureMs; };
+  const d = paylasimDurumu();
+  const sonuc = { kaldirilan: 0, okuraCekilen: 0, sahip: {}, bekleyen: false, hatalar: [] };
+  if (!AYAR.paylasim.length) return sonuc;
+  const agacta = agacBulucu(harita || klasorHaritasi(false));
+  const agacDosyasi = function (f) { return AYAR.paylasim.indexOf(f.id) >= 0 || (f.parents || []).some(agacta); };
+  const izinDuzelt = function (f, eslesen, rol) {
+    (f.permissions || []).forEach(function (p) {
+      const e = String(p.emailAddress || '').toLowerCase();
+      if (p.type !== 'user' || !eslesen[e] || p.role === 'owner') return;
+      if (rol === 'kaldir') dene(sonuc, function () { Drive.Permissions.remove(f.id, p.id, { supportsAllDrives: true }); sonuc.kaldirilan++; });
+      else if (YAZAR[p.role]) dene(sonuc, function () { Drive.Permissions.update({ role: 'reader' }, f.id, p.id, { supportsAllDrives: true }); sonuc.okuraCekilen++; });
+    });
+  };
+  // 15'er kişilik gruplar: tek sorgu, sorgu metni kısa kalır
+  function gruplar(a) { const g = []; for (let i = 0; i < a.length; i += 15) g.push(a.slice(i, i + 15)); return g; }
+  function tara(kisiler, kosul, her) {
+    gruplar(kisiler).forEach(function (grup) {
+      const q = '(' + grup.map(function (e) { return kosul.map(function (k) { return "'" + sorguMetni(e) + "' in " + k; }).join(' or '); }).join(' or ') + ') and trashed = false';
+      let sayfa;
+      do {
+        if (!vakit()) { sonuc.bekleyen = true; return; }
+        const r = Drive.Files.list({ q: q, pageSize: 200, pageToken: sayfa, fields: 'nextPageToken, files(id, parents, owners(emailAddress), permissions(id, type, role, emailAddress))',
+          corpora: 'allDrives', includeItemsFromAllDrives: true, supportsAllDrives: true });
+        (r.files || []).filter(agacDosyasi).forEach(her);
+        sayfa = r.nextPageToken;
+      } while (sayfa);
+    });
+  }
+  const esle = function (a) { const m = {}; a.forEach(function (e) { m[e] = true; }); return m; };
+  const cek = esle(d.cekilecek), ver = esle(d.verilen), kalan = {};
+  tara(d.cekilecek, ['readers', 'writers'], function (f) {
+    (f.permissions || []).forEach(function (p) { const e = String(p.emailAddress || '').toLowerCase(); if (cek[e]) kalan[e] = true; });
+    izinDuzelt(f, cek, 'kaldir');
+  });
+  tara(d.verilen, ['writers'], function (f) { izinDuzelt(f, ver, 'oku'); });
+  tara(d.verilen, ['owners'], function (f) {
+    (f.owners || []).forEach(function (o) { const e = String(o.emailAddress || '').toLowerCase(); if (ver[e]) sonuc.sahip[e] = (sonuc.sahip[e] || 0) + 1; });
+  });
+  // Ağaçta izni görülmeyen çıkarılmış üye artık izlenmez. Süre bittiyse hepsi bir sonraki tura kalır.
+  if (!sonuc.bekleyen) paylasimDurumuYaz({ verilen: d.verilen, cekilecek: d.cekilecek.filter(function (e) { return kalan[e]; }) });
+  return sonuc;
+}
+
+// Tetikleyici bunu saatte bir çağırır (kurulum).
+function driveDenetimi() {
+  const kilit = LockService.getScriptLock();
+  if (!kilit.tryLock(1000)) return;
+  try { const d = denetle(null, DENETIM_SURE_MS); Logger.log(JSON.stringify(d)); } finally { kilit.releaseLock(); }
+}
+
 /* ---------- kurulum ---------- */
 
 // Kurulumda bir kez editörden çalıştır: izinleri sorar, klasör haritasını çıkarır, tazelemeyi kurar ve
@@ -318,6 +515,13 @@ function kurulum() {
   ScriptApp.getProjectTriggers().forEach(function (x) { if (x.getHandlerFunction() === 'klasorHaritasiniYenile') ScriptApp.deleteTrigger(x); });
   ScriptApp.newTrigger('klasorHaritasiniYenile').timeBased().everyHours(4).create();
   Logger.log('Tazeleme: 4 saatte bir. Drive\'daki kopya: ' + HARITA_DOSYASI);
+  ScriptApp.getProjectTriggers().forEach(function (x) { if (x.getHandlerFunction() === 'driveDenetimi') ScriptApp.deleteTrigger(x); });
+  if (AYAR.paylasim.length) {
+    ScriptApp.newTrigger('driveDenetimi').timeBased().everyHours(1).create();
+    const g = gizliAltKlasorler(harita);
+    Logger.log('Drive erişimi: ' + AYAR.paylasim.length + ' klasör, denetim saatte bir.' +
+      (g.length ? ' DİKKAT, paylaşımın altında kişisel veri adlı klasörler var; bunlar taşınmadan ya da AYAR.gizliDegil\'e yazılmadan kimseye erişim verilmez: ' + g.join(' · ') : ''));
+  }
   // önbellek boşalınca dosyadan okumanın süresi
   const cache = CacheService.getScriptCache();
   cache.remove('kh:n');

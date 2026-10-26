@@ -279,8 +279,8 @@ Kullanıcı kimlikleri Firebase uid'leridir (Claude'dan aktarılıp eşlenmeyenl
 
 | Yol | Belge şekli | Yazan |
 |---|---|---|
-| `items/<kalemId>` | `{ owner:uid?, testNot, testFoto:[assetId], not, by, at }` + eski sürümden kalan alanlar (`v, cal, test, asama, karar, is, tas, dok, har` — artık durum hesabında kullanılmıyor) | `patchItem()` |
-| `checks/<kalemId>` | `{ s:{ "<i>":0\|1\|2 }, f:{ "<i>":{ v:'evet'\|'kismen'\|'hayir'\|'sonra', olc:bool, is:metin, db:'var'\|'yok', found:[{t,u}], asama:'tasarim'\|'uretim'\|'test'\|'uygun', not, foto:[assetId], emek:[uid] } }, by, at }` | `setFlow()` |
+| `items/<kalemId>` | `{ owner:uid?, testNot, testFoto:[assetId], found:[{t,u,by}], not, by, at }` + eski sürümden kalan alanlar (`v, cal, test, asama, karar, is, tas, dok, har` — artık durum hesabında kullanılmıyor) | `patchItem()` |
+| `checks/<kalemId>` | `{ s:{ "<i>":0\|1\|2 }, f:{ "<i>":{ v:'evet'\|'kismen'\|'hayir'\|'sonra', olc:bool, is:metin, db:'var'\|'yok', found:[{t,u,by}], asama:'tasarim'\|'uretim'\|'test'\|'uygun', not, foto:[assetId], emek:[uid] } }, by, at }` | `setFlow()` |
 | `rapor/<kalemId>` | `{ f:{ "<alan>":{ v, by, at, src, ok:{by,at}\|null, h:[{v,by,at}] } }, by, at }` (eski biçim: `v:{alan:"değer"}` — okunur) | `setRapor()` |
 | `log/<auto>` | `{ by, at, item, text }` — son hareketler akışı | `logIt()` |
 | `chat/<kanal>/m/<auto>` | `{ text≤1000, by, at, item? }` — kanallar: `genel, M, E, O` | sohbet formu |
@@ -292,6 +292,11 @@ Kullanıcı kimlikleri Firebase uid'leridir (Claude'dan aktarılıp eşlenmeyenl
 
 Erişim kuralları `firestore.rules`'ta: yalnız aktif üyeler okur ve yazar; `members` herkes yalnız kendi belgesini,
 `log` ve `chat` yalnız kendi adına ekler (`by` = kendi uid'i), `uyeler` ve `indeks`'i yalnız iki kurucu hesap (`voltaris.official@gmail.com`, `alikemaltopak@gmail.com`) yazar.
+`items`, `checks`, `rapor` belgelerini bütün olarak yalnız kurucular siler. Kaleme ya da öncüle eklenen bir dosyayı (`found`) ve
+fotoğrafı (`testFoto`, `foto`, `fotolar/<id>`) yalnız onu ekleyen (`by`; fotoğrafta `fotolar/<id>.by`) ya da bir kurucu kaldırır.
+Kurallar döngü kuramadığı için bir yazma her listeden en fazla bir girdi düşürebilir: panel girdileri tek tek kaldırır ve liste
+dolunca (kalemde 30, öncülde 12 dosya) en eskiyi atmak yerine eklemeyi reddeder. `by`'ı olmayan eski girdileri yalnız kurucular kaldırır.
+Öncül anahtarları kuralda 0–19 olarak sayılı; 20'den çok öncüllü bir kalem gelirse `oncullerUygun()` genişletilmeli.
 Yönetici rolü bilerek yok: kimse bir üyeye bu yetkiyi veremez; eski kayıtlarda `rol` alanı kalmışsa yok sayılır.
 
 ### Doğrulama (TTR verisi)
@@ -316,7 +321,7 @@ Panel Claude Artifact için yazılmıştı ve yeteneklerini `window.claude.use('
 | `db` (paylaşılan belge veritabanı) | Firestore | `update` = `setDoc(..., {merge:true})`: iç içe nesneleri birleştirir, dizileri değiştirir, belge yoksa oluşturur (Claude'daki davranış). `writeDoc()` bu yüzden set/update ayrımı yapmıyor. Yetki hatası `permission-denied` → panelin beklediği `invalid_argument`. |
 | `user` (`me`, `can`, `profiles`) | Firebase Auth (Google) + `uyeler` + `members` | Giriş kapısını yalnız üyeler geçtiği için `can()` her zaman `true`. Ad önce `uyeler`'deki addan, yoksa Google adından gelir; `members/<uid>`'e yazılır, `profiles()` oradan okur. |
 | `assets` (`upload`, `/_blob/<id>`, `delete`) | Firestore `fotolar/<id>` | Firebase Storage yeni projelerde ücretli Blaze planı istiyor; küçültülmüş JPEG bir Firestore belgesine sığıyor. Görüntü `blobSrc(id)` ile önce boş, gelince gerçek. 900 KB'ı aşan fotoğraf otomatik küçültülür. |
-| `mcp` (görüntüleyenin Drive'ında arama) | `apps-script/DriveArama.gs` | Takımın Drive'ında, voltaris.official adına; üyelik her istekte kontrol edilir. Üyelerden Drive izni istenmez. |
+| `mcp` (görüntüleyenin Drive'ında arama) | `apps-script/DriveArama.gs` | Takımın Drive'ında, voltaris.official adına; üyelik her istekte kontrol edilir. Üyelerden Drive izni istenmez. Aynı script takım klasörlerinin paylaşımını üye listesine uydurur: aktif üye okuyucu, pasif ya da çıkarılmış üyenin erişimi kaldırılır (`DRIVE_ARAMA.md`, "Drive erişimi"). |
 | `hot` (yeniden yayında sekmeyi koruma) | kaldırıldı | Sekme zaten `localStorage`'da (`vh-tab`). |
 | `models/voltaris-arac.gltf.json` (base64 gömülü) | `/models/voltaris-arac.glb` | Artifact `data:` URL'lerini engellediği için gerekiyordu; site doğrudan GLB yüklüyor. |
 | `fetch('data/indeks.json')` | `indeksOku()` | Statik dosya herkese açık olurdu; artık Firestore'dan, yalnız üyelere. |
@@ -421,6 +426,7 @@ birebir yeniden üretildiği Claude sürümünde doğrulanmıştı.
 - **Yapay zekâ yasağı (rapor içeriği):** Bölüm 6 madde 2.1.b "Rapor içeriğinde AI/GPT kullanımı yasaktır." Bölüm 1 madde 2.3.r: tespit edilirse rapor değerlendirme dışı, takım diskalifiye. Paneldeki metin bölümü kutularına yapay zekâ ile üretilmiş metin yapıştırılmamalı; panel takip aracıdır, rapor metnini takım kendisi yazar. Aynı yerde: benzerlik ≤ %20 (2.1.a), kopyala-yapıştır alıntı toplamı ≤ 1 sayfa (2.1.c), başka kaynaktan şekil ≤ %5 ve atıflı (2.1.e).
 - **Kişisel veri:** Drive'da başvuru formları, kimlik bilgisi içeren belgeler var. Bunlar indekse ve panele girmemeli (`build_indeks.py`'deki `SENS` deseni + Sponsorluk/Sosyal Medya hariç). Takım üye tablosu panelde yok.
 - **Gizli tutulacak dosyalar:** `data-export/`, `indeks.json`, `panel/kaynak/` içindeki indeks dosyaları. Site deposu herkese açık; bunlar `.gitignore`'da ve **depoya girmemeli**. İndeks Firestore'dan yalnız giriş yapmış üyelere sunulur.
+- **Drive erişimi:** üyeler takım klasörlerinde yalnız okuyucudur; düzenleme ve silme kurucularda. Üyeler ekranında aktiflik değişince script paylaşımı eşitler, saatte bir de ayrıca paylaşılmış dosyaları denetler. Bir üyenin **sahibi** olduğu dosyalar ona her zaman açıktır (rapor bunları sayar); sahipliğin voltaris.official'a devredilmesi gerekir. Paylaşılan ağaçta kişisel veri adlı bir klasör varsa script kimseye yeni erişim vermez.
 - **Kullanıcı girdisi:** her şey `esc()` ile kaçışlanır; linkler `safeUrl()` ile yalnız http/https; asset id'leri `/^[A-Za-z0-9_-]{16,64}$/` ile doğrulanır. Taşırken bu korumaları koru.
 
 ---
