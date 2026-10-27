@@ -175,6 +175,7 @@ function erisimRaporu(r){
   const ad = e => esc(uyeler.find(u => u.email === e)?.ad || e);
   const satir = [`<b>Eşitlendi</b> (${new Date().toLocaleTimeString('tr', { hour:'2-digit', minute:'2-digit' })}): ${r.uye} aktif üye okuyucu.`];
   if(r.eklenen?.length) satir.push(`Erişim verildi: ${r.eklenen.map(ad).join(', ')}.`);
+  if(r.googleYok?.length) satir.push(`<span style="color:var(--bad)">Google hesabı olmadığı için Drive erişimi verilemedi (panele de giremezler): ${r.googleYok.map(ad).join(', ')}. Google e-postalarını sorup listede adreslerini değiştir; sonraki eşitlemede eklenirler.</span>`);
   if(r.okuraCekilen?.length) satir.push(`Düzenleme yetkisi okumaya çekildi: ${r.okuraCekilen.map(ad).join(', ')}.`);
   if(r.cikarilan?.length) satir.push(`Erişimi kaldırıldı: ${r.cikarilan.map(ad).join(', ')}.`);
   const dsy = r.dosya || {};

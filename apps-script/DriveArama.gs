@@ -363,14 +363,14 @@ function esitle(token) {
 
     const harita = klasorHaritasi(false);
     const gizli = gizliAltKlasorler(harita);
-    const r = { uye: aktif.length, eklenen: [], okuraCekilen: [], cikarilan: [], disaridaYazar: [], herkeseAcik: [], gizli: gizli, hatalar: [] };
+    const r = { uye: aktif.length, eklenen: [], googleYok: [], okuraCekilen: [], cikarilan: [], disaridaYazar: [], herkeseAcik: [], gizli: gizli, hatalar: [] };
     AYAR.paylasim.forEach(function (kok) {
       let izinler;
       try { izinler = kokIzinleri(kok); } catch (err) { r.hatalar.push(kok + ': ' + err.message); return; }
       aktif.forEach(function (e) {
         const p = izinler.kisi[e];
         // kişisel veri adlı bir klasör paylaşımın altındaysa kimseye yeni erişim verilmez
-        if (!p) { if (!gizli.length) dene(r, function () { Drive.Permissions.create({ type: 'user', role: 'reader', emailAddress: e }, kok, { sendNotificationEmail: false, supportsAllDrives: true }); r.eklenen.push(e); }); }
+        if (!p) { if (!gizli.length) okuyucuEkle(r, kok, e); }
         else if (YAZAR[p.role]) dene(r, function () { Drive.Permissions.update({ role: 'reader' }, kok, p.id, { supportsAllDrives: true }); r.okuraCekilen.push(e); });
       });
       cekilecek.forEach(function (e) {
@@ -382,12 +382,26 @@ function esitle(token) {
       });
       if (izinler.herkes) r.herkeseAcik.push(kok);
     });
-    ['eklenen', 'okuraCekilen', 'cikarilan', 'disaridaYazar'].forEach(function (k) { r[k] = tekil(r[k]); });
+    ['eklenen', 'googleYok', 'okuraCekilen', 'cikarilan', 'disaridaYazar'].forEach(function (k) { r[k] = tekil(r[k]); });
     paylasimDurumuYaz({ verilen: aktif, cekilecek: cekilecek });
     const d = denetle(harita, ESITLEME_SURE_MS);
     r.dosya = d; r.hatalar = r.hatalar.concat(d.hatalar).slice(0, 10);
     return r;
   } finally { kilit.releaseLock(); }
+}
+
+// Drive shares silently only with Google accounts; for any other address it insists on an invitation
+// e-mail. Such a member stays without Drive access (and cannot sign in to the panel either) until
+// their entry is changed to the address of a Google account.
+function okuyucuEkle(r, kok, e) {
+  try {
+    Drive.Permissions.create({ type: 'user', role: 'reader', emailAddress: e }, kok, { sendNotificationEmail: false, supportsAllDrives: true });
+    r.eklenen.push(e);
+  } catch (err) {
+    const m = String(err && err.message || err);
+    if (/google account|notify people|sendNotificationEmail|invalidSharingRequest/i.test(m)) r.googleYok.push(e);
+    else if (r.hatalar.length < 10) r.hatalar.push(m.slice(0, 200));
+  }
 }
 
 function dene(r, is) { try { is(); } catch (err) { if (r.hatalar.length < 10) r.hatalar.push(String(err && err.message || err).slice(0, 200)); } }
