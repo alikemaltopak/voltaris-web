@@ -74,6 +74,7 @@ canvas), `SmoothScroll` (Lenis), `CustomCursor`.
   Üye listesini yalnız `voltaris.official` ve `alikemaltopak` (gmail) yönetir; yönetici rolü yok.
   Eklenen dosya/fotoğrafı yalnız ekleyen ya da bu iki hesap kaldırır (kural düzeyinde). Takım Drive'ında üyeler
   okuyucu; Üyeler ekranındaki değişiklik `DriveArama.gs` üzerinden paylaşımı eşitler.
+  Çevrimiçi üyeler Realtime Database'de (`cevrimici/`, kurallar `database.rules.json`); verinin geri kalanı Firestore'da.
 - `cad-assets/` — CAD → Blender → kare/GLB üretim betikleri (Python). Sitenin
   çalışma zamanının parçası değil; Vercel'e gitmez (`.vercelignore`).
 

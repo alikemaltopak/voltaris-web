@@ -28,9 +28,9 @@ const config = emulator
 // Without a config (a fresh checkout with no .env) the panel falls back to its local mode.
 export const configured = !!(config.apiKey && config.projectId);
 
-let auth = null, fs = null;
+let auth = null, fs = null, app = null;
 if(configured){
-  const app = initializeApp(config);
+  app = initializeApp(config);
   auth = getAuth(app);
   // ignoreUndefinedProperties: the panel's patches can carry undefined fields, which the Claude
   // database dropped silently and Firestore would reject.
@@ -72,7 +72,10 @@ export async function girisYap(){
     throw e;
   }
 }
-export const cikisYap = () => signOut(auth);
+// Leaving the presence list first: once signed out, the database would refuse the removal.
+let cikisOncesi = null;
+export const cikisOncesiniAyarla = f => { cikisOncesi = f; };
+export const cikisYap = async () => { try{ await cikisOncesi?.(); }catch{} return signOut(auth); };
 
 /* ---------- the three runtime objects the panel expects ---------- */
 
@@ -232,6 +235,48 @@ export async function driveEsitle(){
   const d = await scripteSor(url, { token, islem:'esitle' }, AbortSignal.timeout(180_000));
   if(!d?.ok) throw hata(d?.hata || 'esitleme', d?.mesaj);
   return d;
+}
+
+/* ---------- çevrimiçi üyeler (Realtime Database) ---------- */
+
+// Who has the panel open, and where. Firestore would bill every open panel a read for every heartbeat;
+// the Realtime Database keeps one node per open tab and its server deletes the node the moment the
+// connection drops (onDisconnect), so a closed laptop or a lost network drops off with no help from the
+// tab. Only the uid, the place and a time live there: names and units come from members/, which
+// non-members cannot read (database.rules.json). Loaded on demand so the panel opens as fast as before.
+const RTDB_URL = env.VITE_FIREBASE_DATABASE_URL || (config.projectId ? `https://${config.projectId}-default-rtdb.europe-west1.firebasedatabase.app` : '');
+export async function cevrimici(uid, cb){
+  if(!configured || !uid || !RTDB_URL) return null;
+  let m;
+  try{ m = await import('firebase/database'); }catch{ return null; }
+  const rdb = m.getDatabase(app, RTDB_URL);
+  if(emulator) m.connectDatabaseEmulator(rdb, '127.0.0.1', 9000);
+  const benim = m.push(m.ref(rdb, 'cevrimici/' + uid));
+  const yer = { kalem:'', sekme:'', uzakta:document.hidden };
+  const yaz = () => m.set(benim, { at:m.serverTimestamp(), ...yer }).catch(() => {});
+  // Each reconnect re-arms the server-side cleanup before announcing the tab again.
+  const offBag = m.onValue(m.ref(rdb, '.info/connected'), s => { if(s.val() === true) m.onDisconnect(benim).remove().then(yaz, () => {}); });
+  const offListe = m.onValue(m.ref(rdb, 'cevrimici'), s => {
+    const kisiler = [];
+    s.forEach(k => {
+      // several tabs of one person: away only if all are hidden; the place comes from the latest visible one
+      const sekmeler = []; k.forEach(b => { const v = b.val(); if(v && typeof v === 'object') sekmeler.push(v); });
+      if(!sekmeler.length) return;
+      const gorunen = sekmeler.filter(v => !v.uzakta), son = (gorunen.length ? gorunen : sekmeler).sort((a, b) => (b.at || 0) - (a.at || 0))[0];
+      kisiler.push({ uid:k.key, kalem:String(son.kalem || ''), sekme:String(son.sekme || ''), uzakta:!gorunen.length });
+    });
+    cb(kisiler);
+  }, () => cb(null));
+  const gorunurluk = () => { yer.uzakta = document.hidden; yaz(); };
+  document.addEventListener('visibilitychange', gorunurluk);
+  return {
+    yerim(kalem, sekme){
+      kalem = String(kalem || '').slice(0, 40); sekme = String(sekme || '').slice(0, 20);
+      if(kalem === yer.kalem && sekme === yer.sekme) return;
+      Object.assign(yer, { kalem, sekme }); yaz();
+    },
+    async kapat(){ document.removeEventListener('visibilitychange', gorunurluk); offBag(); offListe(); await m.remove(benim).catch(() => {}); },
+  };
 }
 
 /* ---------- ilerlemeyi sıfırlama ---------- */

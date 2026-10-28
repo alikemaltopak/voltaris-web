@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "cevrimici": {
+      ".read": "auth != null && auth.token.email_verified == true",
+      "$uid": {
+        ".write": "auth != null && auth.token.email_verified == true && auth.uid === $uid",
+        "$sekme": {
+          ".validate": "newData.hasChildren(['at'])",
+          "at": { ".validate": "newData.isNumber() && newData.val() <= now" },
+          "kalem": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "sekme": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "uzakta": { ".validate": "newData.isBoolean()" },
+          "$diger": { ".validate": false }
+        }
+      }
+    },
+    "$diger": { ".read": false, ".write": false }
+  }
+}

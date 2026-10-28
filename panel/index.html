@@ -73,6 +73,24 @@ h1,h2,h3{text-wrap:balance}
 .real-pct i{font-style:normal}
 .me{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
 .me img{width:26px;height:26px;border-radius:50%}
+/* çevrimiçi üyeler */
+.onl{position:relative}
+.onl-btn .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.onl-av{display:inline-flex}
+.onl-av>*{margin-left:-6px;border:2px solid var(--surface)}
+.onl-av>:first-child{margin-left:0}
+.onl .av{width:22px;height:22px;border-radius:50%;object-fit:cover;background:var(--sunk);display:inline-grid;place-items:center;font-size:10px;font-weight:700;color:var(--ink-2);flex:none}
+.onl-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:40;width:min(340px,calc(100vw - 32px));max-height:min(70vh,520px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,.18);padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+.onl-pop ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+.onl-pop li{display:flex;gap:10px;align-items:center;min-width:0}
+.onl-pop li .av{width:30px;height:30px;font-size:12px;border:0}
+.onl-pop li>div{min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.onl-pop li b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.onl-pop li b small{font-weight:400;color:var(--ink-3)}
+.onl-pop li .namebtn{font-size:12.5px}
+.onl-pop li.uzak{opacity:.55}
+.onl-pop .help{margin:0}
+@media (max-width:640px){ .onl{position:static} .onl-pop{position:fixed;left:16px;right:16px;top:64px;width:auto} }
 .sel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-height:36px;color:var(--ink);max-width:100%}
 .btn{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 12px;color:var(--ink);font-size:13.5px;cursor:pointer;min-height:36px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .btn:hover{border-color:var(--ink-3)}
@@ -609,6 +627,8 @@ summary{cursor:pointer}
       <select class="sel" id="myBirim"><option value="">Seçilmedi</option><option value="M">Mekanik</option><option value="E">Elektrik-Elektronik</option><option value="O">Organizasyon ve Sosyal Medya</option></select>
       <button class="me mebtn" id="me" type="button" hidden title="Profilim: araca katkın" aria-haspopup="dialog"></button>
       <button class="btn" id="yonetimBtn" type="button" hidden>Üyeler</button>
+      <div class="onl"><button class="btn onl-btn" id="onlineBtn" type="button" hidden aria-expanded="false" aria-controls="onlinePop"><span class="dot" aria-hidden="true"></span><span><b id="onlineN">0</b> çevrimiçi</span><span class="onl-av" id="onlineAv" aria-hidden="true"></span></button>
+        <div class="onl-pop" id="onlinePop" hidden role="dialog" aria-label="Çevrimiçi üyeler"></div></div>
       <button class="btn" id="chatBtn" type="button" aria-expanded="false">Sohbet <span class="count" id="chatCount" hidden></span></button>
       <button class="btn" id="cikisBtn" type="button" hidden>Çıkış</button>
     </div>
@@ -847,6 +867,7 @@ const recs = {};      // items/<id>
 const checks = {};    // checks/<id>  -> {s:{index:0|1|2}, by, at}
 let logRows = [];
 let db=null, user=null, assets=null, myId=null, myBirim='', canWrite=null, mode='loading';
+let online=null, onlineAc=false, varlik=null;   // çevrimiçi üyeler: firebase.js cevrimici()
 let selected='sasi', xray=false, selBar='mek:0', filter='all', tab='arac', chatOpen=false, chan='genel', attachItem=null;
 let driveState = {}; const openReq = new Set(); let selEt = 'dinamik';   // per item: {loading, results, msg, err}
 const chat = {}; const unread = {};
@@ -1621,11 +1642,51 @@ function renderAttach(){ const a=$('attach'); if(attachItem){ a.hidden=false; a.
 function renderAll(){ if(!$('dbPop').hidden && dbQ) renderDb(); renderHeader(); renderNotice(); renderCard(); renderList(); renderPlate(); if(tab==='takvim'){ renderLevels(); renderTimeline(); } if(tab==='birim'){ renderUnits(); renderFeed(); } if(tab==='sart' && sv.mode!=='sec') renderSart(); if(tab==='rapor') renderRapor(); syncScene(); }
 
 /* ---------- interactions ---------- */
-function select(id, jump){ selected=id; openStep[id]=0; const it=byId(id); if(it.ets.length && !it.ets.includes(selEt)) selEt=it.ets[0]; if(tab!=='arac') setTab('arac'); renderCard(); renderList(); renderPlate(); syncScene();
+function select(id, jump){ selected=id; openStep[id]=0; const it=byId(id); if(it.ets.length && !it.ets.includes(selEt)) selEt=it.ets[0]; if(tab!=='arac') setTab('arac'); renderCard(); renderList(); renderPlate(); syncScene(); yerimiBildir();
   if(jump && window.innerWidth<1001){ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches; $('card').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'}); } }
 function setTab(t){ if(!$('v-'+t)) t='arac'; tab=t; ['arac','kontrol','sart','takvim','birim','rapor'].forEach(x=>{ $('v-'+x).hidden = x!==t; });
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===t)); try{ localStorage.setItem('vh-tab',t); }catch(e){}
-  if(t==='takvim'){ renderLevels(); renderTimeline(); } if(t==='birim'){ renderUnits(); renderFeed(); } if(t==='sart') renderSart(); if(t==='kontrol') renderPlate(); if(t==='rapor') renderRapor(); }
+  if(t==='takvim'){ renderLevels(); renderTimeline(); } if(t==='birim'){ renderUnits(); renderFeed(); } if(t==='sart') renderSart(); if(t==='kontrol') renderPlate(); if(t==='rapor') renderRapor(); yerimiBildir(); }
+
+/* ---------- çevrimiçi üyeler ---------- */
+// Who else has the panel open and where. Presence comes from the Realtime Database (firebase.js
+// cevrimici); names, photos and units from members/, read once and again when a stranger uid shows up.
+const kartlar = new Map(); let kartlarP=null, kartSaat=0;
+const sekmeAdi = t => document.querySelector(`.tab[data-tab="${t}"]`)?.textContent.trim() || '';
+function yerimiBildir(){ varlik?.yerim(tab==='arac' ? selected : '', tab); }
+// tazele: opening the list re-reads cards at most once a minute, so a changed unit shows up too
+function kartlariTamamla(tazele){
+  if(!online || kartlarP) return;
+  if(tazele ? Date.now()-kartSaat<60000 : (online.every(o=>kartlar.has(o.uid)) || Date.now()-kartSaat<30000)) return;
+  kartSaat=Date.now();
+  kartlarP=fb.profiller().then(l=>l.forEach(p=>{ if(p.id!==myId) kartlar.set(p.id, p); })).catch(()=>{}).finally(()=>{ kartlarP=null; renderOnline(); });
+}
+// a uid without a members/ card is not a member (rules keep them out of members/), so it is left out
+const onlineKisiler = () => (online||[]).map(o=>({ ...o, p:kartlar.get(o.uid) })).filter(o=>o.p)
+  .map(o=>({ ...o, birim: o.uid===myId ? myBirim : (o.p.birim||'') }))
+  .sort((a,b)=>(b.uid===myId)-(a.uid===myId) || a.uzakta-b.uzakta || String(a.p.ad||'').localeCompare(String(b.p.ad||''),'tr'));
+const onlineAv = o => o.p.foto ? `<img class="av" src="${esc(o.p.foto)}" alt="" referrerpolicy="no-referrer" loading="lazy">` : `<span class="av">${esc((String(o.p.ad||'?').trim()[0]||'?').toLocaleUpperCase('tr'))}</span>`;
+function onlineYer(o){ const it=o.kalem && byId(o.kalem);
+  if(it) return `<button type="button" class="namebtn" data-goto="${it.id}">${esc(it.name)}</button> kaleminde`;
+  return o.sekme ? `${esc(sekmeAdi(o.sekme))} sekmesinde` : 'panelde'; }
+function renderOnline(){
+  const b=$('onlineBtn'), pop=$('onlinePop');
+  if(!online){ b.hidden=true; pop.hidden=true; return; }
+  const ks=onlineKisiler();
+  b.hidden=false; $('onlineN').textContent=ks.length;
+  $('onlineAv').innerHTML=ks.filter(o=>o.uid!==myId).slice(0,4).map(onlineAv).join('');
+  b.setAttribute('aria-label', `${ks.length} kişi çevrimiçi; listeyi aç`);
+  if(pop.hidden) return;
+  const gruplar=[['M',BIRIM_TAG.M],['E',BIRIM_TAG.E],['O',BIRIM_TAG.O],['','Birim seçilmemiş']];
+  pop.innerHTML = gruplar.map(([k,ad])=>{ const g=ks.filter(o=>o.birim===k); if(!g.length) return '';
+    return `<div><span class="sub-h">${esc(ad)} <span class="mono">${g.length}</span></span><ul>${g.map(o=>`<li class="${o.uzakta?'uzak':''}">${onlineAv(o)}<div><b>${esc(o.p.ad||'Bir ekip üyesi')}${o.uid===myId?' <small>(sen)</small>':''}</b><span class="when">${onlineYer(o)}${o.uzakta?' · uzakta':''}</span></div></li>`).join('')}</ul></div>`; }).join('')
+    + (ks.length<2 ? '<p class="help">Şu an panelde başka kimse yok.</p>' : '');
+}
+function toggleOnline(ac){ onlineAc = ac ?? !onlineAc; $('onlinePop').hidden=!onlineAc; $('onlineBtn').setAttribute('aria-expanded', onlineAc); if(onlineAc){ kartlariTamamla(true); renderOnline(); } }
+$('onlineBtn').addEventListener('click', ()=>toggleOnline());
+$('onlinePop').addEventListener('click', e=>{ if(e.target.closest('[data-goto]')) toggleOnline(false); });
+document.addEventListener('click', e=>{ if(onlineAc && !e.target.closest('#onlinePop, #onlineBtn')) toggleOnline(false); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && onlineAc){ toggleOnline(false); $('onlineBtn').focus(); } });
 document.querySelector('.tabs').addEventListener('click', e=>{ const b=e.target.closest('.tab'); if(b) setTab(b.dataset.tab); });
 document.addEventListener('click', e=>{ const g=e.target.closest('[data-goto]'); if(g){ e.preventDefault(); select(g.dataset.goto, true); if(window.innerWidth<700 && chatOpen) toggleChat(false); } });
 
@@ -1777,6 +1838,9 @@ async function connect(oturum){
   if(!myBirim && ['M','E','O'].includes(oturum.birim)) myBirim=oturum.birim;
   const el=$('me'); el.hidden=false; el.innerHTML=oturum.me.avatarUrl?`<img src="${esc(oturum.me.avatarUrl)}" alt="" referrerpolicy="no-referrer"><span></span>`:'<span></span>'; el.querySelector('span').textContent=oturum.me.name;
   $('cikisBtn').hidden=false; $('yonetimBtn').hidden=!oturum.yonetici; benKurucu=!!oturum.yonetici;
+  kartlar.set(myId, { id:myId, ad:oturum.me.name, foto:oturum.me.avatarUrl });
+  fb.cevrimici(myId, l=>{ online=l; kartlariTamamla(); renderOnline(); })
+    .then(v=>{ varlik=v; if(v){ fb.cikisOncesiniAyarla(()=>v.kapat()); yerimiBildir(); } }).catch(()=>{});
   db.collection('items').onSnapshot(snap=>{
     snap.docs.forEach(doc=>{ exists.items.add(doc.id); if(byId(doc.id)) recs[doc.id] = clean(doc.data()); });
     renderAll();

@@ -288,6 +288,7 @@ Kullanıcı kimlikleri Firebase uid'leridir (Claude'dan aktarılıp eşlenmeyenl
 | `fotolar/<id>` | `{ veri: bayt (JPEG ≤ 900 KB), tur, by, at }`. Fotoğraflar 1600 px JPEG'e küçültülür; kalem belgelerinde yalnız id saklanır | `uploadPhotos()` → `assets.upload()` |
 | `uyeler/<e-posta>` | `{ ad, birim, aktif, at }` — belge kimliği küçük harfli Google e-postası; panele kimin girebileceğini belirler | `yonetim.js` |
 | `ayarlar/genel` | `{ driveArama: Apps Script adresi, at }` — kurucular yazar, üyeler okur | `yonetim.js` |
+| Realtime Database `cevrimici/<uid>/<sekme>` | `{ at, kalem, sekme, uzakta }` — açık her panel sekmesi için bir düğüm; bağlantı kopunca sunucu siler (`onDisconnect`) | `cevrimici()` |
 | `indeks/meta`, `indeks/p<n>` | `{ ver, parca, at }` ve `{ json: metin parçası }` — takım arşivi indeksi (bölüm 10) | `indeksYaz()` |
 
 Erişim kuralları `firestore.rules`'ta: yalnız aktif üyeler okur ve yazar; `members` herkes yalnız kendi belgesini,
@@ -322,6 +323,7 @@ Panel Claude Artifact için yazılmıştı ve yeteneklerini `window.claude.use('
 | `user` (`me`, `can`, `profiles`) | Firebase Auth (Google) + `uyeler` + `members` | Giriş kapısını yalnız üyeler geçtiği için `can()` her zaman `true`. Ad önce `uyeler`'deki addan, yoksa Google adından gelir; `members/<uid>`'e yazılır, `profiles()` oradan okur. |
 | `assets` (`upload`, `/_blob/<id>`, `delete`) | Firestore `fotolar/<id>` | Firebase Storage yeni projelerde ücretli Blaze planı istiyor; küçültülmüş JPEG bir Firestore belgesine sığıyor. Görüntü `blobSrc(id)` ile önce boş, gelince gerçek. 900 KB'ı aşan fotoğraf otomatik küçültülür. |
 | `mcp` (görüntüleyenin Drive'ında arama) | `apps-script/DriveArama.gs` | Takımın Drive'ında, voltaris.official adına; üyelik her istekte kontrol edilir. Üyelerden Drive izni istenmez. Aynı script takım klasörlerinin paylaşımını üye listesine uydurur: aktif üye okuyucu, pasif ya da çıkarılmış üyenin erişimi kaldırılır (`DRIVE_ARAMA.md`, "Drive erişimi"). |
+| (yok) çevrimiçi üyeler | Realtime Database `cevrimici/` | Üst çubukta "● N çevrimiçi": kim, hangi birimde, hangi kalemde ya da sekmede, sekmesi arkadaysa "uzakta". Firestore'da her "buradayım" yazısı açık bütün panellere okuma olarak yansırdı; Realtime Database'de bağlantı kopunca sunucu kaydı kendisi siler. Orada yalnız uid, yer ve zaman durur; ad, fotoğraf ve birim `members/`'tan gelir, üye olmayan okuyamaz. Kurallar `database.rules.json`. Adres `VITE_FIREBASE_DATABASE_URL` ya da proje kimliğinden (`<proje>-default-rtdb.europe-west1`). Veritabanı yoksa ya da kurallar yayında değilse düğme görünmez. |
 | `hot` (yeniden yayında sekmeyi koruma) | kaldırıldı | Sekme zaten `localStorage`'da (`vh-tab`). |
 | `models/voltaris-arac.gltf.json` (base64 gömülü) | `/models/voltaris-arac.glb` | Artifact `data:` URL'lerini engellediği için gerekiyordu; site doğrudan GLB yüklüyor. |
 | `fetch('data/indeks.json')` | `indeksOku()` | Statik dosya herkese açık olurdu; artık Firestore'dan, yalnız üyelere. |
@@ -352,6 +354,8 @@ ikisi `firestore.rules`'taki `kurucu()` ve `firebase.js`'teki `KURUCULAR` listes
 3. **Veritabanı.** Firestore Database → Create database → production mode, konum `eur3 (europe-west)`.
 4. **Kurallar.** `firestore.rules`'un içeriğini Firestore → Rules'a yapıştırıp Publish et ya da
    `npx firebase-tools deploy --only firestore:rules --project <proje-id>`. Kural değişince bu adım tekrarlanır.
+   **Çevrimiçi üyeler için** Build → Realtime Database → Create database (europe-west1, locked mode), sonra
+   `database.rules.json`'u Realtime Database → Rules'a yapıştırıp Publish et (ya da `deploy --only database`).
 5. **Ayarlar.** Proje ayarları → Your apps → Web (`</>`) → uygulama ekle → `firebaseConfig`'teki `apiKey`, `authDomain`,
    `projectId`, `appId` değerlerini `.env`'e (`.env.example`'daki adlarla) **ve** Vercel → Settings → Environment Variables'a
    gir. Vercel'de yeniden deploy et. Bu değerler gizli değildir (derlemeye gömülür); veriyi kurallar korur.
