@@ -86,13 +86,20 @@ Sonucu tablonun altında görürsün. "Drive erişimini şimdi eşitle" ile elle
 1. **Önce Drive'ı hazırla.**
    - Takım klasörünün paylaşımında "Bağlantıya sahip olan herkes" açıksa **Kısıtlı** yap. Yoksa erişimi kaldırılan üye linkle girmeye devam eder.
    - Başvuru formu, kimlik, iletişim listesi gibi kişisel veri taşıyan klasörleri paylaşılacak ağacın **dışına** taşı.
-     Script, ağaçta adı bunlara benzeyen bir klasör (başvuru, kimlik, fatura, Sponsorluk…) görürse kimseye yeni erişim
-     vermez ve klasörün yolunu raporda gösterir. Adı yanlışlıkla desene takılan bir klasörü ("Telefon tutucu") kontrol
-     ettiysen kimliğini `AYAR.gizliDegil`'e yaz.
-2. `DriveArama.gs`'de `AYAR.paylasim` içine takım klasörünün kimliğini yaz (klasörün adresindeki `/folders/` sonrası):
+     Script, ağaçta adı bunlara benzeyen bir klasör ya da dosya (başvuru, kimlik, fatura, Sponsorluk…) görürse kimseye
+     yeni erişim vermez ve yolunu raporda gösterir. Kontrol ettiğin ve paylaşılabilecek olanın (ör. "Telefon tutucu")
+     kimliğini `AYAR.gizliDegil`'e yaz; bir klasörü yazmak altındaki her şeyi de serbest bırakır. Kişisel veriyi
+     toplamak için en temizi: Drive'ım'da bir "Yönetim" klasörü açıp başvuruları ve benzerlerini oraya taşımak,
+     kimliğini `paylasmaHaric`'e yazmak.
+2. `DriveArama.gs`'de `AYAR.paylasim`'i ayarla. İki seçenek var:
    ```js
-   paylasim: ['1AbCdEf...'],
+   paylasim: 'hepsi',              // Drive'ım'ın en üstündeki bütün klasörler; yeni açılanlar da kendiliğinden girer
+   paylasmaHaric: ['1XyZ...'],     // 'hepsi' iken paylaşılmayacak en üst klasörler (ör. "Yönetim")
    ```
+   ya da yalnız belirli klasörler: `paylasim: ['1AbCdEf...', ...]` (klasör adresindeki `/folders/` sonrası).
+   Drive'ım'ın en üstünde klasörsüz duran dosyalar hiçbir zaman paylaşılmaz; paylaşılacak dosya bir klasöre konur.
+   Başkasına ait, "Benimle paylaşılanlar"daki klasörleri script paylaşamaz: sahibi üyelerle paylaşmalı ya da
+   voltaris.official bir kopyasını kendi Drive'ına almalı.
 3. Kodu yapıştır → Kaydet → **`kurulum`'u bir kez çalıştır**. Saatlik `driveDenetimi` tetikleyicisi kurulur. Günlükte
    "Drive erişimi: 1 klasör, denetim saatte bir." satırını görmelisin. Bir "DİKKAT" satırı varsa 1. adımdaki klasörleri düzelt.
 4. **Dağıt → Dağıtımları yönet → Yeni sürüm** (adres değişmez).
@@ -110,6 +117,8 @@ Sonucu tablonun altında görürsün. "Drive erişimini şimdi eşitle" ile elle
   belge paylaşılan ağacın dışında ve sahibi üye. Ancak sahibi üye olduğu için belgeyi değiştirip silebilir, ayrılınca
   da belge onda kalır. Diğer üyeler de ancak sahip onlarla da paylaştıysa açabilir. Kalıcı olması gereken belgeyi
   voltaris.official "Kopyasını oluştur" ile takım klasörüne alır. Kopyanın sahibi takım olur ve bütün üyeler okur.
+- **Uzun ilk eşitleme.** Bir eşitleme en fazla 2 dakika erişim dağıtır (panel 3 dakikada vazgeçer). Çok klasör ve
+  üyede rapor "Erişimlerin bir kısmı verildi" der; düğmeye bir kez daha bas ya da saatlik denetimi bekle, o da kalanı verir.
 - **Bekleme.** Kök klasörde yapılan değişiklik Drive'da alt dosyalara birkaç dakikada yayılır. Erişim panelden hemen
   kesilir, Drive'daki tam temizlik saatlik denetimle tamamlanır.
 - **Ortak drive (Shared drive).** Takım klasörü bir ortak drive'daysa drive üyeliği bu scriptin dışındadır; oradaki

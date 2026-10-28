@@ -36,10 +36,15 @@ const AYAR = {
   // Kimlik, klasörün Drive adresindeki /folders/ sonrasındaki kısımdır.
   kokKlasorler: [],
   enFazla: 25,
-  // Üyelerin okuyucu olacağı takım klasörleri (kimlikler, kokKlasorler gibi). Boşsa paylaşıma dokunulmaz.
+  // Üyelerin okuyucu olacağı yer. 'hepsi': Drive'ım'ın en üstündeki, voltaris.official'a ait bütün klasörler
+  // (paylasmaHaric dışında); sonradan açılan klasörler de kendiliğinden girer. En üstte klasörsüz duran
+  // dosyalar paylaşılmaz: paylaşılacak dosya bir klasöre konur. Ya da yalnız belirli klasörler:
+  // ['1AbC…', …] (kimlikler, kokKlasorler gibi). Boşsa paylaşıma dokunulmaz.
   paylasim: [],
-  // Paylaşılan klasörlerin altında kişisel veri adlı bir klasör (GIZLI, GIZLI_KLASOR) varsa kimseye erişim
-  // verilmez. Adı yanlışlıkla desene takılan bir klasör ("Telefon tutucu") kontrol edilip buraya yazılır.
+  // paylasim 'hepsi' iken paylaşılmayacak en üst klasörler, ör. başvuruların durduğu bir "Yönetim" klasörü.
+  paylasmaHaric: [],
+  // Paylaşılan klasörlerin altında kişisel veri adlı bir klasör ya da dosya (GIZLI, GIZLI_KLASOR) varsa kimseye
+  // erişim verilmez. Adı yanlışlıkla desene takılan biri ("Telefon tutucu") kontrol edilip kimliği buraya yazılır.
   gizliDegil: [],
 };
 
@@ -324,7 +329,7 @@ function tur(mime, ad) {
 /* ---------- Drive erişimi: üyeler yalnız okuyucu ---------- */
 
 // Kurucu panelde bir üyeyi ekleyince, pasife alınca ya da listeden çıkarınca panel buraya `islem: 'esitle'`
-// gönderir. Script üye listesini o kurucunun kimliğiyle Firestore'dan okur ve AYAR.paylasim klasörlerinde:
+// gönderir. Script üye listesini o kurucunun kimliğiyle Firestore'dan okur ve paylaşılan köklerde (kokler()):
 //  - aktif üyeyi okuyucu yapar (yoksa ekler, düzenleyiciyse okuyucuya çeker; bildirim e-postası gitmez),
 //  - pasif ya da listeden çıkarılmış üyenin erişimini kaldırır.
 // Kurucuların ve listede hiç olmamış kişilerin (danışman, eski kaptan…) erişimine dokunmaz, yalnız raporlar.
@@ -332,7 +337,25 @@ function tur(mime, ad) {
 // paylaşılmışsa o izin kökten bağımsızdır. Onları denetle() bulur: eşitlemenin sonunda kısa bir tur,
 // sonra saatte bir tetikleyiciyle (kurulum). Çıkarılan bir üye, ağaçta bir izni kalmayana kadar izlenir.
 const YAZAR = { writer: true, fileOrganizer: true, organizer: true };
-const ESITLEME_SURE_MS = 20000, DENETIM_SURE_MS = 60000;
+// The panel gives up after 180 s, so a sync hands out access for at most VERME_SURE_MS and leaves the rest
+// to the next press or to the hourly run, which grants from the stored member list.
+const VERME_SURE_MS = 120000, ESITLEME_SURE_MS = 20000, DENETIM_SURE_MS = 60000;
+
+// Paylaşılan kökler. 'hepsi' her çalışmada Drive'ım'dan yeniden okunur: yeni açılan klasör de girer.
+let KOKLER = null;
+function kokler() {
+  if (KOKLER) return KOKLER;
+  if (AYAR.paylasim !== 'hepsi') return (KOKLER = (AYAR.paylasim || []).slice());
+  const k = [];
+  let sayfa;
+  do {
+    const r = Drive.Files.list({ q: "'root' in parents and 'me' in owners and trashed = false and mimeType = '" + KLASOR + "'",
+      pageSize: 200, pageToken: sayfa, fields: 'nextPageToken, files(id, name)' });
+    (r.files || []).forEach(function (f) { if (AYAR.paylasmaHaric.indexOf(f.id) < 0) k.push(f.id); });
+    sayfa = r.nextPageToken;
+  } while (sayfa);
+  return (KOKLER = k);
+}
 
 function hataKod(kod, mesaj) { const e = new Error(mesaj || kod); e.kod = kod; return e; }
 const kurucuMu = function (e) { return AYAR.kurucular.indexOf(e) >= 0; };
@@ -348,7 +371,7 @@ function paylasimDurumu() {
 function paylasimDurumuYaz(d) { PropertiesService.getScriptProperties().setProperty('paylasim', JSON.stringify(d)); }
 
 function esitle(token) {
-  if (!AYAR.paylasim.length) throw hataKod('paylasim-yok');
+  if (!kokler().length) throw hataKod('paylasim-yok');
   const kilit = LockService.getScriptLock();
   if (!kilit.tryLock(30000)) throw hataKod('mesgul');
   try {
@@ -362,32 +385,43 @@ function esitle(token) {
     const listede = {}; liste.forEach(function (u) { listede[u.email] = true; });
 
     const harita = klasorHaritasi(false);
-    const gizli = gizliAltKlasorler(harita);
-    const r = { uye: aktif.length, eklenen: [], googleYok: [], okuraCekilen: [], cikarilan: [], disaridaYazar: [], herkeseAcik: [], gizli: gizli, hatalar: [] };
-    AYAR.paylasim.forEach(function (kok) {
-      let izinler;
-      try { izinler = kokIzinleri(kok); } catch (err) { r.hatalar.push(kok + ': ' + err.message); return; }
-      aktif.forEach(function (e) {
-        const p = izinler.kisi[e];
-        // kişisel veri adlı bir klasör paylaşımın altındaysa kimseye yeni erişim verilmez
-        if (!p) { if (!gizli.length) okuyucuEkle(r, kok, e); }
-        else if (YAZAR[p.role]) dene(r, function () { Drive.Permissions.update({ role: 'reader' }, kok, p.id, { supportsAllDrives: true }); r.okuraCekilen.push(e); });
-      });
-      cekilecek.forEach(function (e) {
-        const p = izinler.kisi[e];
-        if (p && p.role !== 'owner') dene(r, function () { Drive.Permissions.remove(kok, p.id, { supportsAllDrives: true }); r.cikarilan.push(e); });
-      });
-      Object.keys(izinler.kisi).forEach(function (e) {
-        if (!listede[e] && !kurucuMu(e) && YAZAR[izinler.kisi[e].role]) r.disaridaYazar.push(e);
-      });
-      if (izinler.herkes) r.herkeseAcik.push(kok);
-    });
-    ['eklenen', 'googleYok', 'okuraCekilen', 'cikarilan', 'disaridaYazar'].forEach(function (k) { r[k] = tekil(r[k]); });
+    const r = kokleriEsitle(harita, aktif, cekilecek, listede);
     paylasimDurumuYaz({ verilen: aktif, cekilecek: cekilecek });
-    const d = denetle(harita, ESITLEME_SURE_MS);
+    const d = denetle(harita, r.yarim ? 5000 : ESITLEME_SURE_MS);
     r.dosya = d; r.hatalar = r.hatalar.concat(d.hatalar).slice(0, 10);
     return r;
   } finally { kilit.releaseLock(); }
+}
+
+// Her kökte: aktif üye okuyucu, çekilecek olanın izni kaldırılır. `listede` (eşitlemede) verilirse listede
+// olmayan düzenleyiciler raporlanır; saatlik çalışma onu bilmez. Süre dolarsa kalan erişimler sonraya kalır.
+function kokleriEsitle(harita, aktif, cekilecek, listede) {
+  const t0 = Date.now();
+  const gizli = gizliler(harita);
+  const r = { uye: aktif.length, kok: kokler().length, eklenen: [], googleYok: [], okuraCekilen: [], cikarilan: [], disaridaYazar: [], herkeseAcik: [], gizli: gizli, yarim: false, hatalar: [] };
+  kokler().forEach(function (kok) {
+    let izinler;
+    try { izinler = kokIzinleri(kok); } catch (err) { r.hatalar.push(kok + ': ' + err.message); return; }
+    // erişim kaldırmak süreye bakmaz: pasif üye beklememeli
+    cekilecek.forEach(function (e) {
+      const p = izinler.kisi[e];
+      if (p && p.role !== 'owner') dene(r, function () { Drive.Permissions.remove(kok, p.id, { supportsAllDrives: true }); r.cikarilan.push(e); });
+    });
+    aktif.forEach(function (e) {
+      const p = izinler.kisi[e];
+      if (p) { if (YAZAR[p.role]) dene(r, function () { Drive.Permissions.update({ role: 'reader' }, kok, p.id, { supportsAllDrives: true }); r.okuraCekilen.push(e); }); return; }
+      // kişisel veri adlı bir klasör ya da dosya paylaşımın altındaysa kimseye yeni erişim verilmez
+      if (gizli.length) return;
+      if (Date.now() - t0 > VERME_SURE_MS) { r.yarim = true; return; }
+      okuyucuEkle(r, kok, e);
+    });
+    if (listede) Object.keys(izinler.kisi).forEach(function (e) {
+      if (!listede[e] && !kurucuMu(e) && YAZAR[izinler.kisi[e].role]) r.disaridaYazar.push(e);
+    });
+    if (izinler.herkes) r.herkeseAcik.push(kok);
+  });
+  ['eklenen', 'googleYok', 'okuraCekilen', 'cikarilan', 'disaridaYazar'].forEach(function (k) { r[k] = tekil(r[k]); });
+  return r;
 }
 
 // Drive shares silently only with Google accounts; for any other address it insists on an invitation
@@ -441,7 +475,7 @@ function kokIzinleri(kok) {
 
 // Klasör kimliği → paylaşılan bir kökün altında mı (klasör haritasından)
 function agacBulucu(harita) {
-  const bellek = {}, kok = AYAR.paylasim;
+  const bellek = {}, kok = kokler();
   function bak(id, derinlik) {
     if (!id) return false;
     if (kok.indexOf(id) >= 0) return true;
@@ -451,14 +485,30 @@ function agacBulucu(harita) {
   return function (id) { return bak(id, 0); };
 }
 
-// Paylaşımın altında adı kişisel veriyi andıran klasörler, yollarıyla
-function gizliAltKlasorler(harita) {
+// Drive'ın ad araması kelime başını eşler; aday dosyalar bunlarla toplanıp GIZLI ile süzülür.
+const GIZLI_ARA = ['basvuru', 'başvuru', 'kimlik', 'nüfus', 'nufus', 'fatura', 'dekont', 'iban', 'banka', 'özgeçmiş', 'ozgecmis',
+  'cv', 'dilekçe', 'taahhüt', 'muvafakat', 'telefon', 'iletişim', 'sağlık', 'saglik', 'üye'];
+
+// Paylaşımın altında adı kişisel veriyi andıran klasör ve dosyalar, yollarıyla
+function gizliler(harita) {
   const agacta = agacBulucu(harita);
   const yolu = function (id) { const p = []; for (let x = id, d = 0; x && harita[x] && d < 60; x = harita[x][1], d++) p.unshift(harita[x][0]); return p.join('/'); };
-  return Object.keys(harita).filter(function (id) {
+  // gizliDegil'e yazılan bir klasörün altındaki her şey de kontrol edilmiş sayılır
+  const muaf = function (id) { for (let x = id, d = 0; x && d < 60; x = harita[x] && harita[x][1], d++) if (AYAR.gizliDegil.indexOf(x) >= 0) return true; return false; };
+  const bulunan = Object.keys(harita).filter(function (id) {
     const ad = norm(harita[id][0]).trim();
-    return (GIZLI_KLASOR.test(ad) || GIZLI.test(ad)) && AYAR.gizliDegil.indexOf(id) < 0 && agacta(id);
-  }).map(yolu).slice(0, 20);
+    return (GIZLI_KLASOR.test(ad) || GIZLI.test(ad)) && !muaf(id) && agacta(id);
+  }).map(yolu);
+  for (let i = 0; i < GIZLI_ARA.length && bulunan.length < 20; i += 10) {
+    const r = Drive.Files.list({ q: '(' + GIZLI_ARA.slice(i, i + 10).map(function (k) { return "name contains '" + k + "'"; }).join(' or ') +
+      ") and mimeType != '" + KLASOR + "' and trashed = false", pageSize: 500, fields: 'files(id, name, parents)',
+      corpora: 'allDrives', includeItemsFromAllDrives: true, supportsAllDrives: true });
+    (r.files || []).forEach(function (f) {
+      const ust = (f.parents || [])[0];
+      if (GIZLI.test(norm(f.name)) && AYAR.gizliDegil.indexOf(f.id) < 0 && !muaf(ust) && agacta(ust) && bulunan.length < 20) bulunan.push(yolu(ust) + '/' + f.name + ' [' + f.id + ']');
+    });
+  }
+  return tekil(bulunan).slice(0, 20);
 }
 
 // Ağaçtaki dosya ve klasörlerde kökten bağımsız kalmış izinleri düzeltir, süre yettiğince:
@@ -468,9 +518,9 @@ function denetle(harita, sureMs) {
   const t0 = Date.now(), vakit = function () { return Date.now() - t0 < sureMs; };
   const d = paylasimDurumu();
   const sonuc = { kaldirilan: 0, okuraCekilen: 0, sahip: {}, bekleyen: false, hatalar: [] };
-  if (!AYAR.paylasim.length) return sonuc;
+  if (!kokler().length) return sonuc;
   const agacta = agacBulucu(harita || klasorHaritasi(false));
-  const agacDosyasi = function (f) { return AYAR.paylasim.indexOf(f.id) >= 0 || (f.parents || []).some(agacta); };
+  const agacDosyasi = function (f) { return kokler().indexOf(f.id) >= 0 || (f.parents || []).some(agacta); };
   const izinDuzelt = function (f, eslesen, rol) {
     (f.permissions || []).forEach(function (p) {
       const e = String(p.emailAddress || '').toLowerCase();
@@ -509,11 +559,16 @@ function denetle(harita, sureMs) {
   return sonuc;
 }
 
-// Tetikleyici bunu saatte bir çağırır (kurulum).
+// Tetikleyici bunu saatte bir çağırır (kurulum): son eşitlemedeki listeyle kökleri tamamlar (yarım kalan
+// erişimler, 'hepsi'de yeni açılmış klasörler), sonra ağacı denetler.
 function driveDenetimi() {
   const kilit = LockService.getScriptLock();
   if (!kilit.tryLock(1000)) return;
-  try { const d = denetle(null, DENETIM_SURE_MS); Logger.log(JSON.stringify(d)); } finally { kilit.releaseLock(); }
+  try {
+    const d = paylasimDurumu(), harita = klasorHaritasi(false);
+    const r = kokler().length ? kokleriEsitle(harita, d.verilen, d.cekilecek, null) : {};
+    Logger.log(JSON.stringify({ kokler: r, dosya: denetle(harita, DENETIM_SURE_MS) }));
+  } finally { kilit.releaseLock(); }
 }
 
 /* ---------- kurulum ---------- */
@@ -530,11 +585,11 @@ function kurulum() {
   ScriptApp.newTrigger('klasorHaritasiniYenile').timeBased().everyHours(4).create();
   Logger.log('Tazeleme: 4 saatte bir. Drive\'daki kopya: ' + HARITA_DOSYASI);
   ScriptApp.getProjectTriggers().forEach(function (x) { if (x.getHandlerFunction() === 'driveDenetimi') ScriptApp.deleteTrigger(x); });
-  if (AYAR.paylasim.length) {
+  if (kokler().length) {
     ScriptApp.newTrigger('driveDenetimi').timeBased().everyHours(1).create();
-    const g = gizliAltKlasorler(harita);
-    Logger.log('Drive erişimi: ' + AYAR.paylasim.length + ' klasör, denetim saatte bir.' +
-      (g.length ? ' DİKKAT, paylaşımın altında kişisel veri adlı klasörler var; bunlar taşınmadan ya da AYAR.gizliDegil\'e yazılmadan kimseye erişim verilmez: ' + g.join(' · ') : ''));
+    const g = gizliler(harita);
+    Logger.log('Drive erişimi: ' + kokler().length + ' klasör' + (AYAR.paylasim === 'hepsi' ? ' (Drive\'ım\'ın en üstündeki bütün klasörler)' : '') + ', denetim saatte bir.' +
+      (g.length ? ' DİKKAT, paylaşımın altında kişisel veri adlı klasör ya da dosyalar var; bunlar taşınmadan ya da AYAR.gizliDegil\'e yazılmadan kimseye erişim verilmez: ' + g.join(' · ') : ''));
   }
   // önbellek boşalınca dosyadan okumanın süresi
   const cache = CacheService.getScriptCache();

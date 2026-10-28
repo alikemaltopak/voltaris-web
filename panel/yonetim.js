@@ -173,7 +173,7 @@ function erisimiEsitle(bekle = 1500){
 const kisiler = a => a.map(esc).join(', ');
 function erisimRaporu(r){
   const ad = e => esc(uyeler.find(u => u.email === e)?.ad || e);
-  const satir = [`<b>Eşitlendi</b> (${new Date().toLocaleTimeString('tr', { hour:'2-digit', minute:'2-digit' })}): ${r.uye} aktif üye okuyucu.`];
+  const satir = [`<b>Eşitlendi</b> (${new Date().toLocaleTimeString('tr', { hour:'2-digit', minute:'2-digit' })}): ${r.uye} aktif üye${r.kok ? `, ${r.kok} klasörde` : ''} okuyucu.`];
   if(r.eklenen?.length) satir.push(`Erişim verildi: ${r.eklenen.map(ad).join(', ')}.`);
   if(r.googleYok?.length) satir.push(`<span style="color:var(--bad)">Google hesabı olmadığı için Drive erişimi verilemedi (panele de giremezler): ${r.googleYok.map(ad).join(', ')}. Google e-postalarını sorup listede adreslerini değiştir; sonraki eşitlemede eklenirler.</span>`);
   if(r.okuraCekilen?.length) satir.push(`Düzenleme yetkisi okumaya çekildi: ${r.okuraCekilen.map(ad).join(', ')}.`);
@@ -181,7 +181,8 @@ function erisimRaporu(r){
   const dsy = r.dosya || {};
   if(dsy.kaldirilan || dsy.okuraCekilen) satir.push(`Ayrıca paylaşılmış dosyalarda: ${dsy.kaldirilan || 0} izin kaldırıldı, ${dsy.okuraCekilen || 0} izin okumaya çekildi.`);
   if(dsy.bekleyen) satir.push('Dosyaların bir kısmı saatlik denetime kaldı.');
-  if(r.gizli?.length) satir.push(`<span style="color:var(--bad)"><b>Kimseye yeni erişim verilmedi:</b> paylaşılan klasörün altında kişisel veri taşıyabilecek klasörler var: ${kisiler(r.gizli)}. Bunları paylaşımın dışına taşı ya da kişisel veri yoksa kimliklerini script'te AYAR.gizliDegil'e yaz.</span>`);
+  if(r.gizli?.length) satir.push(`<span style="color:var(--bad)"><b>Kimseye yeni erişim verilmedi:</b> paylaşılan klasörlerin altında kişisel veri taşıyabilecek klasör ya da dosyalar var: ${kisiler(r.gizli)}. Bunları paylaşımın dışına taşı ya da kişisel veri yoksa kimliklerini script'te AYAR.gizliDegil'e yaz.</span>`);
+  if(r.yarim) satir.push('<b>Erişimlerin bir kısmı verildi.</b> Kalanlar için düğmeye bir kez daha bas; basmasan da saatlik denetim tamamlar.');
   const sahip = Object.entries(dsy.sahip || {});
   if(sahip.length) satir.push(`Sahibi oldukları dosyaları üyeler yine değiştirip silebilir, ayrılınca da onlarda kalır: ${sahip.map(([e, n]) => `${ad(e)} (${n})`).join(', ')}. Bu dosyaların sahipliği ${esc(KURUCULAR[0])}'a devredilmeli.`);
   if(r.disaridaYazar?.length) satir.push(`Listede olmayan ama düzenleyebilen hesaplar (dokunulmadı): ${kisiler(r.disaridaYazar)}.`);
