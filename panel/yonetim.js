@@ -1,7 +1,7 @@
 // Admin dialog: the member list (who may sign in) and the one-time loads that replace what the
 // Claude Artifact had built in — the archive index and the export of its shared records.
 // Firestore rules enforce the same limits (firestore.rules); this file is only the UI.
-import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra, driveEsitle, ilerlemeyiSifirla, uyeleriTopluYaz } from './firebase.js';
+import { KURUCULAR, uyeleriIzle, uyeYaz, uyeSil, profiller, indeksYaz, eskiKayitlariAktar, driveAdresi, driveAdresiYaz, driveAra, driveEsitle, ilerlemeyiSifirla, uyeleriTopluYaz, driveGorselYukle } from './firebase.js';
 
 const BIRIM = { M:'Mekanik', E:'Elektrik-Elektronik', O:'Organizasyon ve Sosyal Medya' };
 const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,6 +50,9 @@ function kur(){
       <p class="help">Claude'daki eski panelden geçiş için. Bir kez yapıldıysa tekrar gerekmez; yalnız arşiv indeksi yeniden üretilirse onu yükle.</p>
       <p class="help"><b>Takım arşivi indeksi.</b> <code>build_indeks.py</code>'nin ürettiği <code>indeks.json</code>. Panelde "Takım arşivinde bulunanlar" bunu arar. Yenisi eskisinin yerine geçer.</p>
       <label class="btn small">indeks.json seç<input type="file" accept=".json,application/json" id="yntIdx" hidden></label>
+      <p class="help"><b>Drive görselleri.</b> Kalemlerde "Drive'dan" etiketiyle görünen takım görselleri (<code>panel/kaynak/drive-gorselleri.json</code>). Görseller panelin fotoğraf deposuna kopyalanır; yenisi eskisinin ve fotoğraflarının yerine geçer.</p>
+      <p class="when" id="yntDgDurum"></p>
+      <label class="btn small">drive-gorselleri.json seç<input type="file" accept=".json,application/json" id="yntDg" hidden></label>
       <p class="help"><b>Claude'daki eski kayıtlar.</b> <code>data-export</code> klasöründeki altı <code>.json</code> dosyasını birlikte seç. Aynı kalemlere ikinci kez yüklemek, o kalemlerde sonradan yapılan değişikliklerin üzerine yazar.</p>
       <label class="btn small">data-export dosyalarını seç<input type="file" accept=".json,application/json" multiple id="yntEski" hidden></label>
       <div id="yntEsle"></div>
@@ -61,6 +64,7 @@ function kur(){
   d.querySelector('#yntList').addEventListener('change', degistir);
   d.querySelector('#yntList').addEventListener('click', sil);
   d.querySelector('#yntIdx').addEventListener('change', indeks);
+  d.querySelector('#yntDg').addEventListener('change', driveGorsel);
   d.querySelector('#yntEski').addEventListener('change', eskiOku);
   d.querySelector('#yntEsle').addEventListener('click', aktar);
   d.querySelector('#yntDriveKaydet').addEventListener('click', driveKaydet);
@@ -229,6 +233,22 @@ async function indeks(e){
     const n = await indeksYaz(d);
     toast(`<b>İndeks yüklendi:</b> ${d.drive.length} Drive dosyası, ${d.teams.length} Teams klasörü (${n} parça). Sayfayı yenileyince aramaya girer.`);
   }catch(err){ toast('İndeks yüklenemedi: ' + esc(err?.message || err?.code || 'hata')); }
+}
+
+async function driveGorsel(e){
+  const f = e.target.files?.[0]; e.target.value = ''; if(!f) return;
+  try{
+    const d = await dosyaOku(f);
+    if(d.tur !== 'drive-gorselleri' || !d.items || typeof d.items !== 'object') throw new Error('Bu bir drive-gorselleri.json değil');
+    const temiz = {};
+    for(const [id, list] of Object.entries(d.items)) if(Array.isArray(list))
+      temiz[id] = list.filter(x => x && /^[\w-]{20,}$/.test(x.id || '') && typeof x.veri === 'string' && x.veri.length < 1_300_000)
+        .map(x => ({ id:x.id, cap:String(x.cap || '').slice(0, 160), n:String(x.n || '').slice(0, 160), tur:/^image\/(jpeg|png|webp)$/.test(x.tur) ? x.tur : 'image/jpeg', veri:x.veri }));
+    const durum = dlg.querySelector('#yntDgDurum');
+    const n = await driveGorselYukle(temiz, String(d.ver || ''), (i, t) => { durum.textContent = `Yükleniyor: ${i} / ${t}`; });
+    durum.textContent = '';
+    toast(`<b>Drive görselleri yüklendi:</b> ${Object.keys(temiz).length} kalemde ${n} görsel. Sayfayı yenileyince kalemlerde görünür.`);
+  }catch(err){ dlg.querySelector('#yntDgDurum').textContent = ''; toast('Drive görselleri yüklenemedi: ' + esc(err?.message || err?.code || 'hata')); }
 }
 
 // Old Claude user ids appear as `by` / `owner` values and as members/ document ids.

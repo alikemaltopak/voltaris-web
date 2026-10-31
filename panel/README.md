@@ -159,8 +159,8 @@ isDone(it)   = bütün öncüller reqOk
 stateOf(it)  = isDone → 'done' | progress>0 → 'part' | bağımlılıklar bitmiş → 'holo' | aksi → 'lock'
 ```
 
-3B görünüm `stateOf` ve `progress` ile sürülür: `done` tam katı turuncu, `part` kısmen katı (opaklık `.12+.55·p`),
-`holo` camgöbeği hologram, `lock` soluk mavi-gri. Etiket karesi: bağlı kalemlerin hepsi `done` ise dolu, biri bile başlamışsa yarı dolu.
+3B görünüm sitenin kuralıyla sürülür: bütün parçalar camgöbeği hologram; seçili (ya da faresi üstündeki) kalem 2.3×
+parlak, diğerleri 0.45× soluk; `done` olan kalemin parçaları yavaşça katı malzemeye döner. Etiket karesi: bağlı kalemlerin hepsi `done` ise dolu, biri bile başlamışsa yarı dolu.
 Kalem bitince ya da bir kalemin kilidi açılınca `announce()` kısa bir bildirim gösterir ve 3B'de o parça parlar.
 
 "Sıradaki öncül" kutusu `nextReq()` (ilk `reqOk` olmayan öncül) ve `reqNextQ()` (o öncülde sorulacak sıradaki soru) ile üretilir.
@@ -174,7 +174,7 @@ Kalem bitince ya da bir kalemin kilidi açılınca `announce()` kısa bir bildir
 
 | Sekme | İçerik | Ana fonksiyonlar |
 |---|---|---|
-| **Araç** | Solda 3B model (döndür, ön/yan/arka/üst görünüm, röntgen = kabuğu gizle; parçaya dokununca kalem açılır). Sağda kalem listesi (birim filtresi) ve **kalem kartı**. | `renderList`, `renderCard`, 3D bölümü |
+| **Araç** | Solda açılır kapanır kalem listesi (birim filtresi), ortada 3B model (sağa/sola 45° döndür, Kabuk saydam; parçaya dokununca kalem açılır) ve altında madde penceresi, sağda **kalem kartı**. | `renderList`, `renderHud`, `renderCard`, 3D bölümü |
 | **Teknik kontrol** | 2026 plakası: 11 kare + yeşil bant. Kareye dokununca o başlığın şartname kaynakları ve bağlı kalemler. | `renderPlate` |
 | **Şartname** | 8 kitapçığın tam metni (bölüm listesi, arama, bent vurgulama), Ek 1 ceza listesi (kalem eşlemesiyle), şekil galerisi, özet kartları (her kalem için hangi maddeler, "araç bitince bakılacaklar"). Yıl seçici `SART_VERS`. | `renderSart`, `renderSec`, `renderSearch`, `renderCeza`, `renderGal`, `renderOzet`, `openSart` |
 | **Takvim** | 2026-27 sezon planı: aşamalar (`LEVELS`), birim hatları ve çubuklar (`LANES`), resmi tarihler (`MILES`). Çubuğa dokununca açıklama ve bağlı kalemlerin hazırlığı. | `renderLevels`, `renderTimeline` |
@@ -209,23 +209,48 @@ Her sonuç "Kaleme ekle" ile bir kaleme eklenir: **kalemin geneline** (`items/<i
 dosyalar") ya da **bir öncüle** (`checks/<id>.f.<i>.found`, öncülün "Bulunan dosyalar" listesi). Kalem listesi dosyanın
 komitesine göre öneriyle başlar (`KOMITE`). Sohbet açıkken balon gizlenir; telefonda pencere alttan açılır.
 
-### Kalem kartı (yukarıdan aşağı)
+### Kalem kartı ve madde penceresi
+Araç sekmesi üç sütun (Ekim 2026 prototipinden): solda **kalem listesi** (birimlere göre gruplu, her satırda yüzde ve
+çubuk; başlığı listeyi kapatır, kapalıyken ince bir şerit kalır, tercih `vh-list`'te saklanır; 1280px altında aracın üstünde
+yatay şerit), ortada araç ve altında **madde penceresi** (`#detail`, bulgular), sağda **kalem kartı** (rehber ve akış).
+Kartın olay işleyicileri ikisini de kapsayan `#aracZone`'a bağlı; pencerenin içeriği de `renderCard()` içinde üretilir.
 
+Kalem kartı (yukarıdan aşağı):
 1. Başlık: aşama etiketi, birim, sorumlu, **Üstlen**, **Sohbette sor**, ilerleme çubuğu.
-2. "Bu kalem nedir, atölyede neye bakılır" — `bak.js`'teki atölye rehberi; adımların yanında ilgili madde numarası çipi (`ADIM_M`), dokununca o öncül açılır.
-3. **Sıradaki öncül** kutusu.
-4. **Öncüller (şartname maddeleri)** listesi; her biri açılınca durum tespiti akışı + "Ne yapılacak" + şartnamenin asıl metni + öncül fotoğrafları. Altında kalemin ceza listesi satırları.
-5. **Test kaydı ve fotoğraflar** (kalem seviyesinde test notu + test fotoğrafları).
-6. **Rapor için veriler** — o kalemin TTR alanları (bölüm 7.3).
-7. **Şartnamedeki görseller** — kalemin kaynaklarına ait şekiller.
-8. **Not**.
-9. **Kaleme eklenen görseller** — öncüllere ve test kaydına eklenen bütün fotoğrafların galerisi.
+2. **Kalemi tanı** — beyin simgeli, açılır kapanır pencere (varsayılan kapalı; açık kalemler `openTani`). Üç soruyu cevaplar:
+   *Bu kalem ne için var?* (madde sayısı, araç/rapor ayrımı, teknik kontrol başlığı `ETIKETLER`, ceza listesi ve
+   diskalifiye sayısı `cezaFor`, TTR bölümü `RAPOR_SECTIONS`); *Ne işe yarar?* (`BAK.gorev`, altında `ne` / `nerede`);
+   *Ne yapmam gerek?* (kalemin durumuna göre sıralı adımlar: bitmemiş bağımlılık, atölye listesi ve alet, Sıradaki öncül,
+   eksik çıkarsa `BAK.isler` ve madde çipleri, Rapor için veriler). Hepsi panelde zaten olan veriden üretilir.
+   Kalemin `REHBER` kaydı varsa üç soru onunla dolar: *ne için var* altında şartname kuralları, *ne işe yarar* altında
+   tanıtım ve şekiller, *ne yapmam gerek* altında işaretlenen adımlar.
+3. **Sıradaki öncül** kutusu ve **Durum tespitini aç** düğmesi.
+4. "Atölyede neye bakılır" — `bak.js`'teki atölye rehberi; adımların yanında ilgili madde numarası çipi (`ADIM_M`).
+5. **Şartname maddeleri (öncüller)** listesi ve altında kalemin ceza listesi satırları. Bir maddeye basınca o madde
+   pencerede açılır; aynı anda tek madde açıktır (`openOnly`).
+
+Madde penceresi (yukarıdan aşağı):
+1. Açık madde varsa: **Ne yapılacak, neden** (madde açıklaması), **Nasıl yapılır, nelere bakılır** (o maddeye bağlı atölye
+   adımları ve alet), **Şartname ne diyor** (asıl metin ve şekiller), **Durum tespiti, Database sorgusu ve bulgular**
+   (`reqFlowHtml`: sorular, arşiv araması, bulunan dosyalar, öncül fotoğrafları, not). Madde yoksa kısa bir yönlendirme.
+2. **Kalemin kayıtları:** Database'den eklenen dosyalar, Test kaydı ve fotoğraflar, Rapor için veriler (bölüm 7.3),
+   Şartnamedeki görseller, **Örnek görseller** (`ORNEK`, aşağıda), Not, Kaleme eklenen görseller.
 
 Tıklanabilir yazılar link mavisidir (`--link`), çerçeveli düğmeler normal düğmedir.
 
 ### Tasarım dili
-Açık tema varsayılan, karanlık tema `prefers-color-scheme` ile; renkler `:root` değişkenleri. IBM Plex Sans/Mono (Google Fonts).
-Turuncu (`--real`) = gerçek/bitmiş, slate (`--holo`) = hayalet. 3B sahne her temada koyu. Mobilde tek sütun.
+Tek, koyu bir "atölye HUD" görünümü (Ekim 2026): ızgaralı ve kumlu koyu zemin, cam kartlar, renkler `:root` değişkenleri.
+Archivo (başlıklar) + IBM Plex Sans/Mono (Google Fonts). Amber (`--real`) = gerçek/bitmiş, camgöbeği (`--holo`) = hayalet.
+Stil dosyasının sonundaki "Workshop HUD" bloğu yalnız görünümdür; üstündeki kurallar aynen geçerli.
+**Liquid glass:** sekme çubuğu, Database balonu, "Sıradaki öncül" kutusu ve sahnedeki HUD parçaları; sayfanın sonundaki küçük betik her birine bir SVG
+yer değiştirme filtresi verir (`backdrop-filter:url()`). Bu yalnız Chromium'da (Chrome, Edge) bükülür; Safari'de (iPhone)
+ve Firefox'ta buzlu cam olarak kalır.
+**3B sahne** sitenin `/arac` görüntüleyicisinin (`CarViewer.tsx`, `src/three/hologram.ts`) aynısı: stüdyo (kubbe, kavisli
+arka ekran, tavan ışıkları, ortam haritası), aynı shader ve parça görünümleri (`LOOK`), hologram rengi `#3fe0c4`, `EDGE_ON`
+kenar çizgileri, aynı ayarlarda Bloom, aynı kamera. Üstüne prototipten: ızgara, halkalar ve dönen yaylardan stand; araç
+döner tablada (`car` grubu) yavaşça döner, düğmeler 45° çevirir, sürükleme yalnız yatay. HUD: sol üstte seçili kalem ve
+durumu, sağ üstte hazırlık halkası, seçili parçadan adına çizgi (`drawCallout`), fareyle üstüne gelince yüzde ve uygun
+madde sayısı. Dar ekranda kamera geri çekilir ki araç sığsın. Mobilde tek sütun.
 
 ---
 
@@ -234,11 +259,48 @@ Turuncu (`--real`) = gerçek/bitmiş, slate (`--holo`) = hayalet. 3B sahne her t
 ### `bak.js` — atölye rehberi
 ```js
 BAK.sasi = {
+  gorev: 'Araçta ne işe yarar, neden önemli …',   // kalem kartının başındaki "Araçtaki görevi"
   ne: 'Bu ne? …', nerede: 'Araçta nerede …', adim: ['Atölyede adım 1 …', …], alet: 'Metre, …',
   isler: [ { n:'Mevcut şasiyi revize edeceğiz', ara:['Şasinin son hali CAD modeli', …], q:['şasi','chassis','profil'], m:[0,3,5] } ]
 }
 ADIM_M.sasi = [[0],[0],[0],[3],[5]]   // atölye adımı → ilgili öncül indeksleri
 ```
+### `bak.js` — kalem rehberi (`REHBER`)
+Araç el kitabımız olmadığı için her kalem şartnameden çıkarılıp sırayla anlatılır; bir kalemin `REHBER` kaydı varsa kartın
+"Kalemi tanı" penceresini doldurur (şimdilik yalnız `ysb`; diğerleri aynı biçimde yazılacak):
+```js
+REHBER.ysb = {
+  tanit: { ne:'…', benzer:'neye benzer', amac:['ne için kullanılır', …], takim:'önceki ekipten bilinenler' },
+  gorsel: [['B3','3'], ['B3','3.a']],          // şartname şekilleri (sartname-2026.json figs: doc + n)
+  sart: [['sade dille kural', 'B3 8.xi'], …],  // şartnamenin bu kalem için dediği her şey, kaynaklı
+  adim: [{ tur:'Tasarım', b:'başlık', t:'ne ve nasıl', k:'bittiğini nasıl anlarız', m:[2] }, …]   // m = ilgili öncüller
+}
+```
+Adımlar sırayla işaretlenir; kayıt `items/<id>.rehber = { <adım sırası>: {by, at} | null }`. Geri alınan adım `null` olur,
+silinmez: Firestore iç içe alanları birleştirerek yazdığı için silinen anahtar geri gelirdi.
+
+### Takımın görselleri ("Drive'dan") ve TEKNOFEST ödüllü araçlar
+Madde penceresinde şartname görsellerinin altında, kaleme ait **takım görselleri** "Drive'dan" etiketiyle çıkar. Görseller
+depoya girmez (depo herkese açık): `panel/kaynak/drive-gorselleri.json`'da (git'e girmez) küçültülmüş JPEG olarak durur ve
+Üyeler → "Bir kerelik veri yükleme" → "drive-gorselleri.json seç" ile yüklenince her biri panelin fotoğraf deposuna
+(`fotolar/`, `kaynak:'drive'`) kopyalanır; `ayarlar/driveGorsel` kalemleri bu fotoğraflara bağlar. Böylece Google oturumu
+gerekmeden her cihazda görünür; büyütünce aslına "Drive'da aç" bağlantısı vardır. Yeni yükleme eskisinin yerine geçer ve
+eski fotoğrafları siler. Dosya biçimi:
+`{ tur:'drive-gorselleri', ver, items:{ <kalem id>:[{ id:<Drive dosya kimliği>, cap, n:'dosya adı', tur:'image/jpeg', veri:<base64, ≤ ~1 MB> }] } }`.
+İnternetten indirilmiş başkalarına ait görseller ve kişisel bilgi içerenler listeye alınmaz.
+
+`bak.js`'teki `ODUL` (şimdilik `kabuk`), Efficiency Challenge'da Görsel Tasarım Ödülü alan takımları yeniden eskiye listeler.
+TEKNOFEST'in sonuç sayfası yalnız performans derecelerini verdiği için her satır ödülü bildiren kaynağa bağlanır; tek ve
+resmi olmayan kaynağa dayananlarda `not` bunu söyler. Fotoğraflarının serbest lisansı olmadığından görsel yerine görsel
+araması bağlantısı verilir.
+
+### `bak.js` — örnek görseller (`ORNEK`)
+Her kalem için parçanın neye benzediğini gösteren 2–3 fotoğraf; madde penceresinde şartname görsellerinin altında çıkar.
+Hepsi Wikimedia Commons'tan, serbest lisanslı (CC BY, CC BY-SA, CC0, kamu malı), görseller Commons'tan yüklenir ve depoya girmez.
+Lisans gereği her birinin altında yazar ve lisans, büyütünce Commons sayfasının bağlantısı görünür; yeni eklenen görsel de bu
+bilgilerle girilmeli: `{ cap, f: küçük resim, b: büyük resim, u: dosya sayfası, by: yazar, lic: lisans, lu: lisans bağlantısı }`.
+Şimdilik Kapılar ve Camlar, TTR ve Videolar'da yok.
+
 `isler[].m` = bu işin ilgili olduğu öncüller. Bir öncülün "Database'e sor" kutusu `jobsFor(it,i)` ile bu işleri bulur;
 `ara` aranacaklar listesini, `q` arşiv aramasının ağırlıklı anahtar kelimelerini verir.
 

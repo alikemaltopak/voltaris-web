@@ -209,6 +209,27 @@ export const driveAdresi = () => (driveAdresP ??= getDoc(doc(fs, 'ayarlar', 'gen
   .then(s => s.exists() ? String(s.data().driveArama || '') : '').catch(() => ''));
 export async function driveAdresiYaz(url){ await setDoc(doc(fs, 'ayarlar', 'genel'), { driveArama:url, at:nowIso() }, { merge:true }); driveAdresP = null; }
 
+// The team's own pictures per item, picked from the Drive. Kept here rather than in the repo, which is public:
+// a founder uploads drive-gorselleri.json from the Üyeler screen, each picture is copied in as a photo (fotolar/,
+// so it shows without a Google session) and ayarlar/driveGorsel maps items to them. A new upload replaces the old
+// list and removes its photos.
+export async function driveGorselOku(){
+  const s = await getDoc(doc(fs, 'ayarlar', 'driveGorsel'));
+  return s.exists() ? JSON.parse(s.data().json || '{}') : null;
+}
+export async function driveGorselYukle(items, ver, ilerleme){
+  const u = auth?.currentUser; if(!u) throw hata('giris');
+  const eski = await driveGorselOku().catch(() => null);
+  const toplam = Object.values(items).reduce((a, l) => a + l.length, 0), yeni = {}; let n = 0;
+  for(const [id, list] of Object.entries(items)){ yeni[id] = [];
+    for(const x of list){ const f = rastgeleId();
+      await setDoc(doc(fs, 'fotolar', f), { veri:Bytes.fromBase64String(x.veri), tur:x.tur || 'image/jpeg', by:u.uid, at:nowIso(), kaynak:'drive' });
+      yeni[id].push({ f, d:x.id, cap:x.cap, n:x.n }); ilerleme?.(++n, toplam); } }
+  await setDoc(doc(fs, 'ayarlar', 'driveGorsel'), { json:JSON.stringify({ ver, items:yeni }), ver, at:nowIso() });
+  for(const list of Object.values(eski?.items || {})) for(const x of list) if(x.f) await deleteDoc(doc(fs, 'fotolar', x.f)).catch(() => {});
+  return n;
+}
+
 const hata = (code, mesaj) => Object.assign(new Error(mesaj || code), { code });
 async function scripteSor(url, govde, signal){
   // A bare string body keeps this a CORS simple request; Apps Script cannot answer a preflight

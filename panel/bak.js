@@ -1,10 +1,11 @@
 // Atölye rehberi: kalemi hiç bilmeyen bir üyenin atölyede ne yapacağı.
-// ne = parça nedir, nerede = araçta nerede, adim = sırayla neye bakılacak, alet = yanında ne olsun,
+// gorev = araçta ne işe yaradığı, neden önemli (kalem kartının başındaki özet), ne = parça nedir, nerede = araçta nerede, adim = sırayla neye bakılacak, alet = yanında ne olsun,
 // var/cal/test = sorulara verilecek cevabın ölçütü.
 // isler = bu kalemde ekibin başlayabileceği somut işler. Database sorgusu seçilen işe göre yazılır:
 //   ara = Database'de aranacak somut dosya türleri, q = Drive arama kelimeleri, m = o işle ilgili şartname maddeleri (reqs sırası).
 const BAK = {
- sasi:{ ne:'Aracın taşıyıcı iskeleti. Motor, süspansiyon, batarya ve koltuklar buna bağlanır.', nerede:'Kabuğun altında, aracın tabanı boyunca. Kabuk çıkarılınca direkt görünür.',
+ sasi:{ gorev:'Bütün aracı taşır ve bir arada tutar. Sağlam ve hafif olması hem güvenliği hem enerji verimini belirler; teknik kontrolde güvensiz bulunan şasiyle yarışa girilemez.',
+  ne:'Aracın taşıyıcı iskeleti. Motor, süspansiyon, batarya ve koltuklar buna bağlanır.', nerede:'Kabuğun altında, aracın tabanı boyunca. Kabuk çıkarılınca direkt görünür.',
   adim:['Aracı düz zemine al. Kabuk takılıysa erişim kapaklarını aç ya da kabuğu çıkar.',
    'Fenerle bütün kaynak dikişlerini gez: çatlak, kopma, delik, pas var mı? Şüpheli yerin fotoğrafını çek.',
    'Motor, süspansiyon, direksiyon kutusu, batarya kutusu ve koltukların bağlandığı plakaları bul. Cıvatalar takılı ve sıkı mı, plaka esniyor mu?',
@@ -18,7 +19,8 @@ const BAK = {
    {n:'Mevcut şasiyi revize edeceğiz (güçlendirme, ölçü değişikliği)', ara:['Şasinin son hali CAD modeli veya teknik resmi','Önceki revizyonların notları, ölçüleri ve fotoğrafları','Şasi mukavemet analizleri','Kullanılan boru/profil ölçüleri, malzeme faturası'], q:['şasi','chassis','profil'], m:[0,3,5]},
    {n:'Batarya, motor ve koltuk bağlantı plakalarını yapacağız', ara:['Bağlantı plakası çizimleri ve delik ölçüleri','Batarya kutusu ve motor montaj ölçüleri','Kullanılan cıvata listesi (M8, 8.8 kalite vb.)'], q:['bağlantı plakası','braket','montaj'], m:[0,1,6]},
    {n:'Çekme halkalarını ekleyeceğiz', ara:['Çekme halkası çizimi ya da satın alma linki','Şasinin ön ve arka uç ölçüleri'], q:['çekme halkası'], m:[7]} ]},
- rollcage:{ ne:'Araç devrilirse sürücüyü koruyan çelik boru kafes: ön roll bar, arka roll bar ve bunları bağlayan borular.', nerede:'Koltukların çevresinde, kabuğun içinde. Şasiye kaynakla ya da cıvatayla bağlıdır.',
+ rollcage:{ gorev:'Araç devrilir ya da bir yere çarparsa sürücünün başını ve gövdesini koruyan çelik kafes. Yarışın en kritik güvenlik parçalarından biri; boruların ölçüsü ve malzemesi şartnamede ayrıntılı tanımlı.',
+  ne:'Araç devrilirse sürücüyü koruyan çelik boru kafes: ön roll bar, arka roll bar ve bunları bağlayan borular.', nerede:'Koltukların çevresinde, kabuğun içinde. Şasiye kaynakla ya da cıvatayla bağlıdır.',
   adim:['Ön ve arka roll barı bul. Şasiye kaç noktadan bağlandığını say (en az 4 olmalı).',
    'Boruları kumpasla ölç: dış çap ve et kalınlığı (boru en az Ø30×1,5 mm, kutu profil en az 25×25×1,5 mm).',
    'Kaynakları ve cıvataları kontrol et. Boruda delik, sonradan eklenmiş parça ya da çatlak var mı?',
@@ -31,7 +33,8 @@ const BAK = {
    {n:'Kafesi revize edeceğiz ya da yeniden yapacağız', ara:['Roll cage CAD modeli','Boru ölçüleri ve malzeme sertifikası/faturası','Önceki büküm ve kaynak notları, fotoğrafları'], q:['roll cage','rollbar','roll bar'], m:[0,1,2,4]},
    {n:'1 kN mukavemet analizini yapacağız (TTR)', ara:['Önceki analiz dosyaları (ANSYS, SolidWorks Simulation vb.)','Kafesin güncel CAD modeli'], q:['analiz','simulation','roll cage analiz'], m:[5,6]},
    {n:'Sürücü pozisyonunu ve bar yüksekliklerini ayarlayacağız', ara:['Sürücü oturma ölçüleri, ergonomi çizimi','Önceki teknik kontrol notları'], q:['ergonomi','sürücü pozisyonu'], m:[3]} ]},
- fren:{ ne:'Dört tekerlek (jant, lastik, göbek), süspansiyon, her tekerdeki disk ve kaliper, fren pedalı ve hidrolik fren hattı.', nerede:'Tekerlek bölgeleri. Fren pedalı ve ana merkez sürücünün ayak tarafında.',
+ fren:{ gorev:'Aracın yere bastığı dört nokta. Süspansiyon yoldaki darbeleri emer, frenler aracı güvenle durdurur. Fren ayrıca rampada denenir ve videosu çekilir.',
+  ne:'Dört tekerlek (jant, lastik, göbek), süspansiyon, her tekerdeki disk ve kaliper, fren pedalı ve hidrolik fren hattı.', nerede:'Tekerlek bölgeleri. Fren pedalı ve ana merkez sürücünün ayak tarafında.',
   adim:['Aracı kriko ya da sehpayla kaldır. Her tekerleği elle çevir: sürtme, boşluk, yalpalama var mı?',
    'Dört tekerin her birinde disk ve kaliper var mı bak.',
    'Pedaldan çıkan hidrolik hatları takip et: iki ayrı devre var mı (ön-arka ya da çapraz)? Rakorlarda ıslaklık, sızıntı var mı?',
@@ -46,7 +49,8 @@ const BAK = {
    {n:'Fren hattını çift devre kuracağız', ara:['Hidrolik fren hattı şeması','Ana merkez ve kaliper modelleri, datasheet\'leri','Kaliper bağlantı braketi çizimleri','Hortum, rakor ve fren hidroliği siparişleri'], q:['fren','kaliper','ana merkez','hidrolik'], m:[0,1,2,5]},
    {n:'Süspansiyonu kuracağız ya da revize edeceğiz', ara:['Süspansiyon geometrisi çizimi, salıncak CAD modeli','Amortisör modeli ve yay hesapları','Süspansiyon analizleri'], q:['süspansiyon','amortisör','salıncak'], m:[]},
    {n:'Fren rampası testini yapacağız', ara:['Önceki fren testi videoları','Rampa ölçüleri ve rampa çizimi'], q:['fren testi','rampa'], m:[3]} ]},
- direksiyon:{ ne:'Simit, direksiyon mili, kremayer-pinyon kutusu ve tekerleri çeviren rot kolları.', nerede:'Simit sürücünün önünde. Kutu ve rotlar ön aks bölgesinde.',
+ direksiyon:{ gorev:'Sürücünün aracı yönlendirdiği sistem: simidin dönüşünü ön tekerlere iletir. Boşluklu ya da gevşek bir direksiyon hem kontrolü hem teknik kontrolü kaybettirir.',
+  ne:'Simit, direksiyon mili, kremayer-pinyon kutusu ve tekerleri çeviren rot kolları.', nerede:'Simit sürücünün önünde. Kutu ve rotlar ön aks bölgesinde.',
   adim:['Simidin tam halka olduğunu ve solda durduğunu kontrol et.',
    'Ön tekerler yerdeyken simidi sağa sola çevir: tekerler hemen tepki veriyor mu? Tepki vermeden dönen açıyı (boşluk) açıölçerle ölç, en fazla 7° olmalı.',
    'Simidi iki yöne sonuna kadar çevir: bir durdurucu tekeri durduruyor mu, teker şasiye veya kabuğa sürtüyor mu?',
@@ -58,7 +62,8 @@ const BAK = {
   isler:[
    {n:'Direksiyon sistemini kuracağız ya da revize edeceğiz', ara:['Kremayer-pinyon kutusu modeli, datasheet ya da satın alma linki','Direksiyon mili, kardan ve simit bağlantı çizimleri','Rot kolu ve rot başı ölçüleri'], q:['direksiyon','kremayer','rot'], m:[0,1,2,3]},
    {n:'Direksiyon hesaplarını hazırlayacağız (TTR)', ara:['Ackermann ve dönüş yarıçapı hesapları','Rot kolu kuvvet ve emniyet katsayısı hesapları','Önceki TTR direksiyon bölümü'], q:['ackermann','direksiyon analiz'], m:[4]} ]},
- koltuk:{ ne:'Sürücü ve yolcu koltukları, 5 noktalı emniyet kemerleri ve kemer bağlantı noktaları.', nerede:'Kokpitte, roll cage içinde yan yana.',
+ koltuk:{ gorev:'Sürücüyü yerinde tutar; 5 noktalı kemer bir çarpışmada sürücüyü koltuğa sabitler. Sürücünün güvenliği ve rahat sürmesi buna bağlı.',
+  ne:'Sürücü ve yolcu koltukları, 5 noktalı emniyet kemerleri ve kemer bağlantı noktaları.', nerede:'Kokpitte, roll cage içinde yan yana.',
   adim:['Sürücü koltuğunda FIA etiketi var mı bak, fotoğrafını çek.',
    'İki koltuk arasındaki en yakın mesafeyi ölç (en az 90 mm).',
    'Koltuk sırtının dikeyle yaptığı açıyı ölç (en fazla 30°).',
@@ -71,7 +76,8 @@ const BAK = {
   isler:[
    {n:'Koltuk ve kemer alacağız', ara:['Daha önce alınmış FIA koltuk ve kemerlerin faturaları, sertifikaları','Sponsor ya da tedarikçi yazışmaları','Ürün linkleri ve fiyat teklifleri'], q:['koltuk','FIA','kemer'], m:[0,3]},
    {n:'Koltuk ve kemer bağlantılarını yapacağız', ara:['Koltuk montaj braketi çizimleri','Kemer bağlantı noktalarının yeri ve ölçüleri','Yolcu koltuğu çizimi ve yük analizi'], q:['koltuk montaj','kemer bağlantı'], m:[1,2,4,5]} ]},
- kabuk:{ ne:'Aracın dış gövdesi: kompozit ya da başka malzemeden kabuk, erişim kapakları ve sürücü ile batarya arasındaki yanmaz perde.', nerede:'Aracın dışı. Perde kokpit ile batarya bölmesi arasında.',
+ kabuk:{ gorev:'Aracın dış gövdesi. Havayı düzgün akıtıp sürtünmeyi azaltır, bu da harcanan enerjiyi doğrudan düşürür. Sürücüyü dış etkilerden korur; yanmaz perde sürücüyü batarya bölmesinden ayırır.',
+  ne:'Aracın dış gövdesi: kompozit ya da başka malzemeden kabuk, erişim kapakları ve sürücü ile batarya arasındaki yanmaz perde.', nerede:'Aracın dışı. Perde kokpit ile batarya bölmesi arasında.',
   adim:['Kabuğun her yerini gez: çatlak, kırık, delik, keskin kenar var mı?',
    'Araca yukarıdan bak ya da üstten fotoğraf çek: tekerlekler kabuğun içinde kalıyor mu?',
    'Önde ve arkada açılan erişim kapağı var mı? Bataryaya hiçbir şey sökmeden ulaşılıyor mu?',
@@ -85,7 +91,8 @@ const BAK = {
    {n:'Kalıp ve kabuk üreteceğiz', ara:['Kabuğun CAD modeli ve son ölçüleri','Kalıp tasarımı ve kalıp malzemesi notları','Önceki laminasyon adımları, fotoğrafları, malzeme listesi (elyaf, reçine)'], q:['kabuk','kalıp','laminasyon','kompozit'], m:[0,4,5]},
    {n:'Erişim kapaklarını ve yanmaz perdeyi yapacağız', ara:['Kapak yerleri, menteşe ve kilit çizimleri','Yanmaz perde malzemesi ve montaj notları'], q:['kapak','perde','seperatör'], m:[1,3]},
    {n:'Mevcut kabuğu tamir edeceğiz', ara:['Hasar fotoğrafları ve tamir notları','Kalan malzemenin listesi ya da faturası'], q:['kabuk tamir'], m:[2,6]} ]},
- kapi:{ ne:'İki yan kapı, menteşe ve kilit mekanizması, ön cam, yan pencereler ve silecek.', nerede:'Kabuğun iki yanı ve önü.',
+ kapi:{ gorev:'Sürücünün araca binip inmesini, acil durumda hızla çıkabilmesini ve yolu görmesini sağlar. Kabuğun parçası oldukları için aerodinamiği de etkiler.',
+  ne:'İki yan kapı, menteşe ve kilit mekanizması, ön cam, yan pencereler ve silecek.', nerede:'Kabuğun iki yanı ve önü.',
   adim:['İki kapıyı aç kapa: öne doğru açılıyor mu, kendiliğinden kapanıyor mu, açıkken sarkıyor mu?',
    'Kapı açıklığını ölç (en az 50 cm genişlik, 80 cm yükseklik).',
    'Kilidi dene: dışarıdan anahtarla kilitleniyor mu, kilitliyken içeriden açılıyor mu?',
@@ -97,7 +104,8 @@ const BAK = {
   isler:[
    {n:'Kapı mekanizmasını (menteşe, kilit) yapacağız', ara:['Menteşe ve kilit mekanizması çizimleri','Kullanılan kilit ve menteşe ürün linkleri','Önceki kapı mekanizması videoları'], q:['kapı','menteşe','kilit'], m:[0,1,2,3,5]},
    {n:'Ön cam, pencere ve sileceği yapacağız', ara:['Cam kesim kalıbı ya da çizimi','Silecek motoru ve kolu modeli, bağlantı şeması'], q:['ön cam','silecek','polikarbonat'], m:[4]} ]},
- motor:{ ne:'Aracı hareket ettiren elektrik motoru. Takım kararı: arkada tek motor.', nerede:'Arka aks bölgesi.',
+ motor:{ gorev:'Bataryadaki elektrik enerjisini aracı ileri iten harekete çevirir. Ne kadar verimli çalıştığı, yarışta harcanan enerjiyi ve dolayısıyla puanı belirler.',
+  ne:'Aracı hareket ettiren elektrik motoru. Takım kararı: arkada tek motor.', nerede:'Arka aks bölgesi.',
   adim:['Motorun üstündeki etiketi bul: marka, model, güç, gerilim. Fotoğrafını çek.',
    'Motorun datasheet\'ini bul ya da üreticiden iste.',
    'Motorun şasiye veya aksa bağlantısını kontrol et: cıvatalar, titreşim takozu.',
@@ -109,7 +117,8 @@ const BAK = {
   isler:[
    {n:'Tek arka motorun montajını tasarlayacağız', ara:['Motor montaj braketi ve aks bağlantısı çizimleri','Motor ile jant arasındaki ara parça (adaptör) tasarımları','Aktarma hesapları (zincir, kayış ya da direkt) ve dişli oranı notları'], q:['motor montaj','motor braket','aktarma'], m:[0,2]},
    {n:'Motoru seçeceğiz ya da doğrulayacağız', ara:['Motor datasheet\'leri, satın alma faturası','Motor test verileri: tork, hız, akım, verim grafikleri','Önceki TTR motor bölümü'], q:['motor datasheet','BLDC','hub motor'], m:[0,1,3,4]} ]},
- surucu:{ ne:'Bataryadan aldığı enerjiyi motora kontrollü veren elektronik kart (inverter, kontrolcü).', nerede:'Batarya ile motor arasında, kapalı bir kutunun içinde.',
+ surucu:{ gorev:'Sürücünün gaz komutuna göre bataryadan motora ne kadar enerji gideceğini ayarlar. Motorun düzgün ve verimli çalışması bu karta bağlı.',
+  ne:'Bataryadan aldığı enerjiyi motora kontrollü veren elektronik kart (inverter, kontrolcü).', nerede:'Batarya ile motor arasında, kapalı bir kutunun içinde.',
   adim:['Sürücü kartını bul. Kapalı bir kutuda mı, kutu araca sağlam bağlı mı?',
    'Giren çıkan kablolara bak: hepsi sökülebilir konnektörle mi bağlı?',
    'Enerji yokken kartı incele: yanık iz, şişmiş kondansatör, kopuk kablo var mı?',
@@ -121,7 +130,8 @@ const BAK = {
   isler:[
    {n:'Sürücü kartını revize edeceğiz', ara:['Sürücü kartı şeması ve PCB dosyaları (Altium, KiCad)','Gömülü yazılım kodu ve sürüm notları','Kart test kayıtları, osiloskop ölçümleri'], q:['motor sürücü','inverter','PCB'], m:[2,3]},
    {n:'Kutusunu ve konnektörlerini yapacağız', ara:['Sürücü kutusu çizimi','Kullanılan konnektör modelleri ve siparişleri'], q:['sürücü kutusu','konnektör'], m:[0,1]} ]},
- batarya:{ ne:'Lityum iyon hücrelerden oluşan ana enerji kaynağı. Kutusu, sigortası ve elle ayırma anahtarı (service disconnect) ile birlikte.', nerede:'Kokpitten yanmaz bir duvarla ayrılmış batarya bölmesinde.',
+ batarya:{ gorev:'Aracın enerji deposu: motoru ve bütün elektronik sistemleri besler. Yüksek gerilim taşıdığı için güvenlik kurallarının (sigorta, ayırma anahtarı, yanmaz kutu) en sıkı olduğu kalem.',
+  ne:'Lityum iyon hücrelerden oluşan ana enerji kaynağı. Kutusu, sigortası ve elle ayırma anahtarı (service disconnect) ile birlikte.', nerede:'Kokpitten yanmaz bir duvarla ayrılmış batarya bölmesinde.',
   adim:['Önce enerjiyi kes: service disconnect\'i ya da ana şalteri ayır, izole eldiven tak. Tek başına çalışma.',
    'Kutuyu dışarıdan incele: şişme, ezik, yanık kokusu, sızıntı var mı?',
    'Kutunun şasiye nasıl bağlandığına bak (en az M8, 8.8 kalite cıvata).',
@@ -135,7 +145,8 @@ const BAK = {
    {n:'Paketi tasarlayacağız ve hücre seçeceğiz', ara:['Hücre datasheet\'leri ve önceki hücre testleri','Seri-paralel, kapasite ve menzil hesapları','Paket CAD modeli, ısıl analizler'], q:['batarya','hücre','paket'], m:[0,1,7,8]},
    {n:'Batarya kutusunu yapıp araca bağlayacağız', ara:['Batarya kutusu çizimi ve malzeme seçimi','Kutu ile şasi arasındaki bağlantı ölçüleri','Yanmaz duvar ya da perde çözümleri'], q:['batarya kutusu','montaj'], m:[2,3,5]},
    {n:'Sigorta, service disconnect ve uyarı etiketlerini ekleyeceğiz', ara:['Sigorta ve kesici ürün linkleri, değer hesabı','Önceki elektrik şemasında batarya çıkışı'], q:['sigorta','service disconnect'], m:[4,6]} ]},
- bms:{ ne:'Batarya Yönetim Sistemi. Hücre gerilimlerini ve sıcaklığı izleyen, hücreleri dengeleyen, gerekirse sistemi kesen kart.', nerede:'Batarya paketinin yanında ya da içinde. Sıcaklık sensörleri paketin içinde.',
+ bms:{ gorev:'Bataryayı korur: her hücrenin gerilimini ve sıcaklığını izler, hücreleri dengeler, tehlikeli bir durumda devreyi keser. BMS olmadan lityum batarya güvenle kullanılamaz.',
+  ne:'Batarya Yönetim Sistemi. Hücre gerilimlerini ve sıcaklığı izleyen, hücreleri dengeleyen, gerekirse sistemi kesen kart.', nerede:'Batarya paketinin yanında ya da içinde. Sıcaklık sensörleri paketin içinde.',
   adim:['BMS kartını ve sıcaklık sensörlerini bul. En az 2 sabit sensör ve 1 test sensörü var mı?',
    'BMS ekranında ya da bilgisayarda hücre gerilimlerini oku. Hücreler arasındaki fark ne kadar?',
    'Doluluk yüzdesini (SoC) gösteriyor mu, değer mantıklı mı?',
@@ -147,7 +158,8 @@ const BAK = {
   isler:[
    {n:'BMS kartını ve yazılımını geliştireceğiz', ara:['BMS şeması ve PCB dosyaları','BMS yazılımı (kod deposu), SoC algoritması notları','Kullanılan entegrenin (AFE) datasheet\'i'], q:['BMS','BYS','batarya yönetim'], m:[2,3,4]},
    {n:'Sıcaklık uyarı ve kesme testini yapacağız', ara:['Sensör yerleşim çizimi','Önceki test kayıtları ve videoları','Buzzer ve uyarı lambası bağlantı şeması'], q:['sıcaklık sensörü','NTC'], m:[0,1]} ]},
- ysb:{ ne:'Aracın üzerinde duran, bataryayı prizden (220 V) şarj eden şarj cihazı.', nerede:'Araç içinde, genellikle batarya bölmesinin yakınında.',
+ ysb:{ gorev:'Bataryayı araç üzerindeyken prizden şarj eder. Yarış haftasında şarjın güvenli ve şartnameye uygun yapılması bu birime bağlı.',
+  ne:'Aracın üzerinde duran, bataryayı prizden (220 V) şarj eden şarj cihazı.', nerede:'Araç içinde, genellikle batarya bölmesinin yakınında.',
   adim:['Şarj cihazını bul. Araca sabitlenmiş mi?',
    'Etiketini oku: güç (en az 500 W), giriş gerilimi (85–264 V AC), çıkış gerilimi.',
    'Datasheet\'ten yüksek frekans trafolu (yalıtımlı) bir cihaz olduğunu kontrol et.',
@@ -160,7 +172,8 @@ const BAK = {
   isler:[
    {n:'Şarj cihazını seçeceğiz ya da tasarlayacağız', ara:['Önceki şarj cihazlarının datasheet\'leri ve satın alma bilgileri','Kendi tasarımımız varsa şarj devresi şemaları','Şarj algoritması (CC-CV) notları'], q:['şarj','charger','YŞB'], m:[0,1,4]},
    {n:'BMS ile haberleşmesini kuracağız', ara:['CAN veya UART mesaj tanımları','BMS ile şarj cihazı arasındaki bağlantı şeması'], q:['CAN','şarj haberleşme'], m:[2,3]} ]},
- izolasyon:{ ne:'Yüksek gerilim hattı ile araç gövdesi arasında kaçak olup olmadığını izleyen ve uyarı veren cihaz.', nerede:'Batarya ve ana elektrik hattının yakınında.',
+ izolasyon:{ gorev:'Yüksek gerilim hattından araç gövdesine bir kaçak olursa bunu fark edip uyarır; böylece araca dokunan kişi çarpılmaz. Elektrik güvenliğinin temel parçası.',
+  ne:'Yüksek gerilim hattı ile araç gövdesi arasında kaçak olup olmadığını izleyen ve uyarı veren cihaz.', nerede:'Batarya ve ana elektrik hattının yakınında.',
   adim:['Cihaz araçta var mı bak. Hazır ürünse modelini, kendi tasarımımızsa şemasını bul.',
    'Bağlantılarını kontrol et: artı ve eksi hat ile şasiye bağlantı.',
    'Uyarı çıkışı (buzzer ya da lamba) bağlı mı?',
@@ -170,7 +183,8 @@ const BAK = {
   cal:'Kaçak denemesinde uyarı veriyorsa Evet.', test:'Uyarı sesi araç dışından duyuldu ve test kaydedildiyse Evet.',
   isler:[
    {n:'İzolasyon izleme cihazını yapacağız ya da seçeceğiz', ara:['Cihazın devre şeması ya da hazır ürün datasheet\'i','Önceki test kayıtları','TTR izolasyon bölümü taslakları'], q:['izolasyon','isolation monitor'], m:[0,1,2]} ]},
- aks:{ ne:'Gaz pedalı ve sürüş kararlarını veren ana kontrol kartı (VCU) ile yazılımı.', nerede:'Kart kokpitte ya da elektronik kutuda, pedal sürücünün ayak tarafında.',
+ aks:{ gorev:'Aracın beyni: gaz pedalını okur, sürüş kararlarını verir ve motor sürücüsüne komut gönderir. Bir güvenlik durumunda motoru kesmek de onun işi.',
+  ne:'Gaz pedalı ve sürüş kararlarını veren ana kontrol kartı (VCU) ile yazılımı.', nerede:'Kart kokpitte ya da elektronik kutuda, pedal sürücünün ayak tarafında.',
   adim:['Gaz pedalının ayakla basılan tipte olduğunu ve frenin sağında durduğunu kontrol et.',
    'Pedala bas ve bırak: yay geri getiriyor mu, sinyal kesik kesik geliyor mu?',
    'AKS kartını bul. Hangi sensörlerden veri alıp neyi kontrol ettiğini not et.',
@@ -182,7 +196,8 @@ const BAK = {
   isler:[
    {n:'AKS yazılımını geliştireceğiz', ara:['AKS kod deposu ve sürüm notları','Yazılım akış şeması ve blok diyagramı','Önceki TTR AKS bölümü'], q:['AKS','VCU','araç kontrol'], m:[1,2,3]},
    {n:'Gaz pedalını ve kablajını kuracağız', ara:['Pedal modeli ve bağlantı şeması','Pedal montaj braketi çizimi'], q:['gaz pedalı','pedal'], m:[0]} ]},
- telemetri:{ ne:'Araçtaki verileri (hız, gerilim, sıcaklık) pit bilgisayarına kablosuz gönderen sistem, sürücü ekranı ve araç içi kamera.', nerede:'Ekran ve kamera kokpitte, verici modül elektronik kutuda.',
+ telemetri:{ gorev:'Hız, gerilim, sıcaklık gibi verileri sürücüye ekranda gösterir ve pitteki takıma kablosuz gönderir. Takım yarış sırasında enerjiyi ve arızaları buradan izler.',
+  ne:'Araçtaki verileri (hız, gerilim, sıcaklık) pit bilgisayarına kablosuz gönderen sistem, sürücü ekranı ve araç içi kamera.', nerede:'Ekran ve kamera kokpitte, verici modül elektronik kutuda.',
   adim:['Verici modülü ve anteni bul (LoRa, Wi-Fi, GSM vb.).',
    'Pit tarafındaki arayüz programı nerede, çalışıyor mu öğren.',
    'Araç çalışırken veri geliyor mu dene: hız, batarya gerilimi, sıcaklık.',
@@ -194,7 +209,8 @@ const BAK = {
   isler:[
    {n:'Telemetri sistemini kuracağız', ara:['Telemetri donanım şeması ve kullanılan modüller','Pit arayüz yazılımı (kod)','Önceki menzil testleri'], q:['telemetri','telemetry','LoRa'], m:[0,3]},
    {n:'Sürücü ekranını ve kamerayı takacağız', ara:['Ekran modeli ve bağlantı şeması','Kamera modeli ve montaj aparatı'], q:['gösterge','ekran','kamera'], m:[1,2]} ]},
- elguv:{ ne:'Kablolar, sigortalar, iki acil stop butonu, ana devre kesici ve araç elektrik şeması.', nerede:'Aracın her yerinde. Acil stoplardan biri içeride sürücünün önünde, biri dışarıda sol tarafta.',
+ elguv:{ gorev:'Bütün elektrik sisteminin güvenle bağlanması: kablolar, sigortalar, acil stop butonları ve ana kesici. Bir sorun anında sistemi tek hareketle durdurabilmek buna bağlı.',
+  ne:'Kablolar, sigortalar, iki acil stop butonu, ana devre kesici ve araç elektrik şeması.', nerede:'Aracın her yerinde. Acil stoplardan biri içeride sürücünün önünde, biri dışarıda sol tarafta.',
   adim:['İç ve dış acil stop butonlarını bul. Gözetim altında, enerji varken basıp tüm sistemin kesildiğini dene.',
    'Akü çıkışındaki ana devre kesiciyi ve sigortaları bul, değerlerini not et.',
    'Kablajı baştan sona gez: açık uç, izolesiz bağlantı, bir yere sürtünen kablo var mı?',
@@ -206,7 +222,8 @@ const BAK = {
   isler:[
    {n:'Elektrik şemasını güncelleyeceğiz', ara:['Son araç elektrik şeması (A4, güç dağıtımı)','Kablo listesi ve kesit hesapları','Önceki TTR elektrik şeması'], q:['elektrik şeması','kablaj','güç dağıtım'], m:[3,5]},
    {n:'Kablajı yenileyip acil stopları kuracağız', ara:['Acil stop ve kontaktör ürün linkleri, datasheet\'leri','Kablo kanalı, kılıf ve konnektör siparişleri','Önceki kablajın fotoğrafları'], q:['acil stop','kontaktör','sigorta'], m:[0,1,2,4]} ]},
- aydinlatma:{ ne:'İki ön far, iki stop lambası, korna ve iki dikiz aynası.', nerede:'Aracın önü, arkası ve kokpitin iki yanı.',
+ aydinlatma:{ gorev:'Aracın görünmesini ve sürücünün çevresini görmesini sağlar: farlar, stop lambaları, korna ve aynalar. Teknik kontrolde çalışıp çalışmadıklarına bakılır.',
+  ne:'İki ön far, iki stop lambası, korna ve iki dikiz aynası.', nerede:'Aracın önü, arkası ve kokpitin iki yanı.',
   adim:['Farları yak: ikisi de beyaz ışık veriyor mu, sürücü düğmeyle açıp kapatabiliyor mu?',
    'Frene bas: iki stop lambası hemen yanıyor mu?',
    '25 m uzaklaş: gündüz ışığında far ve stoplar görünüyor mu?',
@@ -218,7 +235,8 @@ const BAK = {
   isler:[
    {n:'Aydınlatma ve korna devresini kuracağız', ara:['Far, stop lambası ve korna ürün linkleri','Fren lambası anahtarı bağlantı şeması','12 V yardımcı besleme şeması'], q:['far','stop lambası','korna'], m:[0,1,2]},
    {n:'Aynaları takacağız', ara:['Ayna modeli ve bağlantı aparatı çizimi'], q:['ayna','dikiz'], m:[3]} ]},
- surus:{ ne:'Sürücü ve yedek sürücü, sporcu lisansları, FIA tulum, kask, eldiven, ayakkabı, yangın söndürücü ve acil tahliye.', nerede:'Çoğu araç dışında. Yangın söndürücü kokpitte.',
+ surus:{ gorev:'Aracı yarışta kullanacak sürücüler ve onların güvenlik ekipmanı. Lisansı ya da ekipmanı eksik olan sürücü piste çıkamaz.',
+  ne:'Sürücü ve yedek sürücü, sporcu lisansları, FIA tulum, kask, eldiven, ayakkabı, yangın söndürücü ve acil tahliye.', nerede:'Çoğu araç dışında. Yangın söndürücü kokpitte.',
   adim:['Sürücü ve yedek sürücü belli mi? İkisinin sporcu lisansı var mı sor.',
    'Ekipmanı bul: tulumda FIA etiketi, kask tipi, yanmaz eldiven ve ayakkabı.',
    'Yangın söndürücüyü bul: 2 kg (ya da 2×1 kg), son kullanma tarihi geçmemiş, basınç göstergesi yeşilde mi?',
@@ -230,7 +248,8 @@ const BAK = {
   isler:[
    {n:'Sürücü ekipmanı alacağız', ara:['Önceki tulum, kask, eldiven alımları (fatura, beden listesi)','Sponsor ve tedarikçi yazışmaları'], q:['tulum','kask','FIA'], m:[2,3]},
    {n:'Lisans işlemlerini yapacağız', ara:['Daha önce lisans alan üyelerin süreç notları','Gençlik ve Spor müdürlüğü yazışmaları, belge listeleri'], q:['lisans','sporcu lisansı'], m:[0,1]} ]},
- logo:{ ne:'Kabuk üzerindeki logo, yarış numarası ve teknik kontrol plakası alanları, araç kaplaması ve Görsel Tasarım Ödülü raporu.', nerede:'Kabuğun iki kapısı ve önü.',
+ logo:{ gorev:'Aracın yarıştaki kimliği: logo, yarış numarası ve kaplama. Görsel Tasarım Ödülü için ayrıca bir rapor hazırlanır.',
+  ne:'Kabuk üzerindeki logo, yarış numarası ve teknik kontrol plakası alanları, araç kaplaması ve Görsel Tasarım Ödülü raporu.', nerede:'Kabuğun iki kapısı ve önü.',
   adim:['İki kapıda ve önde 30×30 cm logo alanı, 20×25 cm numara alanı boş mu? Ölç.',
    'Ön sağ kapıda 20×25 cm teknik kontrol plakası yeri var mı?',
    'Mevcut kaplama ya da boya tasarımının dosyası var mı bul.'],
@@ -239,7 +258,8 @@ const BAK = {
   cal:'Kaplama uygulanmış ve okunur durumdaysa Evet.', test:'Teknik kontrol öncesi ölçülüp fotoğrafla belgelendiyse Evet.',
   isler:[
    {n:'Kaplamayı ve görsel tasarımı yapacağız', ara:['Önceki kaplama tasarım dosyaları (AI, PSD, Figma)','Sponsor logoları ve kullanım kuralları','Önceki Görsel Tasarım Ödülü raporu'], q:['kaplama','logo','görsel tasarım'], m:[0,1,2]} ]},
- ttr:{ ne:'TEKNOFEST\'e gönderilen Teknik Tasarım Raporu.', nerede:'Drive\'daki rapor klasörü.',
+ ttr:{ gorev:'Aracın nasıl tasarlandığını ve test edildiğini TEKNOFEST\'e anlatan rapor. Puanlanır; her kalemin rapor maddeleri burada toplanır.',
+  ne:'TEKNOFEST\'e gönderilen Teknik Tasarım Raporu.', nerede:'Drive\'daki rapor klasörü.',
   adim:['Önceki yılların TTR dosyalarını ve aldıkları puanları bul.',
    'Bölüm 3\'teki başlıkları sırayla gez. Hangi başlık için elimizde çizim, hesap ya da test sonucu var, not et.',
    'Güncel TTR şablonunu indir.'],
@@ -248,7 +268,8 @@ const BAK = {
   cal:'Bölüm 6\'daki yazım kurallarına uyuyorsa Evet.', test:'Başka birimden biri okuyup kontrol ettiyse Evet.',
   isler:[
    {n:'Raporu yazacağız', ara:['Önceki yılların TTR dosyaları ve hakem puanları','Her başlık için kullanılabilecek çizim, analiz ve test sonuçları','Maliyet tablosu için faturalar'], q:['teknik tasarım raporu','TTR','rapor'], m:[0,1,2,3,4]} ]},
- video:{ ne:'Alt Sistem Kontrol, Dinamik Sürüş, Fren Testi ve Teknik Onay videoları.', nerede:'Drive ve YouTube.',
+ video:{ gorev:'Aracın çalıştığını ve testleri geçtiğini gösteren videolar. TEKNOFEST\'e belirli aşamalarda gönderilir; her videoda neyin gösterileceği şartnamede tanımlı.',
+  ne:'Alt Sistem Kontrol, Dinamik Sürüş, Fren Testi ve Teknik Onay videoları.', nerede:'Drive ve YouTube.',
   adim:['Önceki yılların videolarını bul. Hangi kural yüzünden puan kaybettiğimizi öğren.',
    'Çekim için gereken yeri belirle: 25 m düz alan ve en az 10° eğimli rampa.',
    'Kamera, tripod ve güncel bir Bilim ve Teknik dergisi var mı kontrol et.'],
@@ -266,4 +287,190 @@ const ADIM_M = {
  surucu:[[0],[1],[],[3],[]], batarya:[[4],[2],[2],[0],[1],[4]], bms:[[0],[2],[3],[1],[4]], ysb:[[],[0],[1],[2],[],[3]],
  izolasyon:[[0],[0],[1],[0]], aks:[[0],[0],[2],[3],[1]], telemetri:[[0],[0],[0],[1],[2]], elguv:[[0],[1],[2],[3],[5]],
  aydinlatma:[[0],[1],[0,1],[2],[3]], surus:[[0,1],[2],[3],[0],[4]], logo:[[0,1],[1],[2]], ttr:[[],[],[]], video:[[],[1,2],[0]],
+};
+
+// Kalem rehberi: araç el kitabımız olmadığı için her kalemi şartnameden çıkarıp sırayla anlatır.
+// Kalem kartının başında gösterilir: önce tanıtım (ne, neye benzer, ne için), sonra şartnamenin bu kalem
+// için dediği her şey (kaynaklı), sonra kalemin eksiksiz bitmesi için bizim yapmamız gerekenler, sırayla.
+//   tanit.ne / benzer / amac[] / takim = tanıtım; takim = önceki ekipten bilinenler
+//   gorsel = şartname şekilleri [kitapçık, şekil no] (data/fig'den)
+//   sart = [sade dille kural, kaynak]
+//   adim = { tur, b: başlık, t: ne ve nasıl yapılır, k: bittiğini nasıl anlarız, m: ilgili öncüller (reqs sırası) }
+// Adımların tamamlanması kalem kaydında tutulur: items/<id>.rehber = { <adım sırası>: {by, at} }.
+const REHBER = {
+ ysb:{
+  tanit:{
+   ne:'Yerleşik Şarj Birimi (YŞB), aracın üzerinde duran şarj cihazıdır. Duvardaki prizden gelen 220 V alternatif akımı (AC), bataryanın kabul ettiği doğru akıma (DC) çevirir ve bataryayı güvenli bir hızla doldurur. Telefon şarj adaptörünün çok daha güçlü, araca sabitlenmiş ve bataryanın beyniyle (BYS) konuşan bir hali gibi düşünebilirsin.',
+   benzer:'Genellikle alüminyum gövdeli, üstü soğutucu kanatçıklı dikdörtgen bir kutudur. Bir yanından şebeke kablosu girer; öbür yanından bataryaya giden kalın iki DC kablo (+ ve −) ve BYS ile konuşan ince bir haberleşme kablosu (CAN ya da UART) çıkar. İçinde doğrultucu, güç anahtarları (MOSFET), yüksek frekans trafosu ve kontrol kartı bulunur. Aşağıdaki şekillerde şartnamenin YŞB\'yi batarya ve BYS ile nasıl bağlı gördüğü var.',
+   amac:[
+    'Bataryayı araçtan sökmeden, yarış alanındaki standart prizden şarj edebilmek.',
+    'Şebekeyi yüksek gerilimli bataryadan bir trafoyla elektriksel olarak ayırmak; böylece şarj eden kişi ve araç korunur.',
+    'Bataryayı BYS\'nin istediği akımla ve hücrelere zarar vermeyen bir profille doldurmak (genellikle önce sabit akım, sonra sabit gerilim: CC-CV).'],
+   takim:'Önceki ekip YŞB\'yi yerli tasarlamaya karar vermişti: AC-DC tam köprü doğrultucu → tam köprülü LLC rezonans çevirici (yalıtım yüksek frekans trafosuyla) → tam köprü doğrultma. Paket 19 seri 10 paralel LG INR21700M50 hücreydi; 19 seri bir Li-ion paket tam dolunca 19 × 4,2 = 79,8 V olur. O tasarımda şarj geri beslemesini AKS gönderiyordu; 2026 şartnamesi şarjı BYS\'nin yönetmesini istiyor (B3 8.xi), bu kısım ona göre düzenlenmeli. Notlar Drive\'da "09-Yerleşik Şarj Birimi" klasöründe; Database\'de "Yerleşik Şarj Birimi" diye ara.'
+  },
+  gorsel:[['B3','3'],['B3','3.a'],['B3','4']],
+  sart:[
+   ['Araçta yerleşik şarj birimi olması zorunlu. Yoksa diskalifiye.','B2 4.o; Ek 1'],
+   ['Gücü en az 500 W olmalı.','B2 4.o; B3 8.i'],
+   ['Bataryayı tek faz şebekeden (85–264 V AC, 47–60 Hz) şarj etmeli.','B3 8.ii'],
+   ['Şebeke ile batarya arasında yüksek frekans trafosuyla galvanik yalıtım zorunlu. 50 Hz trafolu, triyakla kıyan ya da şebekeyi doğrultup doğrudan düşüren (yalıtımsız) devreler kabul edilmez.','B3 8.iv-vii'],
+   ['Güç faktörü düzeltme (PFC) zorunlu değil ama öneriliyor.','B3 8.iii'],
+   ['BYS ile seri haberleşmeli (CAN, RS-232, UART, SPI…). Şarjı başlatan, bitiren ve akımı belirleyen BYS olmalı; haberleşme koparsa YŞB şarjı kendiliğinden durdurmalı.','B3 8.xi'],
+   ['Şarj bağlantısı takılıyken araç hareket edememeli.','B2 4.p'],
+   ['Yarış sırasında da teknik kontrolde de araç üzerinde durmalı. Kontrolde aracın kendi bataryası şarj edilerek denenir.','B3 8.viii-x'],
+   ['Teknik kontrolde takım YŞB\'yi fiziksel olarak gösterir, tasarımını ve çalışma prensibini anlatır, DA-DA çeviricinin akım ve gerilim değerlerini ölçüp gösterir. Kontrol çıkış uçlarından akım ve gerilim ölçülerek yapılır.','B3 8.1.i-v; B3 8.2'],
+   ['Batarya kontrole %30–60 dolu getirilir. Şarja takılınca AKS ya da BYS S1\'i kapatıp S2\'yi açmalı; sürüşe geçince tersini yapmalı; güvenlik sorununda ikisini de açmalı.','B3 8.2.ii-vii'],
+   ['Şarjda da sürüşte de batarya gerilimi, akımı, sıcaklığı ve SoC sürücü ekranında görünmeli.','B3 8.2.iv'],
+   ['Raporda YŞB bölümü 200 puan. Tablo 8\'in (topoloji, güç, çıkış gerilim aralığı, akım salınımı, giriş güç faktörü, verim, kontrolör, şarj yöntemi, koruma devreleri) doldurulması zorunlu; şarj algoritması anlatılmalı.','B1 2.4; B3 8; B3 8.1'],
+   ['Araç elektrik şemasında şarj ünitesi gösterilmeli.','B2 3.b; B3 17'],
+   ['Dinamik sürüş ve fren testini geçemeyen takım YŞB kontrolüne giremez.','B7 G2.e']
+  ],
+  adim:[
+   {tur:'Karar', b:'Yolu seç: hazır ürün mü, kendi tasarımımız mı',
+    t:'Hazır, yalıtımlı bir Li-ion şarj cihazı almak hızlı ve risksizdir. Kendi tasarımımız (önceki ekibin LLC çalışmasının devamı) raporda ve yerlilikte daha güçlüdür ama zaman ister. Önce önceki ekibin notlarını oku, iki yolu birim toplantısında tartışın.',
+    k:'Karar ve gerekçesi kalemin Not alanına yazıldı.'},
+   {tur:'Tasarım', b:'Bataryaya göre hedef değerleri çıkar',
+    t:'Paketin seri hücre sayısından çıkış gerilim aralığını hesapla (Li-ion hücre tam dolu 4,2 V; 19 seride en fazla 79,8 V). Hücre datasheet\'inden izin verilen en yüksek şarj akımını bul ve paralel sayısıyla çarp. Güç en az 500 W olmalı; örneğin 80 V × 6,5 A ≈ 520 W.',
+    k:'Hedef güç, gerilim aralığı ve akım Rapor için veriler\'deki Tablo 8 alanlarına girildi.', m:[0]},
+   {tur:'Tasarım', b:'Yalıtımlı bir devre seç ya da doğrula',
+    t:'Şebeke ile batarya arasında yüksek frekans trafosu olmalı (ör. LLC rezonans ya da faz kaydırmalı tam köprü). 50 Hz trafo, triyak ya da doğrultup düşüren (buck) devreler kabul edilmez. Hazır ürün alınacaksa datasheet\'te "isolated" ibaresini ve yalıtım gerilimini ara.',
+    k:'Yalıtımın nerede olduğu şemada ya da datasheet\'te gösterilebiliyor.', m:[1]},
+   {tur:'Tasarım', b:'BYS ile haberleşmeyi tasarla',
+    t:'BYS ve AKS sorumlularıyla protokolü belirle (çoğu takımda CAN). Gerekli mesajlar: şarjı başlat / durdur, istenen akım ve gerilim, YŞB\'nin durum ve hata bilgisi. Belirli bir süre mesaj gelmezse (zaman aşımı) YŞB çıkışı kapatmalı.',
+    k:'Mesaj listesi ve zaman aşımı süresi yazılı, BYS sorumlusu onayladı.', m:[2]},
+   {tur:'Tasarım', b:'Şarj kilidini ve S1/S2 mantığını planla',
+    t:'Şarj kablosu takılıyken araç hareket etmemeli. Şarja takılınca AKS ya da BYS S1\'i kapatıp S2\'yi açmalı (motor tarafı ayrılır), sürüşe geçince tersini yapmalı. Şarj bağlantısını algılayan bir sinyal (ör. fişte bir algılama pini) AKS\'ye gitmeli. AKS ve elektrik güvenliği sorumlularıyla birlikte tasarla.',
+    k:'Elektrik şemasında S1, S2 ve şarj algılama gösteriliyor.', m:[3]},
+   {tur:'Tedarik / üretim', b:'Parçaları al ya da kartı üret',
+    t:'Hazır üründe sipariş, fatura ve datasheet\'i Drive\'a koy. Kendi tasarımda komponent seçimi, PCB, trafo sarımı ve gömülü yazılım. Yerlilik değerlendirmesi için tasarım ve üretim dosyalarını sakla.',
+    k:'Datasheet ya da üretim dosyaları Database\'den bu kaleme eklendi.'},
+   {tur:'Montaj', b:'Araca sabitle ve bağla',
+    t:'YŞB\'yi titreşimde oynamayacak şekilde cıvatalı bir braketle sabitle; soğuması için hava alan bir yer seç. Şebeke girişini, bataryaya giden + ve − kablolarını (sigortadan geçirerek) ve BYS haberleşme kablosunu bağla. Kabloları kelepçele, keskin kenarlardan koru.',
+    k:'Montaj fotoğrafı Test kaydı\'na eklendi ve elektrik şemasıyla aynı.'},
+   {tur:'Test', b:'Önce tezgâhta, sonra araçta şarj et',
+    t:'Önce güvenli bir test yüküyle çıkış gerilimini ve akımını multimetreyle ölç. Sonra aracın kendi bataryasını şarj et ve prizden çekilen gücü ölç (en az 500 W). BYS haberleşme kablosunu çek: şarj durmalı. Şarj takılıyken gaza bas: araç hareket etmemeli. Sürücü ekranında gerilim, akım, sıcaklık ve SoC görünüyor mu bak.',
+    k:'Ölçümler Rapor için veriler\'e, video ve fotoğraflar Test kaydı\'na eklendi.', m:[0,2,3]},
+   {tur:'Rapor', b:'Tablo 8\'i ve şarj algoritmasını yaz',
+    t:'Topoloji, güç, çıkış gerilim aralığı, akım salınımı, giriş güç faktörü, verim, kontrolör, şarj yöntemi (ör. CC-CV) ve koruma devrelerini doldur. Şarj algoritmasını ve BYS ile haberleşmeyi metinde anlat. Elektrik şemasında şarj ünitesinin göründüğünü kontrol et.',
+    k:'Rapor için veriler\'deki Tablo 8 alanları dolu ve başka bir üye doğruladı.', m:[4]},
+   {tur:'Teknik kontrol', b:'Teknik kontrole hazırlan',
+    t:'Bataryayı %30–60 dolu getir. YŞB\'yi gösterecek, çalışma prensibini anlatacak ve çıkış akımıyla gerilimini ölçüp gösterecek kişiyi belirleyin. Şarja takınca S1/S2\'nin doğru konuma geçtiğini ve haberleşme kopunca şarjın durduğunu bir kez daha prova edin.',
+    k:'Prova yapıldı; tarih ve sonuç Not\'a yazıldı.'}
+  ]
+ }
+};
+
+// Example photos per item, shown under the şartname figures as "Örnek görseller". All from Wikimedia Commons under
+// free licences (CC BY, CC BY-SA, CC0, public domain) and loaded from Commons itself; the panel credits author and licence
+// under each one. f = thumbnail, b = larger view, u = file page, lu = licence. Not our car: they show what the part looks like.
+const ORNEK = {
+ sasi:[
+  { cap:'Shell Eco-marathon prototipinin karbon fiber şasisi', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Carbon_fiber_chasi_of_Shell_Eco-marathon_prototype_-_Proto_INSA_Club_-_Phoenix.jpg/500px-Carbon_fiber_chasi_of_Shell_Eco-marathon_prototype_-_Proto_INSA_Club_-_Phoenix.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Carbon_fiber_chasi_of_Shell_Eco-marathon_prototype_-_Proto_INSA_Club_-_Phoenix.jpg/1280px-Carbon_fiber_chasi_of_Shell_Eco-marathon_prototype_-_Proto_INSA_Club_-_Phoenix.jpg', u:'https://commons.wikimedia.org/wiki/File:Carbon_fiber_chasi_of_Shell_Eco-marathon_prototype_-_Proto_INSA_Club_-_Phoenix.jpg', by:'Proto INSA Club', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Öğrenci takımı Shell Eco-marathon aracının şasisi üzerinde çalışıyor', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/81/0008_shell_eco_preview_ecran.jpg/500px-0008_shell_eco_preview_ecran.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/81/0008_shell_eco_preview_ecran.jpg/1280px-0008_shell_eco_preview_ecran.jpg', u:'https://commons.wikimedia.org/wiki/File:0008_shell_eco_preview_ecran.jpg', by:'Jérémy Barande', lic:'CC BY-SA 3.0', lu:'https://creativecommons.org/licenses/by-sa/3.0' },
+  { cap:'Boru kafes şasi (space frame) örneği: Maserati Tipo 61', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Maserati_Birdcage_Tipo_61_2459_Frame.jpg/500px-Maserati_Birdcage_Tipo_61_2459_Frame.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/b/b3/Maserati_Birdcage_Tipo_61_2459_Frame.jpg', u:'https://commons.wikimedia.org/wiki/File:Maserati_Birdcage_Tipo_61_2459_Frame.jpg', by:'Thomasbrianwright', lic:'CC BY-SA 3.0', lu:'https://creativecommons.org/licenses/by-sa/3.0' },
+ ],
+ rollcage:[
+  { cap:'Öğrenci takımının (Manipal Racing, SAE BAJA) roll cage\'i', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Roll_cage_by_Team_Manipal_Racing_for_SAE_BAJA_2013_Rochster.jpg/500px-Roll_cage_by_Team_Manipal_Racing_for_SAE_BAJA_2013_Rochster.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/d/d4/Roll_cage_by_Team_Manipal_Racing_for_SAE_BAJA_2013_Rochster.jpg', u:'https://commons.wikimedia.org/wiki/File:Roll_cage_by_Team_Manipal_Racing_for_SAE_BAJA_2013_Rochster.jpg', by:'Ashleshbhat13', lic:'CC BY-SA 3.0', lu:'https://creativecommons.org/licenses/by-sa/3.0' },
+  { cap:'Ralli aracında roll cage, iç görünüm', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5f/Suzuki_Swift_JWRC_%2705_005.JPG/500px-Suzuki_Swift_JWRC_%2705_005.JPG', b:'https://upload.wikimedia.org/wikipedia/commons/5/5f/Suzuki_Swift_JWRC_%2705_005.JPG', u:'https://commons.wikimedia.org/wiki/File:Suzuki_Swift_JWRC_%2705_005.JPG', by:'Tennen-Gas', lic:'CC BY-SA 3.0', lu:'http://creativecommons.org/licenses/by-sa/3.0/' },
+  { cap:'Yarış aracında roll cage boruları', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Race_car_roll_cage_%28Unsplash%29.jpg/500px-Race_car_roll_cage_%28Unsplash%29.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Race_car_roll_cage_%28Unsplash%29.jpg/1280px-Race_car_roll_cage_%28Unsplash%29.jpg', u:'https://commons.wikimedia.org/wiki/File:Race_car_roll_cage_(Unsplash).jpg', by:'Lloyd Dirks', lic:'CC0', lu:'http://creativecommons.org/publicdomain/zero/1.0/deed.en' },
+ ],
+ fren:[
+  { cap:'Bisiklet tipi hidrolik disk fren: kaliper ve balatalar', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Bike_disc_break_disc_pads_and_caliper.jpg/500px-Bike_disc_break_disc_pads_and_caliper.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Bike_disc_break_disc_pads_and_caliper.jpg/1280px-Bike_disc_break_disc_pads_and_caliper.jpg', u:'https://commons.wikimedia.org/wiki/File:Bike_disc_break_disc_pads_and_caliper.jpg', by:'Alextredz', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Disk fren CAD modeli: disk ve kaliper', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/CAD_Model_of_Disc_Brake.jpg/500px-CAD_Model_of_Disc_Brake.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/1/17/CAD_Model_of_Disc_Brake.jpg', u:'https://commons.wikimedia.org/wiki/File:CAD_Model_of_Disc_Brake.jpg', by:'Atharv Chandel', lic:'CC BY 4.0', lu:'https://creativecommons.org/licenses/by/4.0' },
+  { cap:'Çift salıncaklı (double wishbone) süspansiyon', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Double_wishbone_suspension.jpg/500px-Double_wishbone_suspension.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Double_wishbone_suspension.jpg/1280px-Double_wishbone_suspension.jpg', u:'https://commons.wikimedia.org/wiki/File:Double_wishbone_suspension.jpg', by:'RB30DE', lic:'CC BY-SA 3.0', lu:'https://creativecommons.org/licenses/by-sa/3.0' },
+ ],
+ direksiyon:[
+  { cap:'Direksiyon sistemi şeması: simitten tekerleğe', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Steer_system.jpg/500px-Steer_system.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/b/be/Steer_system.jpg', u:'https://commons.wikimedia.org/wiki/File:Steer_system.jpg', by:'LaurensvanLieshout', lic:'CC BY-SA 3.0', lu:'https://creativecommons.org/licenses/by-sa/3.0' },
+  { cap:'Araçta görünen kremayer ve rot', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Car_with_clearly_visible_steering_rack_with_inner_track_rod_and_track_rod_ends.jpg/500px-Car_with_clearly_visible_steering_rack_with_inner_track_rod_and_track_rod_ends.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/f/f5/Car_with_clearly_visible_steering_rack_with_inner_track_rod_and_track_rod_ends.jpg', u:'https://commons.wikimedia.org/wiki/File:Car_with_clearly_visible_steering_rack_with_inner_track_rod_and_track_rod_ends.jpg', by:'vipdesilva', lic:'CC BY 2.0', lu:'https://creativecommons.org/licenses/by/2.0' },
+  { cap:'Aks başı (fuzee): direksiyon kolu ve tekerlek bağlantısı', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Achsschenkel_eines_Formel-V-Wagens_%282008-06-28_b%29.jpg/500px-Achsschenkel_eines_Formel-V-Wagens_%282008-06-28_b%29.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Achsschenkel_eines_Formel-V-Wagens_%282008-06-28_b%29.jpg/1280px-Achsschenkel_eines_Formel-V-Wagens_%282008-06-28_b%29.jpg', u:'https://commons.wikimedia.org/wiki/File:Achsschenkel_eines_Formel-V-Wagens_(2008-06-28_b).jpg', by:'Lothar Spurzem', lic:'CC BY-SA 2.0 de', lu:'https://creativecommons.org/licenses/by-sa/2.0/de/deed.en' },
+ ],
+ koltuk:[
+  { cap:'Kova koltuk ve Schroth altı noktalı emniyet kemeri', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Bucket_seat_with_Schroth_six-point_harness_in_a_2010_Porsche_997_GT3_RS_3.8.jpg/500px-Bucket_seat_with_Schroth_six-point_harness_in_a_2010_Porsche_997_GT3_RS_3.8.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Bucket_seat_with_Schroth_six-point_harness_in_a_2010_Porsche_997_GT3_RS_3.8.jpg/1280px-Bucket_seat_with_Schroth_six-point_harness_in_a_2010_Porsche_997_GT3_RS_3.8.jpg', u:'https://commons.wikimedia.org/wiki/File:Bucket_seat_with_Schroth_six-point_harness_in_a_2010_Porsche_997_GT3_RS_3.8.jpg', by:'The Car Spy', lic:'CC BY 2.0', lu:'https://creativecommons.org/licenses/by/2.0' },
+  { cap:'Çok noktalı yarış kemeri', f:'https://upload.wikimedia.org/wikipedia/commons/8/80/Harness.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/8/80/Harness.jpg', u:'https://commons.wikimedia.org/wiki/File:Harness.jpg', by:'Randroide (Commons)', lic:'CC BY-SA 3.0', lu:'http://creativecommons.org/licenses/by-sa/3.0/' },
+  { cap:'Yarış koltuğu ve kemer bağlantıları', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Schroth%2C_Professional_MotorSport_World_Expo_2024%2C_Cologne_%28P1031213%29.jpg/500px-Schroth%2C_Professional_MotorSport_World_Expo_2024%2C_Cologne_%28P1031213%29.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Schroth%2C_Professional_MotorSport_World_Expo_2024%2C_Cologne_%28P1031213%29.jpg/1280px-Schroth%2C_Professional_MotorSport_World_Expo_2024%2C_Cologne_%28P1031213%29.jpg', u:'https://commons.wikimedia.org/wiki/File:Schroth,_Professional_MotorSport_World_Expo_2024,_Cologne_(P1031213).jpg', by:'Matti Blume', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0/deed.en' },
+ ],
+ kabuk:[
+  { cap:'Shell Eco-marathon aracı için karbon fiber alt gövde', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Carbon_fiber_low_body_of_Poenix%2C_the_5th_Shell_Eco-marathon_prototype_of_Proto_INSA_Club.jpg/500px-Carbon_fiber_low_body_of_Poenix%2C_the_5th_Shell_Eco-marathon_prototype_of_Proto_INSA_Club.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Carbon_fiber_low_body_of_Poenix%2C_the_5th_Shell_Eco-marathon_prototype_of_Proto_INSA_Club.jpg/1280px-Carbon_fiber_low_body_of_Poenix%2C_the_5th_Shell_Eco-marathon_prototype_of_Proto_INSA_Club.jpg', u:'https://commons.wikimedia.org/wiki/File:Carbon_fiber_low_body_of_Poenix,_the_5th_Shell_Eco-marathon_prototype_of_Proto_INSA_Club.jpg', by:'Proto INSA Club', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Gövdeyi üretmek için karbon fiber kalıplar', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/Carbon_fiber_moulds_to_build_the_body_of_a_Shell_Eco-marathon_prototype.jpg/500px-Carbon_fiber_moulds_to_build_the_body_of_a_Shell_Eco-marathon_prototype.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/3/36/Carbon_fiber_moulds_to_build_the_body_of_a_Shell_Eco-marathon_prototype.jpg', u:'https://commons.wikimedia.org/wiki/File:Carbon_fiber_moulds_to_build_the_body_of_a_Shell_Eco-marathon_prototype.jpg', by:'Proto INSA Club', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Aerodinamik kabuklu araç, Shell Eco-marathon 2019', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg/500px-Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg/1280px-Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg', u:'https://commons.wikimedia.org/wiki/File:Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg', by:'Elln', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+ ],
+ motor:[
+  { cap:'Elektrikli scooter göbek motoru: stator sargıları ve mıknatıslar', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Wheel_hub_motor_of_an_electric_kick_scooter%2C_sidepanel_removed_%282022%29.jpg/500px-Wheel_hub_motor_of_an_electric_kick_scooter%2C_sidepanel_removed_%282022%29.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Wheel_hub_motor_of_an_electric_kick_scooter%2C_sidepanel_removed_%282022%29.jpg/1280px-Wheel_hub_motor_of_an_electric_kick_scooter%2C_sidepanel_removed_%282022%29.jpg', u:'https://commons.wikimedia.org/wiki/File:Wheel_hub_motor_of_an_electric_kick_scooter,_sidepanel_removed_(2022).jpg', by:'Andrez1', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Araçta tekerlek göbek motoru', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/2015-02-25_Radnabenmotor_Mulan_Intec_Leipzig03.jpg/500px-2015-02-25_Radnabenmotor_Mulan_Intec_Leipzig03.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/2015-02-25_Radnabenmotor_Mulan_Intec_Leipzig03.jpg/1280px-2015-02-25_Radnabenmotor_Mulan_Intec_Leipzig03.jpg', u:'https://commons.wikimedia.org/wiki/File:2015-02-25_Radnabenmotor_Mulan_Intec_Leipzig03.jpg', by:'Hadhuey', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Tekerlek içi (in-wheel) motorun parçaları', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Protean360%2B.jpg/500px-Protean360%2B.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Protean360%2B.jpg/1280px-Protean360%2B.jpg', u:'https://commons.wikimedia.org/wiki/File:Protean360%2B.jpg', by:'Protean Electric', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+ ],
+ surucu:[
+  { cap:'Elektrikli araç motor kontrol (inverter) ünitesi', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/Audi_electric_motor_control%2C_Paris_Motor_Show_2018%2C_Paris_%281Y7A1113%29.jpg/500px-Audi_electric_motor_control%2C_Paris_Motor_Show_2018%2C_Paris_%281Y7A1113%29.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/Audi_electric_motor_control%2C_Paris_Motor_Show_2018%2C_Paris_%281Y7A1113%29.jpg/1280px-Audi_electric_motor_control%2C_Paris_Motor_Show_2018%2C_Paris_%281Y7A1113%29.jpg', u:'https://commons.wikimedia.org/wiki/File:Audi_electric_motor_control,_Paris_Motor_Show_2018,_Paris_(1Y7A1113).jpg', by:'Matti Blume', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+ ],
+ batarya:[
+  { cap:'Hücrelerden oluşan elektrikli araç batarya paketi', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Acp_tzero_LH_wo_cover.JPG/500px-Acp_tzero_LH_wo_cover.JPG', b:'https://upload.wikimedia.org/wikipedia/commons/b/b3/Acp_tzero_LH_wo_cover.JPG', u:'https://commons.wikimedia.org/wiki/File:Acp_tzero_LH_wo_cover.JPG', by:'D0li0 (en.wikipedia)', lic:'CC BY-SA 3.0', lu:'http://creativecommons.org/licenses/by-sa/3.0/' },
+  { cap:'18650 ve 21700 lityum-iyon hücre karşılaştırması', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Comparison_of_18650_and_21700_batteries_01.jpg/500px-Comparison_of_18650_and_21700_batteries_01.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Comparison_of_18650_and_21700_batteries_01.jpg/1280px-Comparison_of_18650_and_21700_batteries_01.jpg', u:'https://commons.wikimedia.org/wiki/File:Comparison_of_18650_and_21700_batteries_01.jpg', by:'Retired electrician', lic:'CC0', lu:'http://creativecommons.org/publicdomain/zero/1.0/deed.en' },
+ ],
+ bms:[
+  { cap:'Hücre dengeleme yapan BMS kartı', f:'https://upload.wikimedia.org/wikipedia/commons/e/ea/Bms-system-balancujici-a-merici-jednotka_%28cropped%29.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/e/ea/Bms-system-balancujici-a-merici-jednotka_%28cropped%29.jpg', u:'https://commons.wikimedia.org/wiki/File:Bms-system-balancujici-a-merici-jednotka_(cropped).jpg', by:'Drazny', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'3S, 4S ve 6S lityum-iyon BMS kartları', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Generic_Chinese_3S%2C_4S%2C_6S_BMS_boards_for_lithium_batteries_01.jpg/500px-Generic_Chinese_3S%2C_4S%2C_6S_BMS_boards_for_lithium_batteries_01.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Generic_Chinese_3S%2C_4S%2C_6S_BMS_boards_for_lithium_batteries_01.jpg/1280px-Generic_Chinese_3S%2C_4S%2C_6S_BMS_boards_for_lithium_batteries_01.jpg', u:'https://commons.wikimedia.org/wiki/File:Generic_Chinese_3S,_4S,_6S_BMS_boards_for_lithium_batteries_01.jpg', by:'Retired electrician', lic:'CC0', lu:'http://creativecommons.org/publicdomain/zero/1.0/deed.en' },
+  { cap:'Batarya paketi ve BMS sistemi', f:'https://upload.wikimedia.org/wikipedia/commons/1/14/BMS_System.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/1/14/BMS_System.jpg', u:'https://commons.wikimedia.org/wiki/File:BMS_System.jpg', by:'Mikelpa', lic:'CC BY 4.0', lu:'https://creativecommons.org/licenses/by/4.0' },
+ ],
+ ysb:[
+  { cap:'Taşınabilir elektrikli araç şarj cihazı (kutu tipi)', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/CrOhm-Box_rechts_Beschriftung.jpg/500px-CrOhm-Box_rechts_Beschriftung.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/CrOhm-Box_rechts_Beschriftung.jpg/1280px-CrOhm-Box_rechts_Beschriftung.jpg', u:'https://commons.wikimedia.org/wiki/File:CrOhm-Box_rechts_Beschriftung.jpg', by:'J. Hammerschmidt', lic:'CC BY-SA 3.0', lu:'https://creativecommons.org/licenses/by-sa/3.0' },
+  { cap:'Araç üzerindeki şarj girişi (Type 2)', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/20132-03-29-Zoe-Front.jpg/500px-20132-03-29-Zoe-Front.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/20132-03-29-Zoe-Front.jpg/1280px-20132-03-29-Zoe-Front.jpg', u:'https://commons.wikimedia.org/wiki/File:20132-03-29-Zoe-Front.jpg', by:'Grey Geezer', lic:'Public domain', lu:'' },
+ ],
+ izolasyon:[
+  { cap:'Yalıtım direnci ölçerler (megger): yalıtımı elle ölçmek için', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Insulation_testers_by_Megger.jpg/500px-Insulation_testers_by_Megger.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Insulation_testers_by_Megger.jpg/1280px-Insulation_testers_by_Megger.jpg', u:'https://commons.wikimedia.org/wiki/File:Insulation_testers_by_Megger.jpg', by:'Megger Ltd.', lic:'CC BY 3.0', lu:'https://creativecommons.org/licenses/by/3.0' },
+  { cap:'Dijital yalıtım ölçüm cihazı', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/Isolationsmessger%C3%A4t_1507.jpg/500px-Isolationsmessger%C3%A4t_1507.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/c/ce/Isolationsmessger%C3%A4t_1507.jpg', u:'https://commons.wikimedia.org/wiki/File:Isolationsmessger%C3%A4t_1507.jpg', by:'wdwd', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+ ],
+ aks:[
+  { cap:'Otomobilde elektronik kontrol ünitesi (ECU)', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/ECU_in_car.JPG/120px-ECU_in_car.JPG', b:'https://upload.wikimedia.org/wikipedia/commons/b/bb/ECU_in_car.JPG', u:'https://commons.wikimedia.org/wiki/File:ECU_in_car.JPG', by:'Adelelfrih', lic:'CC BY-SA 3.0', lu:'https://creativecommons.org/licenses/by-sa/3.0' },
+  { cap:'STM32 mikrodenetleyici kartı', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Core_Learning_Board_module_Arduino_STM32_F103_C8T6.jpg/500px-Core_Learning_Board_module_Arduino_STM32_F103_C8T6.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Core_Learning_Board_module_Arduino_STM32_F103_C8T6.jpg/1280px-Core_Learning_Board_module_Arduino_STM32_F103_C8T6.jpg', u:'https://commons.wikimedia.org/wiki/File:Core_Learning_Board_module_Arduino_STM32_F103_C8T6.jpg', by:'Popolon', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Arduino Mega 2560 kartı', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Arduino_Mega_2560.jpg/500px-Arduino_Mega_2560.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Arduino_Mega_2560.jpg/1280px-Arduino_Mega_2560.jpg', u:'https://commons.wikimedia.org/wiki/File:Arduino_Mega_2560.jpg', by:'SimonWaldherr', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+ ],
+ telemetri:[
+  { cap:'Anten ve SPI kablolarıyla LoRa modülü', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/LoRa_Module_with_antenna_and_SPI_wires_attached.jpg/500px-LoRa_Module_with_antenna_and_SPI_wires_attached.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/5/5a/LoRa_Module_with_antenna_and_SPI_wires_attached.jpg', u:'https://commons.wikimedia.org/wiki/File:LoRa_Module_with_antenna_and_SPI_wires_attached.jpg', by:'Cnd (en.wikipedia)', lic:'CC0', lu:'http://creativecommons.org/publicdomain/zero/1.0/deed.en' },
+  { cap:'LoRa + GPS kartı', f:'https://upload.wikimedia.org/wikipedia/commons/7/73/LORA_GPS_HAT.png', b:'https://upload.wikimedia.org/wikipedia/commons/7/73/LORA_GPS_HAT.png', u:'https://commons.wikimedia.org/wiki/File:LORA_GPS_HAT.png', by:'David Dragino', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Dijital gösterge ekranı (hız, durum)', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Hezery99-SYM_SR125i_digital_meter.jpg/500px-Hezery99-SYM_SR125i_digital_meter.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Hezery99-SYM_SR125i_digital_meter.jpg/1280px-Hezery99-SYM_SR125i_digital_meter.jpg', u:'https://commons.wikimedia.org/wiki/File:Hezery99-SYM_SR125i_digital_meter.jpg', by:'Hezery99', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+ ],
+ elguv:[
+  { cap:'Acil durdurma butonu (mantar tipi)', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Emergency_Stop.jpg/500px-Emergency_Stop.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Emergency_Stop.jpg/1280px-Emergency_Stop.jpg', u:'https://commons.wikimedia.org/wiki/File:Emergency_Stop.jpg', by:'Biso', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Kablo demeti ve bağlantı kutusu', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Wiring_harness_module_box.JPG/500px-Wiring_harness_module_box.JPG', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Wiring_harness_module_box.JPG/1280px-Wiring_harness_module_box.JPG', u:'https://commons.wikimedia.org/wiki/File:Wiring_harness_module_box.JPG', by:'Mkamara9540', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Farklı boyutlarda araç sigortaları', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Electrical_fuses%2C_plug-in_type%2C_different_sizes.jpeg/500px-Electrical_fuses%2C_plug-in_type%2C_different_sizes.jpeg', b:'https://upload.wikimedia.org/wikipedia/commons/7/78/Electrical_fuses%2C_plug-in_type%2C_different_sizes.jpeg', u:'https://commons.wikimedia.org/wiki/File:Electrical_fuses,_plug-in_type,_different_sizes.jpeg', by:'havarhen', lic:'CC BY-SA 3.0', lu:'http://creativecommons.org/licenses/by-sa/3.0/' },
+ ],
+ aydinlatma:[
+  { cap:'LED far ve gündüz farı', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/%22_15_-_Italian_Urban_SUV_-_Fiat_500X_front_lights_with_logo.jpg/500px-%22_15_-_Italian_Urban_SUV_-_Fiat_500X_front_lights_with_logo.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/%22_15_-_Italian_Urban_SUV_-_Fiat_500X_front_lights_with_logo.jpg/1280px-%22_15_-_Italian_Urban_SUV_-_Fiat_500X_front_lights_with_logo.jpg', u:'https://commons.wikimedia.org/wiki/File:%22_15_-_Italian_Urban_SUV_-_Fiat_500X_front_lights_with_logo.jpg', by:'Thesupermat', lic:'CC BY-SA 3.0 it', lu:'https://creativecommons.org/licenses/by-sa/3.0/it/deed.en' },
+  { cap:'Dikiz aynası', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Reflections_from_rearview_mirrors_in_front_of_TRA_Tianzhong_Station_20160228.jpg/500px-Reflections_from_rearview_mirrors_in_front_of_TRA_Tianzhong_Station_20160228.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Reflections_from_rearview_mirrors_in_front_of_TRA_Tianzhong_Station_20160228.jpg/1280px-Reflections_from_rearview_mirrors_in_front_of_TRA_Tianzhong_Station_20160228.jpg', u:'https://commons.wikimedia.org/wiki/File:Reflections_from_rearview_mirrors_in_front_of_TRA_Tianzhong_Station_20160228.jpg', by:'Mk2010', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+ ],
+ surus:[
+  { cap:'Yarış tulumu ve kask', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/1992_Martin_Brundle_Racing_Suit_and_Helmet%2C_1997_Damon_Hill_Helmet_and_2000_Michael_Schumacher_Helmet_%2849254927491%29.jpg/500px-1992_Martin_Brundle_Racing_Suit_and_Helmet%2C_1997_Damon_Hill_Helmet_and_2000_Michael_Schumacher_Helmet_%2849254927491%29.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/1992_Martin_Brundle_Racing_Suit_and_Helmet%2C_1997_Damon_Hill_Helmet_and_2000_Michael_Schumacher_Helmet_%2849254927491%29.jpg/1280px-1992_Martin_Brundle_Racing_Suit_and_Helmet%2C_1997_Damon_Hill_Helmet_and_2000_Michael_Schumacher_Helmet_%2849254927491%29.jpg', u:'https://commons.wikimedia.org/wiki/File:1992_Martin_Brundle_Racing_Suit_and_Helmet,_1997_Damon_Hill_Helmet_and_2000_Michael_Schumacher_Helmet_(49254927491).jpg', by:'David Merrett from Daventry, England', lic:'CC BY 2.0', lu:'https://creativecommons.org/licenses/by/2.0' },
+  { cap:'Yangın söndürücü', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/A_Fire_Extinguisher.jpg/500px-A_Fire_Extinguisher.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/A_Fire_Extinguisher.jpg/1280px-A_Fire_Extinguisher.jpg', u:'https://commons.wikimedia.org/wiki/File:A_Fire_Extinguisher.jpg', by:'Paul The Writer', lic:'CC0', lu:'http://creativecommons.org/publicdomain/zero/1.0/deed.en' },
+  { cap:'CO2 yangın söndürücü', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/CO2_extinguisher.jpg/500px-CO2_extinguisher.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/CO2_extinguisher.jpg/1280px-CO2_extinguisher.jpg', u:'https://commons.wikimedia.org/wiki/File:CO2_extinguisher.jpg', by:'Eunosfire986', lic:'CC0', lu:'http://creativecommons.org/publicdomain/zero/1.0/deed.en' },
+ ],
+ logo:[
+  { cap:'Sponsor logolu yarış aracı, Shell Eco-marathon 2019', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg/500px-Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg', b:'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg/1280px-Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg', u:'https://commons.wikimedia.org/wiki/File:Aurora2_tijdens_de_Shell_Eco-Marthon_2019.jpg', by:'Elln', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+  { cap:'Renk ve grafik tasarımı yapılmış prototip araç', f:'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Evvolutio_96.jpg/500px-Evvolutio_96.jpg', b:'https://upload.wikimedia.org/wikipedia/commons/f/f5/Evvolutio_96.jpg', u:'https://commons.wikimedia.org/wiki/File:Evvolutio_96.jpg', by:'Proto INSA Club', lic:'CC BY-SA 4.0', lu:'https://creativecommons.org/licenses/by-sa/4.0' },
+ ]
+};
+
+// Cars that won the Görsel Tasarım (visual design) award at the Efficiency Challenge, for the Kabuk item, newest first.
+// TEKNOFEST's own results page lists only the performance places, so each entry cites where the award is reported;
+// `not` says when that is a single, unofficial source. There are no freely licensed photos of these cars, so the
+// panel links to a picture search instead of showing them.
+const ODUL = {
+ kabuk:[
+  { yil:'2026', takim:'KSÜ Elektromobil Takımı', uni:'Kahramanmaraş Sütçü İmam Üniversitesi', odul:'Görsel Tasarım Ödülü', kat:'Uluslararası',
+    not:'Tek kaynak: yerel haber (9 Eylül 2026).', ara:'KSÜ Elektromobil Takımı TEKNOFEST 2026 araç',
+    kaynak:'https://www.ajans344.com/kahramanmaras-haberleri/kahramanmarasli-genclerden-teknofest-basarisi/408866' },
+  { yil:'2025', takim:'Eskişehir Şehit Suat Çelik Gençlik Merkezi takımı', uni:'Gençlik Merkezi (üniversite değil)', odul:'Görsel Tasarım Ödülü', kat:'Uluslararası',
+    not:'Tek kaynak: gençlik merkezinin kendi paylaşımı; takım adı yazmıyor.', ara:'Eskişehir Şehit Suat Çelik Gençlik Merkezi elektromobil TEKNOFEST 2025',
+    kaynak:'https://x.com/gsb_suatcelikgm/status/1962165220354183543' },
+  { yil:'2024', takim:'Mostra', uni:'Zeytinburnu Şehitler BİLSEM', odul:'Görsel Tasarım Ödülü', kat:'lise takımı',
+    not:'2024 üniversite kazananı yayımlanmamış; bulunan tek kayıt bu.', ara:'Mostra takımı Zeytinburnu BİLSEM elektrikli araç',
+    kaynak:'https://orgm.meb.gov.tr/www/teknofest-uluslararasi-efficiency-challenge-elektrikli-arac-yarislarinda-bilsemlerin-basarisi/icerik/2903' },
+  { yil:'2023', takim:'GÖKTÜRK', uni:'Niğde Ömer Halisdemir Üniversitesi', odul:'Görsel Tasarım Ödülü', ara:'GÖKTÜRK Niğde Ömer Halisdemir elektromobil araç',
+    kaynak:'https://bilimgenc.tubitak.gov.tr/makale/2023-tubitak-ec-elektrikli-arac-yarislarinda-kazananlar-belli-oldu' },
+  { yil:'2023', takim:'ATILIM RACING', uni:'Atılım Üniversitesi', odul:'Görsel Tasarım Ödülü', ara:'Atılım Racing efficiency challenge araç',
+    kaynak:'https://bilimgenc.tubitak.gov.tr/makale/2023-tubitak-ec-elektrikli-arac-yarislarinda-kazananlar-belli-oldu' },
+  { yil:'2021', takim:'ADYU CENDERE', uni:'Adıyaman Üniversitesi', odul:'Görsel Tasarım Ödülü', ara:'Adıyaman Üniversitesi Cendere elektromobil',
+    kaynak:'https://bilimgenc.tubitak.gov.tr/makale/2021-efficiency-challenge-elektrikli-arac-yarislari-sona-erdi' },
+  { yil:'2019', takim:'Konya Teknik Üniversitesi takımı', uni:'Konya Teknik Üniversitesi', odul:'Görsel Tasarım Ödülü', ara:'Konya Teknik Üniversitesi efficiency challenge elektromobil 2019',
+    kaynak:'https://www.aa.com.tr/tr/bilim-teknoloji/tubitak-efficiency-challenge-elektrikli-arac-yarislarinda-dereceye-girenler-belli-oldu/1588583' },
+ ]
 };

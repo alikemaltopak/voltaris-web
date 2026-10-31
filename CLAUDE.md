@@ -70,7 +70,8 @@ canvas), `SmoothScroll` (Lenis), `CustomCursor`.
   Statik verisi `public/panel/data/`; giriş kapısının filmi `public/panel/giris/` (README §8). `firestore.rules` + `firebase.json` kökte; kural değişince
   Firebase'e yeniden yayınlanmalı. Ortam değişkenleri `VITE_FIREBASE_*` (`.env.example`).
   **Gizli:** takım arşivi indeksi (`indeks.json`) ve Claude dökümü (`data-export/`) depoya ve
-  `public/`'e girmez (depo herkese açık); Firestore'a paneldeki Üyeler ekranından yüklenir.
+  `public/`'e girmez (depo herkese açık); Firestore'a paneldeki Üyeler ekranından yüklenir. Kalemlerdeki takım
+  görselleri de öyle: `panel/kaynak/drive-gorselleri.json` (git'e girmez) aynı ekrandan yüklenir, `fotolar/`'a kopyalanır.
   Üye listesini yalnız `voltaris.official` ve `alikemaltopak` (gmail) yönetir; yönetici rolü yok.
   Eklenen dosya/fotoğrafı yalnız ekleyen ya da bu iki hesap kaldırır (kural düzeyinde). Takım Drive'ında üyeler
   okuyucu; Üyeler ekranındaki değişiklik `DriveArama.gs` üzerinden paylaşımı eşitler.

@@ -8,40 +8,27 @@
 <title>Voltaris Sanal Atölye</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Archivo:wght@500;600;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Archivo:wdth,wght@100..125,500..800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: a plain workshop board. One header, five flat tabs. The Araç tab is the work surface:
-   3D viewport + item list on the left, the open item's guided steps on the right.
-   Orange = real/hazır (the colour of the technical-control stickers), slate blue = ghost/to do. */
+/* Layout: a workshop HUD. One header, flat tabs, glass cards on a dark gridded floor. The Araç tab is the
+   work surface: the hologram car + item list on the left, the open item's guided steps on the right.
+   One dark look on purpose: the 3D stage was dark in every theme already, and the hologram reads best on it.
+   Amber = real/hazır (the colour of the technical-control stickers), cyan = ghost/to do. */
 :root{
-  --bg:#F3F4F6; --surface:#FFFFFF; --sunk:#F7F8FA; --line:#DDE1E7; --line-2:#ECEEF2;
-  --ink:#1A202B; --ink-2:#4B5565; --ink-3:#7A8494;
-  --accent:#1E5BB8; --accent-soft:#E7EEF9; --on-accent:#FFFFFF; --link:#1A62D6;
-  --real:#DD6421; --real-soft:#FCEBDD; --holo:#5D7AA6; --lock:#AEB6C2;
-  --ok:#2C8452; --ok-soft:#E3F2E9; --bad:#C23E2C; --bad-soft:#FBE8E5; --warn:#A86A12; --warn-soft:#FBF0DC;
-  --mile:#C23E2C; --stage:#12161D; --stage-ink:#D9E0EA;
-  --m:#8A5A12; --e:#1E5BB8; --o:#6A4CA8;
+  --bg:#060A0F; --bg-2:#0B131B; --surface:#0E1821; --sunk:#09111A; --line:#1F2E3A; --line-2:#17232D;
+  --glass:rgba(12,21,30,.72); --glass-2:rgba(18,31,43,.86);
+  --ink:#E3EDF2; --ink-2:#9BB0BD; --ink-3:#6A8292;
+  --accent:#4FD8E8; --accent-soft:rgba(79,216,232,.12); --on-accent:#04161A; --link:#6CCBF2;
+  --real:#F5A524; --real-soft:rgba(245,165,36,.14); --holo:#4FD8E8; --lock:#3C4C59;
+  --ok:#5CC08A; --ok-soft:rgba(92,192,138,.14); --bad:#F0705E; --bad-soft:rgba(240,112,94,.13); --warn:#E8C36A; --warn-soft:rgba(232,195,106,.13);
+  --mile:#F0705E; --stage:#06070A; --stage-ink:#D9E0EA;
+  --m:#E0B46A; --e:#7FAEF0; --o:#B79CEB;
   --f-body:'IBM Plex Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  --f-disp:var(--f-body);
+  --f-disp:'Archivo', 'Helvetica Neue', Arial, sans-serif;
   --f-mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
-  --r:10px;
+  --r:14px;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#13161B; --surface:#1A1E25; --sunk:#161A20; --line:#2B313B; --line-2:#232831;
-  --ink:#E6E9EF; --ink-2:#AAB2BF; --ink-3:#7E8897;
-  --accent:#6FA0EC; --accent-soft:#1D2A3E; --on-accent:#0D1726; --link:#7FB2FF;
-  --real:#F08443; --real-soft:#3A2618; --holo:#8AA3CC; --lock:#4D5664;
-  --ok:#5CC08A; --ok-soft:#183324; --bad:#F07A68; --bad-soft:#3A1E1A; --warn:#E0A84A; --warn-soft:#352A15;
-  --mile:#F07A68; --stage:#0E1116; --stage-ink:#D9E0EA;
-  --m:#E0B46A; --e:#7FAEF0; --o:#B79CEB; color-scheme:dark } }
-:root[data-theme="dark"]{
-  --bg:#13161B; --surface:#1A1E25; --sunk:#161A20; --line:#2B313B; --line-2:#232831;
-  --ink:#E6E9EF; --ink-2:#AAB2BF; --ink-3:#7E8897;
-  --accent:#6FA0EC; --accent-soft:#1D2A3E; --on-accent:#0D1726; --link:#7FB2FF;
-  --real:#F08443; --real-soft:#3A2618; --holo:#8AA3CC; --lock:#4D5664;
-  --ok:#5CC08A; --ok-soft:#183324; --bad:#F07A68; --bad-soft:#3A1E1A; --warn:#E0A84A; --warn-soft:#352A15;
-  --mile:#F07A68; --stage:#0E1116; --stage-ink:#D9E0EA;
-  --m:#E0B46A; --e:#7FAEF0; --o:#B79CEB; color-scheme:dark }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{background:var(--bg);color:var(--ink)}
@@ -179,18 +166,12 @@ textarea.inp{min-height:64px;resize:vertical;width:100%}
 .b-M{color:var(--m)} .b-E{color:var(--e)} .b-O{color:var(--o)}
 
 /* araç tab */
-.arac{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-areas:"stage card" "list card";gap:14px;align-items:start}
+.arac{display:grid;gap:14px;align-items:start}
 .arac>.stage-wrap{grid-area:stage;min-width:0} .arac>.card{grid-area:card;min-width:0} .arac>.list{grid-area:list;min-width:0}
-@media (max-width:1000px){.arac{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "card" "list"}}
 .stage-wrap{display:flex;flex-direction:column;gap:8px}
 .stage{position:relative;overflow:hidden;height:min(52vh,460px);min-height:300px;border-radius:var(--r);background:var(--stage)}
 .stage canvas{display:block;position:relative;z-index:1;width:100%;height:100%;cursor:grab;touch-action:none}
 .stage canvas.pointing{cursor:pointer}
-.stage-bg{position:absolute;inset:0;background:var(--stage);pointer-events:none}
-.stage-hud{position:absolute;inset:0;z-index:2;pointer-events:none;padding:10px}
-.views{display:flex;flex-wrap:wrap;gap:4px;pointer-events:auto}
-.views button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:4px 9px;font-size:12px;color:var(--stage-ink);cursor:pointer;min-height:30px}
-.views button[aria-pressed="true"]{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.4)}
 .loading{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;color:var(--stage-ink);font-size:13px;pointer-events:none}
 .tip{position:absolute;z-index:3;pointer-events:none;background:rgba(10,12,16,.92);color:#fff;border-radius:6px;padding:4px 8px;font-size:12px;white-space:nowrap;transform:translate(-50%,-130%)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:0}
@@ -264,6 +245,64 @@ textarea.inp{min-height:64px;resize:vertical;width:100%}
 .howto ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;color:var(--ink)}
 .howto li::marker{color:var(--ink-3);font-variant-numeric:tabular-nums}
 .q>span small{display:block;font-size:12px;color:var(--ink-3);margin-top:1px}
+/* "Kalemi tanı": the guide folds behind a brain button at the top of the card */
+details.tani{border:1px solid rgba(79,216,232,.3);border-radius:14px;background:radial-gradient(120% 70% at 0% 0%,rgba(79,216,232,.09),transparent 60%),rgba(9,17,26,.5)}
+details.tani>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:14px;color:var(--ink)}
+details.tani>summary::-webkit-details-marker{display:none}
+.tani-ic{width:44px;height:44px;flex:none;border-radius:50%;display:grid;place-items:center;color:var(--accent);background:var(--accent-soft);border:1px solid rgba(79,216,232,.45);box-shadow:0 0 18px -4px rgba(79,216,232,.7)}
+.tani-ic svg{width:24px;height:24px}
+.tani-t{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.tani-t b{font:650 16px/1.2 var(--f-disp);font-stretch:104%}
+.tani-t small{font-size:12px;color:var(--ink-3)}
+details.tani>summary .mono{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.tani-ch{width:30px;height:30px;flex:none;border-radius:8px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2)}
+.tani-ch svg{width:14px;height:14px;transition:transform .25s}
+details.tani[open]>summary .tani-ch svg{transform:rotate(180deg)}
+details.tani>.rh{padding:0 12px 12px}
+@media (hover:hover) and (pointer:fine){ details.tani>summary:hover{text-decoration:none} details.tani>summary:hover .tani-ic{background:rgba(79,216,232,.2)} details.tani>summary:hover .tani-ch{border-color:var(--holo);color:var(--ink)} }
+@media (prefers-reduced-motion:reduce){ .tani-ch svg{transition:none} }
+@media (max-width:520px){ details.tani>summary .mono{display:none} }
+.rh{display:flex;flex-direction:column;gap:14px}
+.rh-sec{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:12px;background:var(--sunk);border:1px solid var(--line)}
+.rh-sec>p{margin:0;font-size:14px;line-height:1.6;color:var(--ink)}
+.rh-sec>p.when{font-size:12.5px;color:var(--ink-3)} .rh-sec>p.when b{color:var(--ink-2);font-weight:600}
+.rh-sec h4{margin:6px 0 0;font:500 11px/1.3 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.rh-sec>ul{margin:0;padding-left:18px;font-size:14px;line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.rh-h{margin:0;display:flex;align-items:center;gap:10px;font:650 16px/1.3 var(--f-disp);font-stretch:104%}
+.rh-h i{font:600 12px/1 var(--f-mono);font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;color:var(--on-accent);background:var(--accent)}
+.rh-h .mono{margin-left:auto}
+.rh-note{border-left:2px solid var(--real);padding:6px 0 6px 12px;margin-top:4px}
+.rh-note b{font-size:12.5px;color:var(--real)}
+.rh-note p{margin:3px 0 0;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.rh-rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rh-rules li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line-2);font-size:13.5px;line-height:1.5}
+.rh-rules li:first-child{border-top:0}
+.rh-rules .srcbtn{max-width:150px;flex:none}
+.rh-steps{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column}
+.rh-steps>li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding:10px 0;position:relative}
+.rh-steps>li:not(:last-child)::before{content:"";position:absolute;left:14px;top:40px;bottom:-4px;width:2px;background:var(--line)}
+.rh-steps>li.done:not(:last-child)::before{background:rgba(245,165,36,.5)}
+.rh-chk{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg-2);display:grid;place-items:center;font:600 12px/1 var(--f-mono);color:var(--ink-3);cursor:pointer;position:relative;z-index:1;padding:0}
+.rh-chk svg{width:14px;height:14px}
+.rh-steps>li.done .rh-chk{background:var(--real);border-color:var(--real);color:#1A1003}
+.rh-steps>li.done .rh-chk svg path{stroke:#1A1003}
+.rh-steps>li.cur .rh-chk{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),0 0 14px rgba(79,216,232,.45)}
+.rh-body{display:flex;flex-direction:column;gap:4px;min-width:0}
+.rh-body>b{font:600 15px/1.35 var(--f-disp);font-stretch:102%}
+.rh-body>p{margin:0;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.rh-steps>li.cur .rh-body>p{color:var(--ink)}
+.rh-steps>li.done .rh-body>b{color:var(--ink-3)}
+.rh-tur{font:500 10.5px/1.3 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.rh-steps>li.cur .rh-tur{color:var(--accent)}
+.rh-k{font-size:12.5px!important;color:var(--ink-3)!important}
+.rh-k b{color:var(--ink-2)}
+@media (hover:hover) and (pointer:fine){ .rh-chk:not(:disabled):hover{border-color:var(--accent);color:var(--accent)} }
+.todo{margin:2px 0 0;padding:0;list-style:none;counter-reset:td;display:flex;flex-direction:column;gap:9px}
+.todo>li{counter-increment:td;position:relative;padding-left:32px;font-size:14px;line-height:1.55;color:var(--ink)}
+.todo>li::before{content:counter(td);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+  font:600 11.5px/1 var(--f-mono);color:var(--accent);border:1px solid rgba(79,216,232,.45);background:var(--accent-soft)}
+.todo ul{margin:6px 0 0}
+.todo .namebtn{font:inherit;font-weight:600}
 .jobs{display:flex;flex-direction:column;gap:6px}
 .job{display:flex;align-items:flex-start;gap:9px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--ink);font-size:14px;line-height:1.35}
 .job i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--lock);flex:none;margin-top:2px}
@@ -304,6 +343,20 @@ details.cz summary b{color:var(--bad);font-weight:600}
 .thumb:hover{border-color:var(--accent)}
 .thumb span.im{display:flex;align-items:center;justify-content:center;height:92px;background:#fff;border-radius:5px;overflow:hidden}
 .thumb img{max-width:100%;max-height:92px;object-fit:contain;display:block}
+.thumb.ex span.im{background:#0b1118}
+.thumb.ex img{width:100%;height:100%;max-height:none;object-fit:cover}
+.thumb em{font-style:normal;font-size:10.5px;line-height:1.3;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#figMeta a{color:var(--link)}
+.thumb.dg span.im{position:relative}
+.dg-tag{position:absolute;left:5px;top:5px;font:600 10px/1 var(--f-mono);font-style:normal;padding:3px 6px;border-radius:999px;background:rgba(245,165,36,.92);color:#1A1003}
+.odul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.odul li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line-2)}
+.odul li:first-child{border-top:0}
+.odul b{display:block;font-size:14px}
+.odul small{display:block;font-size:12px;color:var(--ink-3)}
+.odul small.odul-not{font-style:italic}
+.odul-a{display:flex;flex-direction:column;gap:3px;text-align:right;font-size:12.5px}
+.odul-a a{color:var(--link)}
 .thumb small{font-size:11.5px;line-height:1.3;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 figure.sfig{margin:6px 0 14px;display:flex;flex-direction:column;gap:6px;max-width:760px}
 figure.sfig button{border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px;cursor:zoom-in;display:block}
@@ -346,7 +399,6 @@ dialog.lb::backdrop{background:rgba(12,15,20,.6)}
 @media (max-width:520px){.linkrow b{width:auto;flex:1}.linkrow .bar{display:none}}
 
 /* item list */
-.list{padding:14px 16px}
 .filters{display:flex;flex-wrap:wrap;gap:6px}
 .fchip{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:3px 12px;font-size:13px;cursor:pointer;color:var(--ink-2);min-height:32px}
 .fchip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:600}
@@ -516,11 +568,11 @@ summary{cursor:pointer}
 .ix-tm ul{margin:4px 0 0;padding-left:18px;font-size:12.5px;display:flex;flex-direction:column;gap:6px}
 .ix-tm b{font-weight:500;word-break:break-word}
 /* Database balonu: takım arşivinde serbest arama. Ekranın iki kenarından birine yapışır, sürüklenip atılabilir. */
-.dbb{position:fixed;z-index:25;width:56px;height:56px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;
+.dbb{position:fixed;z-index:25;width:72px;height:72px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;
   background:var(--accent);color:var(--on-accent);box-shadow:0 6px 18px rgba(10,20,40,.28),0 1px 3px rgba(10,20,40,.2);
   cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;transition:left .38s cubic-bezier(.2,1.25,.4,1),top .38s cubic-bezier(.2,1.25,.4,1),transform .15s ease}
 .dbb[hidden]{display:none}
-.dbb svg{width:28px;height:28px;pointer-events:none}
+.dbb svg{width:36px;height:36px;pointer-events:none}
 .dbb.drag{transition:none;cursor:grabbing;transform:scale(1.08)}
 .dbb[aria-expanded="true"]{box-shadow:0 0 0 4px var(--accent-soft),0 6px 18px rgba(10,20,40,.28)}
 .dbb:focus-visible{outline:3px solid var(--link);outline-offset:3px}
@@ -601,6 +653,172 @@ summary{cursor:pointer}
 .ynt-ekle{display:flex;flex-wrap:wrap;gap:8px}.ynt-ekle .inp{flex:1 1 180px;min-width:0}
 .ynt-tbl td{vertical-align:middle}.ynt-tbl .sel{max-width:170px}
 .ynt-aktar{display:flex;flex-direction:column;gap:8px}.ynt-aktar .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}
+
+/* ---------- Workshop HUD (2026-10): the look only. Every rule above still holds; these sit on top. ---------- */
+body{background:
+    radial-gradient(1100px 520px at 50% -8%, rgba(79,216,232,.12), transparent 70%),
+    radial-gradient(700px 500px at 100% 100%, rgba(245,165,36,.06), transparent 70%),
+    linear-gradient(var(--bg), var(--bg-2));
+  background-attachment:fixed;min-height:100vh}
+html{background:var(--bg)}
+/* fine grid + dust over the floor */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background:
+    linear-gradient(rgba(120,205,225,.035) 1px, transparent 1px) 0 0/44px 44px,
+    linear-gradient(90deg, rgba(120,205,225,.035) 1px, transparent 1px) 0 0/44px 44px,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.wrap{position:relative;z-index:1;max-width:1480px}
+h1,h2,h3{font-family:var(--f-disp)}
+
+.brand{display:flex;align-items:center;gap:12px}
+.brand .emb{width:38px;height:38px;flex:none;color:#F2FBFD;filter:drop-shadow(0 0 7px rgba(79,216,232,.55))}
+.brand h1{font:800 16px/1 var(--f-disp);letter-spacing:.34em}
+.brand h1 span{display:block;font:500 11px/1.4 var(--f-mono);letter-spacing:.1em;color:var(--ink-3);margin-top:5px}
+.real-pct b{font:700 18px/1 var(--f-disp)}
+
+.tabs{border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px;background:rgba(6,12,18,.5);align-self:flex-start;max-width:100%}
+.tab{border:0;border-radius:999px;min-height:38px;padding:8px 16px;font-weight:500;font-size:13.5px}
+.tab[aria-selected="true"]{background:var(--glass-2);box-shadow:inset 0 0 0 1px rgba(120,210,232,.3),0 0 18px -6px var(--accent)}
+
+.box{background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 20px 40px -24px rgba(0,0,0,.8)}
+.head h2,.head h3,.sect>h3{font:600 12.5px/1.25 var(--f-disp);font-stretch:118%;letter-spacing:.12em;text-transform:uppercase}
+.card h2{font:700 25px/1.15 var(--f-disp);font-stretch:108%;letter-spacing:0}
+.eyebrow{font:500 11px/1.3 var(--f-mono);letter-spacing:.14em;text-transform:uppercase}
+.notice{background:var(--glass)}
+.guide{background:rgba(79,216,232,.07);border:1px solid rgba(79,216,232,.22)}
+
+.btn,.sel,.inp,.fchip,.kw,.job,.stages button,.seg{background:rgba(9,17,26,.72);border-color:rgba(120,205,225,.18)}
+.btn.primary{background:var(--accent);border-color:var(--accent);box-shadow:0 0 18px -4px rgba(79,216,232,.6)}
+.btn.added,.btn.added:disabled{background:var(--ok-soft)}
+.fchip[aria-pressed="true"],.job[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.seg button[aria-pressed="true"]{box-shadow:0 0 14px -3px currentColor}
+/* text on amber stays dark: white on #F5A524 is unreadable */
+.stages button[aria-pressed="true"],.n-ok,.tl-bar.done .lbl{color:#1A1003}
+.stages button[aria-pressed="true"]{box-shadow:0 0 14px -2px rgba(245,165,36,.6)}
+.tbl tr.sel td{background:rgba(79,216,232,.09)}
+.tbl tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
+
+/* the stage: taller, framed like the hologram studio */
+.stage{height:min(46vh,430px);border:1px solid var(--line)}
+@media (max-width:640px){ .stage{height:min(48vh,360px)} }
+/* Three columns as in the prototype: the item list on the left (folds to a rail), the car with the findings
+   window under it, the item card on the right. Narrower, the list becomes a strip above the car. */
+.arac{grid-template-columns:240px minmax(0,1.1fr) minmax(0,1fr);grid-template-areas:"list stage card" "list detail card";grid-template-rows:auto 1fr;transition:grid-template-columns .3s ease}
+.arac>.detail{grid-area:detail;min-width:0;align-self:start}
+.arac>.list{align-self:start;position:sticky;top:12px}
+.arac.list-off{grid-template-columns:58px minmax(0,1.1fr) minmax(0,1fr)}
+@media (max-width:1280px){ .arac,.arac.list-off{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-areas:"list list" "stage card" "detail card";grid-template-rows:auto auto 1fr}
+  .arac>.list{position:static} }
+@media (max-width:1000px){ .arac,.arac.list-off{grid-template-columns:minmax(0,1fr);grid-template-areas:"list" "stage" "card" "detail";grid-template-rows:auto} }
+.detail{padding:16px 18px;display:flex;flex-direction:column;gap:12px;scroll-margin-top:12px}
+.det-h{display:flex;align-items:flex-start;gap:10px}
+.det-h>div{flex:1;min-width:0}
+.det-h h3{margin:5px 0 0;font:650 18px/1.3 var(--f-disp);font-stretch:104%}
+.dsec{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--sunk);display:flex;flex-direction:column;gap:6px}
+.dsec h4{margin:0;font:500 11px/1.3 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.dsec>p{margin:0;font-size:13.5px;line-height:1.55}
+.dsec ol{margin:0;padding-left:20px;font-size:13.5px;line-height:1.5;display:flex;flex-direction:column;gap:4px}
+.dsec .quote{margin-top:0}
+.det-rec{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:12px}
+.req.is-open{background:var(--accent-soft);border-radius:8px;box-shadow:inset 2px 0 0 var(--accent)}
+.req.is-open .rtext small .more{color:var(--accent)}
+/* the stage's HUD, from the prototype: corner brackets, the picked item, its readiness ring, a callout to the part */
+.stage .brk{position:absolute;z-index:2;width:18px;height:18px;border-color:rgba(120,210,232,.32);border-style:solid;pointer-events:none}
+.brk.tl{top:8px;left:8px;border-width:1px 0 0 1px}.brk.tr{top:8px;right:8px;border-width:1px 1px 0 0}
+.brk.bl{bottom:8px;left:8px;border-width:0 0 1px 1px}.brk.br{bottom:8px;right:8px;border-width:0 1px 1px 0}
+.hud-tl{position:absolute;z-index:2;top:14px;left:14px;max-width:min(300px,calc(100% - 120px));padding:9px 13px 10px;border-radius:12px;background:rgba(8,16,24,.16);pointer-events:none}
+.hud-tl .eyebrow{font-size:10px;color:var(--ink-3)}
+.hud-tl h3{margin:4px 0 7px;font:650 16px/1.2 var(--f-disp);font-stretch:106%;color:var(--ink);text-wrap:balance}
+.hud-tl .row{display:flex;gap:6px;flex-wrap:wrap}
+.hud-tl .pill{padding:2px 8px;font-size:10.5px}
+.hud-tr{position:absolute;z-index:2;top:14px;right:14px;width:74px;height:74px;border-radius:50%;background:rgba(8,16,24,.12);pointer-events:none}
+.hud-tr svg{width:100%;height:100%;transform:rotate(-90deg)}
+.hud-tr .lbl{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.hud-tr .lbl b{font:700 17px/1 var(--f-disp);font-stretch:108%;color:var(--ink)}
+.hud-tr .lbl small{font:500 8.5px/1.6 var(--f-mono);letter-spacing:.12em;color:var(--ink-3);text-transform:uppercase}
+.ring-fg{transition:stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 4px rgba(245,165,36,.7))}
+.callout{position:absolute;inset:0;z-index:2;width:100%;height:100%;pointer-events:none;overflow:visible}
+.callout text{font:500 11px var(--f-mono);fill:var(--ink);paint-order:stroke;stroke:#06070a;stroke-width:3px;stroke-linejoin:round}
+.callout .sub{fill:var(--ink-3)}
+.turn{position:absolute;z-index:4;right:14px;bottom:12px;display:flex;gap:6px;align-items:center}
+.turn button{position:relative;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ink);border:1px solid rgba(255,255,255,.1);background:rgba(8,16,24,.2);cursor:pointer;padding:0}
+.turn button.xr{width:auto;border-radius:999px;padding:0 13px;font-size:12px}
+.turn button.xr[aria-pressed="true"]{border-color:rgba(79,216,232,.55);color:var(--accent)}
+.turn svg{width:17px;height:17px;position:relative;z-index:4}
+.tip{transform:translate(14px,14px);padding:8px 11px;border-radius:10px;background:rgba(8,16,24,.3);border:1px solid rgba(255,255,255,.1)}
+.tip b{display:block;font:600 13px/1.25 var(--f-disp);font-stretch:104%}
+.tip span{font:500 11px/1.5 var(--f-mono);color:var(--ink-2)}
+.sw-sel{background:var(--holo);box-shadow:0 0 8px var(--holo)}
+@media (hover:hover) and (pointer:fine){ .turn button:hover{border-color:var(--holo)} }
+@media (max-width:640px){ .hud-tr{width:58px;height:58px} .hud-tr .lbl b{font-size:14px} .hud-tr .lbl small{display:none} .hud-tl h3{font-size:14px} }
+
+/* the item list: grouped rows with a readiness bar; the header folds it away */
+.list{padding:0;display:flex;flex-direction:column}
+.list-h{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:12px 12px 8px 16px;border:0;background:none;color:inherit;cursor:pointer;border-radius:var(--r) var(--r) 0 0;font:inherit}
+.list-h .mono{font-size:11px;color:var(--ink-3)}
+.list-tg{margin-left:auto;width:30px;height:30px;flex:none;border-radius:8px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2)}
+.list-tg svg{width:14px;height:14px;transition:transform .25s}
+.list-body{display:flex;flex-direction:column;gap:6px;padding:0 8px 12px;min-height:0}
+.list-body .filters{padding:0 6px 4px;gap:4px}
+.list-body .fchip{font-size:12px;padding:2px 10px;min-height:28px}
+.ilist{position:relative;max-height:calc(100vh - 170px);overflow:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.grp{padding:12px 8px 6px;display:flex;align-items:center;gap:8px}
+.grp i{width:7px;height:7px;border-radius:2px;transform:rotate(45deg);flex:none}
+.grp .eyebrow{font-size:10px;color:var(--ink-3)}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;width:100%;text-align:left;padding:8px 10px;border-radius:9px;position:relative;border:0;background:none;cursor:pointer;color:inherit;font:inherit}
+.it span{font-size:13px;color:var(--ink-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it em{font:500 11px/1.4 var(--f-mono);font-style:normal;color:var(--ink-3)}
+.it .mbar{grid-column:1/-1;height:2px;border-radius:2px;background:var(--line);overflow:hidden}
+.it .mbar b{display:block;height:100%;background:linear-gradient(90deg,var(--holo),var(--real))}
+.it.lock span{color:var(--ink-3)}
+.it.done em{color:var(--real)}
+.it[aria-current]{background:var(--glass-2);box-shadow:inset 0 0 0 1px var(--line)}
+.it[aria-current] span{color:var(--ink)}
+.it[aria-current]::before,.it[aria-current]::after{content:"";position:absolute;width:8px;height:8px;border-color:var(--real);border-style:solid}
+.it[aria-current]::before{top:-1px;left:-1px;border-width:1.5px 0 0 1.5px;border-top-left-radius:9px}
+.it[aria-current]::after{bottom:-1px;right:-1px;border-width:0 1.5px 1.5px 0;border-bottom-right-radius:9px}
+.ilist .empty{padding:10px;font-size:13px;color:var(--ink-3)}
+@media (hover:hover) and (pointer:fine){ .it:hover{background:rgba(120,205,225,.06)} .list-h:hover .list-tg{border-color:var(--holo);color:var(--ink)} }
+/* closed: on a wide screen the column shrinks to a rail and the car takes the room */
+.arac.list-off .list-body{display:none}
+.arac.list-off .list-tg svg{transform:rotate(180deg)}
+.arac.list-off .list-h{flex-direction:column-reverse;padding:12px 0 14px;gap:12px;border-radius:var(--r)}
+.arac.list-off .list-h .eyebrow{writing-mode:vertical-rl;transform:rotate(180deg)}
+.arac.list-off .list-h .mono{display:none}
+.arac.list-off .list-tg{margin:0}
+@media (max-width:1280px){
+  .ilist{display:flex;gap:6px;max-height:none;overflow-x:auto;padding-bottom:4px}
+  .ilist .grp{display:none}
+  .it{width:auto;flex:none;min-width:150px}
+  .list-tg svg{transform:rotate(90deg)}
+  .arac.list-off .list-tg svg{transform:rotate(-90deg)}
+  .arac.list-off .list-h{flex-direction:row;padding:12px 12px 12px 16px;gap:8px}
+  .arac.list-off .list-h .eyebrow{writing-mode:horizontal-tb;transform:none}
+  .arac.list-off .list-h .mono{display:inline}
+  .arac.list-off .list-tg{margin-left:auto}
+}
+@media (prefers-reduced-motion:reduce){ .arac,.list-tg svg,.ring-fg{transition:none} }
+.tip{background:rgba(8,16,24,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);padding:6px 10px}
+
+/* the next öncül: the one place that glows */
+.now{position:relative;border:1px solid rgba(79,216,232,.45);background:radial-gradient(120% 60% at 100% 0%, rgba(79,216,232,.10), transparent 60%),rgba(12,22,31,.42);
+  box-shadow:0 0 0 1px rgba(79,216,232,.06),0 0 32px -12px rgba(79,216,232,.55)}
+.now::before{content:"";position:absolute;inset:-1px 12% auto;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.8}
+.now h3{font:650 18px/1.3 var(--f-disp);font-stretch:104%}
+.rbtn.ok{box-shadow:0 0 10px -2px rgba(92,192,138,.6)}
+
+.dbb{background:rgba(14,26,36,.3);color:var(--ink);border:1px solid rgba(255,255,255,.08)}
+.dbb svg{position:relative;z-index:4;filter:drop-shadow(0 0 6px rgba(79,216,232,.6))}
+.drawer,.onl-pop{background:var(--glass-2);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+
+/* Liquid glass. Chromium bends the backdrop through a per-element SVG displacement filter (set by the script at
+   the end of the page); other browsers, Safari on iPhone included, keep this frosted fallback. */
+.lg{isolation:isolate;-webkit-backdrop-filter:blur(12px) saturate(1.7) brightness(1.06);backdrop-filter:blur(12px) saturate(1.7) brightness(1.06);
+  box-shadow:inset 1.5px 1.5px 0 -.5px rgba(255,255,255,.42),inset -1px -1px 0 -.5px rgba(255,255,255,.16),inset 0 0 22px rgba(255,255,255,.05),0 22px 44px -20px rgba(0,0,0,.8)}
+.lg::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;mix-blend-mode:screen;
+  background:radial-gradient(260px 180px at var(--mx,22%) var(--my,0%),rgba(255,255,255,.11),transparent 70%),linear-gradient(180deg,rgba(255,255,255,.07),transparent 38%)}
+.tabs.lg{position:relative}
+@media (prefers-reduced-motion:reduce){ .tab[aria-selected="true"],.now{box-shadow:none} }
 </style>
 </head>
 <body>
@@ -620,7 +838,7 @@ summary{cursor:pointer}
 
 <div class="wrap" id="wrap" hidden>
   <header class="top">
-    <div class="brand"><h1>Voltaris <span>· Hayalet Araç</span></h1></div>
+    <div class="brand"><svg class="emb" viewBox="50 135 512 522" fill="currentColor" aria-hidden="true"><path d="M306,137.1C166.1,137.1,52.7,253,52.7,396S166.1,654.9,306,654.9S559.3,539,559.3,396S445.9,137.1,306,137.1z M306.1,627.6C180.9,627.6,79.5,523.9,79.5,396s101.5-231.6,226.6-231.6S532.7,268.1,532.7,396S431.2,627.6,306.1,627.6z"/><path d="M306.1,194.7c-108.8,0-197,90.1-197,201.3s88.2,201.3,197,201.3s197-90.1,197-201.3S414.9,194.7,306.1,194.7z M317.1,578.2L317.1,578.2c-3.6,0.2-7.3,0.3-11,0.3c-3.9,0-7.8-0.1-11.7-0.4C201.2,572,127.5,492.8,127.5,396 c0-32.6,8.4-63.2,23-89.7c2.5-4.5,5.2-8.9,8-13.2c31.2-46.7,83.1-77.8,142.1-79.6c1.8-0.1,3.6-0.1,5.4-0.1c1.7,0,3.4,0,5.1,0.1 c59.1,1.7,110.9,32.7,142.2,79.3c2.7,4.1,5.3,8.3,7.7,12.6c15,26.7,23.5,57.6,23.5,90.6C484.7,493,410.6,572.4,317.1,578.2z"/><path d="M461.1,305.4L317.1,578.2h0c-3.6,0.2-7.3,0.3-11,0.3c-3.9,0-7.8-0.1-11.7-0.4L150.5,306.3 c2.5-4.5,5.2-8.9,8-13.2l77.1,146c0,0,28.7-36.8,29.8-38.2c1.1-1.3,4.8-3.9,7.1-1s-0.7,6.5-0.7,6.5l-31.7,41.4l58.5,109.6 l1.3-187.1l-24.6,11.6L297.7,255c0,0-19.2,2.5-40.9,11.7c-21.8,9.3-44.2,33.8-44.2,33.8l-10.2-9.6c0,0,6.5-11.4,34-29.4 C263.9,243.7,301,240,301,240l-0.3-26.4c1.8-0.1,3.6-0.1,5.4-0.1c1.7,0,3.4,0,5.1,0.1l-0.5,26.3c0,0,22.1-0.8,51.1,8 c29,8.8,55.1,34.9,55.1,34.9l-10.3,9.9c0,0-17-17.7-44.6-29.3c-27.6-11.6-50.9-9.3-50.9-9.3l0.6,99l24.4-11.7L313,558.1l58.6-110.6 c0,0-27.5-35.7-29-37.8c-1.5-2.1-6.5-7.2-3.1-10c3.4-2.8,6.3,0.4,6.3,0.4l30.3,39.1l77.3-146.4 C456.1,296.9,458.7,301.1,461.1,305.4z"/><path d="M133.8,444.3l58.4-1.8c0,0,3.6,0.1,3.5,3.8c-0.1,3.7-2.7,4.6-2.7,4.6l-56.7,1.8"/><path d="M478.3,444.3l-59-1.7c0,0-3.5,0.6-3.5,4.5s4,4.1,4,4.1l56.2,1.4c0,0,3.4-1.3,3.6-1.5c0.2-0.2,0-6.3,0-6.3 L478.3,444.3z"/></svg><h1>VOLTARIS <span>Sanal Atölye · Hayalet Araç</span></h1></div>
     <div class="meta">
       <div class="real-pct" id="realPct"><b>%0</b> hazır</div>
       <label class="me" for="myBirim">Birimim</label>
@@ -653,33 +871,11 @@ summary{cursor:pointer}
   </nav>
 
   <section id="v-arac" class="view" role="tabpanel" aria-labelledby="t-arac">
-    <div class="arac">
-      <div class="stage-wrap">
-        <section class="stage" aria-label="Aracın 3B modeli">
-          <div class="stage-bg"></div>
-          <canvas id="gl" role="img" aria-label="Voltaris aracının 3B modeli. Bir parçaya dokununca o kalem açılır."></canvas>
-          <div class="loading" id="loading">Model yükleniyor…</div>
-          <div class="tip" id="tip" hidden></div>
-          <div class="stage-hud">
-            <div class="views" id="views">
-              <button type="button" data-v="on" aria-pressed="true">Ön</button>
-              <button type="button" data-v="yan" aria-pressed="false">Yan</button>
-              <button type="button" data-v="arka" aria-pressed="false">Arka</button>
-              <button type="button" data-v="ust" aria-pressed="false">Üst</button>
-              <button type="button" id="xray" aria-pressed="false">Kabuk saydam</button>
-            </div>
-          </div>
-        </section>
-        <p class="legend">
-          <span><i class="sw sw-real"></i>Hazır</span>
-          <span><i class="sw sw-part"></i>Üzerinde çalışılıyor</span>
-          <span><i class="sw sw-holo"></i>Bakılmadı</span>
-          <span><i class="sw sw-lock"></i>Önce başka kalem bitmeli</span>
-        </p>
-      </div>
-      <section class="box card" id="card" aria-live="polite"></section>
-      <section class="box list" aria-labelledby="listTitle">
-        <div class="head"><h2 id="listTitle">Kalemler</h2>
+    <div class="arac" id="aracZone">
+      <aside class="box list" id="listBox" aria-label="Kalemler">
+        <button type="button" class="list-h" id="listTg" aria-controls="listBody" aria-expanded="true" aria-label="Kalem listesini kapat"><span class="eyebrow" id="listTitle">Kalemler</span><span class="mono" id="listN"></span>
+          <span class="list-tg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span></button>
+        <div class="list-body" id="listBody">
           <div class="filters" id="filters">
             <button class="fchip" type="button" data-f="mine" aria-pressed="false">Birimim</button>
             <button class="fchip" type="button" data-f="all" aria-pressed="true">Tümü</button>
@@ -687,9 +883,39 @@ summary{cursor:pointer}
             <button class="fchip" type="button" data-f="E" aria-pressed="false">Elektrik</button>
             <button class="fchip" type="button" data-f="O" aria-pressed="false">Organizasyon</button>
           </div>
+          <nav class="ilist" id="itemList" aria-labelledby="listTitle"></nav>
         </div>
-        <div class="hscroll"><table class="tbl" id="tbl"></table></div>
-      </section>
+      </aside>
+      <div class="stage-wrap">
+        <section class="stage" id="stage" aria-label="Aracın 3B modeli">
+          <canvas id="gl" role="img" aria-label="Voltaris aracının 3B modeli. Bir parçaya dokununca o kalem açılır."></canvas>
+          <svg class="callout" id="callout" aria-hidden="true"></svg>
+          <span class="brk tl"></span><span class="brk tr"></span><span class="brk bl"></span><span class="brk br"></span>
+          <div class="hud-tl lg"><span class="eyebrow">Hayalet araç · seçili kalem</span><h3 id="hudName"></h3><div class="row" id="hudPills"></div></div>
+          <div class="hud-tr lg">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(120,205,225,.14)" stroke-width="5"/>
+              <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(120,205,225,.28)" stroke-width="1" stroke-dasharray="1 5.9" transform="scale(1.08) translate(-3.7 -3.7)"/>
+              <circle class="ring-fg" id="ringFg" cx="50" cy="50" r="44" fill="none" stroke="var(--real)" stroke-width="5" stroke-linecap="round" stroke-dasharray="276.46" stroke-dashoffset="276.46"/>
+            </svg>
+            <div class="lbl"><b id="ringPct">%0</b><small>hazır</small></div>
+          </div>
+          <div class="loading" id="loading">Model yükleniyor…</div>
+          <div class="tip lg" id="tip" hidden></div>
+          <div class="turn">
+            <button type="button" class="lg xr" id="xray" aria-pressed="false">Kabuk saydam</button>
+            <button type="button" class="lg" id="turnL" aria-label="Aracı sola döndür"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></button>
+            <button type="button" class="lg" id="turnR" aria-label="Aracı sağa döndür"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4.5h-4.5"/></svg></button>
+          </div>
+        </section>
+        <p class="legend">
+          <span><i class="sw sw-real"></i>Hazır: parça gerçeğe döner</span>
+          <span><i class="sw sw-holo"></i>Hologram: henüz bitmedi</span>
+          <span><i class="sw sw-sel"></i>Parlak: seçili ya da üzerine gelinen kalem</span>
+        </p>
+      </div>
+      <section class="box detail" id="detail" aria-live="polite" aria-label="Seçili madde ve kalemin bulguları"></section>
+      <section class="box card" id="card" aria-live="polite"></section>
     </div>
   </section>
 
@@ -789,6 +1015,7 @@ summary{cursor:pointer}
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer, RenderPass, EffectPass, BloomEffect } from 'postprocessing';
 import * as fb from './firebase.js';
 import { yonetimiAc } from './yonetim.js';
 
@@ -926,6 +1153,7 @@ const stColor = s => s==='done'||s==='part' ? 'var(--real)' : s==='lock' ? 'var(
 const safeUrl = u => { try{ const x=new URL(u); return (x.protocol==='https:'||x.protocol==='http:') ? x.href : null; }catch(e){ return null; } };
 const CHECK = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.2 L5.6 10.2 L11.5 3.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CLOCK = '<svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 4.2V7l2 1.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const BRAIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M19.967 17.484A4 4 0 0 1 18 18"/></svg>';   // Lucide "brain" (ISC)
 const CROSS = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 3.5 L10.5 10.5 M10.5 3.5 L3.5 10.5" fill="none" stroke="#FF7A6B" stroke-width="2.2" stroke-linecap="round"/></svg>';
 
 /* ---------- şartname: data, citation lookup ---------- */
@@ -1015,6 +1243,9 @@ function itemFigs(it){ if(!SART?.figs) return []; const seen=new Set(), out=[];
   return out.slice(0,12); }
 function figsMentioned(doc, texts){ const nums=new Set(); texts.forEach(t=>{ for(const m of String(t).matchAll(/Şekil\s*(\d+)/g)) nums.add(m[1]); });
   return (SART.figs||[]).filter(f=>f.doc===doc && nums.has(f.n.split('.')[0])); }
+// Example photos from Wikimedia Commons (bak.js ORNEK): loaded from Commons itself, credited with author and licence.
+const exHtml = (o,k) => `<button type="button" class="thumb ex" data-ex="${k}"><span class="im"><img src="${esc(o.f)}" alt="${esc(o.cap)}" loading="lazy" referrerpolicy="no-referrer"></span><small>${esc(o.cap)}</small><em>${esc(o.by)} · ${esc(o.lic)}</em></button>`;
+const dgHtml = (o,k) => `<button type="button" class="thumb ex dg" data-dg="${k}"><span class="im"><img src="${blobSrc(o.f)}" data-blob="${esc(o.f)}" alt="${esc(o.cap)}" loading="lazy"><i class="dg-tag">Drive'dan</i></span><small>${esc(o.cap)}</small><em>${esc(o.n||'')}</em></button>`;
 const thumbHtml = f => `<button type="button" class="thumb" data-fig="${f.i}"><span class="im"><img src="${esc(f.f)}" alt="" loading="lazy" width="${f.w}" height="${f.h}"></span><small>${esc(f.cap)}</small></button>`;
 const figHtml = (f, cap) => `<figure class="sfig"><button type="button" data-fig="${f.i}" aria-label="Büyüt: ${esc(f.cap)}"><img src="${esc(f.f)}" alt="${esc(f.cap)}" loading="lazy" width="${f.w}" height="${f.h}"></button><figcaption>${cap||esc(f.cap)} · PDF s. ${f.pg}</figcaption></figure>`;
 let figCur=null;
@@ -1066,6 +1297,14 @@ $('figClose').addEventListener('click', closeFig);
 $('figDlg').addEventListener('click', e=>{ if(e.target===$('figDlg')) closeFig(); });
 $('figOpen').addEventListener('click', ()=>{ const f=figCur; closeFig(); if(f) openSart(f.doc, f.sec, [], tab==='arac'?selected:undefined); });
 document.addEventListener('click', e=>{ const b=e.target.closest('[data-fig]'); if(b){ e.preventDefault(); openFig(+b.dataset.fig); } });
+function openEx(o){ if(!o) return; figCur=null; $('figOpen').hidden=true; delete $('figImg').dataset.blob; $('figImg').src=o.b||o.f; $('figImg').alt=o.cap; $('figTitle').textContent=o.cap;
+  $('figMeta').innerHTML=`Örnek görsel · ${esc(o.by)} · ${o.lu?`<a href="${esc(o.lu)}" target="_blank" rel="noopener">${esc(o.lic)}</a>`:esc(o.lic)} · <a href="${esc(o.u)}" target="_blank" rel="noopener">Wikimedia Commons'ta aç</a>`;
+  const dl=$('figDlg'); try{ dl.showModal(); }catch(e){ dl.setAttribute('open',''); } }
+document.addEventListener('click', e=>{ const b=e.target.closest('[data-ex]'); if(b){ e.preventDefault(); openEx(ORNEK[selected]?.[+b.dataset.ex]); } });
+function openDg(o){ if(!o) return; figCur=null; $('figOpen').hidden=true; $('figImg').dataset.blob=o.f; $('figImg').src=blobSrc(o.f); $('figImg').alt=o.cap; $('figTitle').textContent=o.cap;
+  $('figMeta').innerHTML=`Drive'dan · ${esc(o.n||'')}${o.d?` · <a href="${esc(dgUrl(o.d))}" target="_blank" rel="noopener">Drive'da aç</a>`:''}`;
+  const dl=$('figDlg'); try{ dl.showModal(); }catch(e){ dl.setAttribute('open',''); } }
+document.addEventListener('click', e=>{ const b=e.target.closest('[data-dg]'); if(b){ e.preventDefault(); openDg(dgList(selected)[+b.dataset.dg]); } });
 
 async function loadSart(y){
   const v=SART_VERS.find(x=>x.yil===y)||SART_VERS[0]; sartYil=v.yil; SART=null; sartErr=null;
@@ -1135,6 +1374,12 @@ const rseg = (i, field, opts, val, ro) => `<span class="seg" role="group">${opts
 const reqCopy = {};
 const jobsFor = (it,i) => (BAK[it.id]?.isler||[]).filter(j=>j.m.includes(i));
 /* ---------- takım arşivi indeksi (VOLTARIS_INDEKS + Teams haritası) ---------- */
+// The team's own pictures per item (ayarlar/driveGorsel, uploaded from the Üyeler screen): each one was copied
+// from the Drive into fotolar/ and loads like any other photo; d is the Drive file it came from.
+let DG=null, dgP=null;
+function loadDg(){ if(dgP || mode!=='db') return dgP; dgP = fb.driveGorselOku().then(d=>{ DG=d?.items||{}; renderCard(); }).catch(()=>{ DG={}; }); return dgP; }
+const dgList = id => (DG?.[id]||[]).filter(o=>okIds([o.f]).length);
+const dgUrl = id => `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`;
 let IDX=null, idxP=null; const ixQ={};
 const nrm = s => String(s||'').toLocaleLowerCase('tr').replace(/[çğıöşüâî]/g,c=>({ç:'c',ğ:'g',ı:'i',ö:'o',ş:'s',ü:'u',â:'a',î:'i'}[c])).replace(/[^a-z0-9]+/g,' ').trim();
 const STOP = new Set('ve veya ile icin bir bu su olan olarak gibi vb son hali eski yeni varsa var yok her tum the of and for to in on with dosya dosyalari klasor notlari notu fotograflari olculeri olcu bilgisi listesi'.split(' '));
@@ -1258,24 +1503,73 @@ function stepSummary(it, n){ const r=rec(it.id);
 async function renderCard(){
   const it = byId(selected), r = rec(it.id), ph = phaseOf(it), st = stateOf(it), ro = readOnly();
   const pi = phaseIdx(ph);
-  const ps = await people([r.owner, r.by, checks[it.id]?.by, ...raporIds(it.id)]);
+  const ps = await people([r.owner, r.by, checks[it.id]?.by, ...raporIds(it.id), ...Object.values(r.rehber||{}).map(x=>x?.by)]);
   if(it.id!==selected) return;
   const owner = r.owner ? `<span class="owner">${ps[r.owner]?.avatarUrl?`<img src="${esc(ps[r.owner].avatarUrl)}" alt="">`:''}<span>${esc(nameOf(ps,r.owner))}</span></span>` : '<span>Sorumlu yok</span>';
   const mineOwner = r.owner && r.owner===myId;
   const deps = it.deps.length ? `<span>Önce: ${it.deps.map(d=>`${esc(byId(d).name)}${isDone(byId(d))?' ✓':''}`).join(', ')}</span>` : '';
   const b = BAK[it.id];
   const started = it.reqs.some((_,i)=>flowOf(it,i).v || reqState(it,i)>0);
-  const howto = `<details class="cz howto-d" ${started?'':'open'}><summary>Bu kalem nedir, atölyede neye bakılır</summary><div class="howto" style="margin-top:6px"><p><b>Bu ne?</b> ${esc(b.ne)} <b>Nerede?</b> ${esc(b.nerede)}</p>
-      <span class="sub-h">Atölyede sırayla yap</span>
+  const ni = nextReq(it);
+  // A guide for whoever opens the item, answering in order: why it is here, what it does, what to do now.
+  // Everything comes from data the panel already has; "what to do" follows the item's state.
+  const nA = it.reqs.filter(q=>q[2]==='A').length, nR = it.reqs.length-nA;
+  const ets = (it.ets||[]).map(id=>ETIKETLER.find(e=>e.id===id)?.n).filter(Boolean);
+  const secs = RAPOR_SECTIONS.filter(x=>x[2]===it.id);
+  const cz = cezaFor(it.id), dq = cz.filter(r=>isDQ(r.em)).length;
+  const why = [
+    `Şartname bu kalem için ${it.reqs.length} madde istiyor${nA&&nR?`: ${nA} tanesine araçta bakılır, ${nR} tanesi raporda anlatılır`:nA?'; hepsine araçta bakılır':'; hepsi raporda anlatılır'}.`,
+    ets.length?`Yarış haftasındaki teknik kontrolde ${ets.map(n=>`“${esc(n)}”`).join(' ve ')} ${ets.length>1?'başlıklarında':'başlığında'} kontrol edilir; plakadaki ${ets.length>1?'o kareler':'o kare'}, bağlı kalemlerin hepsi hazır olunca dolar.`:'',
+    cz.length?`Ceza listesinde ${cz.length} satırı var${dq?`, <b>${dq} tanesi diskalifiye sebebi</b>`:''}.`:'',
+    secs.length?`Teknik Tasarım Raporu'nda ${secs.map(x=>`${esc(x[0])}. ${esc(x[1])}`).join(', ')} bölümünde anlatılır.`:''
+  ].filter(Boolean).join(' ');
+  const depsOpen = it.deps.map(byId).filter(d=>!isDone(d)), nFields = itemFields(it).length;
+  const todo = [
+    depsOpen.length?`Önce ${depsOpen.map(d=>`<button type="button" class="namebtn" data-goto="${d.id}">${esc(d.name)}</button>`).join(', ')} bitmeli; bu kalem ona bağlı. Yine de inceleyip hazırlık yapabilirsin.`:'',
+    `Atölyede aşağıdaki <b>${b.adim.length} adımlık</b> kontrol listesini sırayla yap. Yanına al: ${esc(b.alet)}.`,
+    ni>=0?`Sonra parlayan <b>Sıradaki öncül</b> kutusundan başla ve maddeleri tek tek cevapla: karşılanıyor mu, ölçüldü mü. Cevapladıkça parça hayaletten gerçeğe döner.`:`${esc(nextStep(it))}`,
+    (b.isler||[]).length?`Bir madde eksik çıkarsa yapılacak iş genellikle şunlardan biri. Başlamadan önce Database'de takımın önceki çalışmasını ara:<ul>${b.isler.map(j=>`<li>${esc(j.n)}${j.m.map(i=>`<button type="button" class="mref" data-goreq="${i}" title="${esc(it.reqs[i][0])}">${esc(it.reqs[i][1])}</button>`).join('')}</li>`).join('')}</ul>`:'',
+    nFields?`Ölçtüğün ya da hesapladığın değerleri aracın altındaki pencerede <b>Rapor için veriler</b> bölümüne gir (${nFields} alan); Teknik Tasarım Raporu buradan doldurulur.`:''
+  ].filter(Boolean);
+  // "Kalemi tanı": the three questions a member opening the item asks, folded behind the brain button.
+  // A written guide (bak.js REHBER) fills them in full: the şartname's rules under why, the introduction under what
+  // it does, our steps in order under what to do. A finished step is stored as items/<id>.rehber[k] = {by, at};
+  // taken back it becomes null, since the database merges nested fields and a removed key would come back.
+  const RH = REHBER[it.id], rDone = r.rehber || {};
+  const figsR = RH && SART?.figs ? (RH.gorsel||[]).map(([d,n])=>SART.figs.find(f=>f.doc===d && f.n===n)).filter(Boolean) : [];
+  const nDone = RH ? RH.adim.filter((_,k)=>rDone[k]).length : 0, cur = RH ? RH.adim.findIndex((_,k)=>!rDone[k]) : -1;
+  const q1 = `<p>${why}</p>${RH?`<h4>Şartname ne diyor · ${RH.sart.length} kural</h4>
+        <ul class="rh-rules">${RH.sart.map(([t,src])=>`<li><span>${esc(t)}</span>${srcChip(src)}</li>`).join('')}</ul>`:''}`;
+  const q2 = `<p>${esc(b.gorev||b.ne)}</p>${RH?`<p>${esc(RH.tanit.ne)}</p>
+        <h4>Neye benzer</h4><p>${esc(RH.tanit.benzer)}</p>
+        ${figsR.length?`<div class="thumbs">${figsR.map(thumbHtml).join('')}</div>`:''}
+        <h4>Ne için kullanılır</h4><ul>${RH.tanit.amac.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>
+        ${RH.tanit.takim?`<div class="rh-note"><b>Takımdan bilinenler</b><p>${esc(RH.tanit.takim)}</p></div>`:''}`
+      :`<p class="when"><b>Ne:</b> ${esc(b.ne)} <b>Nerede:</b> ${esc(b.nerede)}</p>`}`;
+  const q3 = RH ? `<p class="when">Sırayla ilerle. Bir adım bitince kutusunu işaretle; sıradaki adım öne çıkar. Bir adım bir şartname maddesini karşılıyorsa yanındaki numaraya dokun, o madde aracın altında açılır.</p>
+        <ol class="rh-steps">${RH.adim.map((a,k)=>{ const d=rDone[k]; return `<li class="${d?'done':''} ${k===cur?'cur':''}">
+          <button type="button" class="rh-chk" data-rhb="${k}" role="checkbox" aria-checked="${!!d}" ${ro?'disabled':''} aria-label="${esc(a.b)}: tamamlandı olarak işaretle">${d?CHECK:k+1}</button>
+          <div class="rh-body"><span class="rh-tur">${esc(a.tur)}${k===cur?' · sıradaki adım':''}</span><b>${esc(a.b)}</b>
+            ${d?`<p class="when">${esc(nameOf(ps,d.by))} işaretledi, ${ago(d.at)}</p>`:`<p>${esc(a.t)}</p>
+            <p class="rh-k"><b>Bitti sayılır:</b> ${esc(a.k)}${(a.m||[]).map(i=>`<button type="button" class="mref" data-goreq="${i}" title="${esc(it.reqs[i][0])}">${esc(it.reqs[i][1])}</button>`).join('')}</p>`}</div></li>`; }).join('')}</ol>`
+    : `<ol class="todo">${todo.map(x=>`<li>${x}</li>`).join('')}</ol>`;
+  const tani = `<details class="tani" data-tani="${it.id}" ${openTani.has(it.id)?'open':''}>
+      <summary><span class="tani-ic" aria-hidden="true">${BRAIN}</span><span class="tani-t"><b>Kalemi tanı</b><small>Ne için var · ne işe yarar · ne yapmam gerek</small></span>
+        ${RH?`<span class="mono">${nDone} / ${RH.adim.length} adım</span>`:''}<span class="tani-ch" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+      <div class="rh">
+        <div class="rh-sec"><h3 class="rh-h"><i>1</i>Bu kalem ne için var?</h3>${q1}</div>
+        <div class="rh-sec"><h3 class="rh-h"><i>2</i>Ne işe yarar?</h3>${q2}</div>
+        <div class="rh-sec"><h3 class="rh-h"><i>3</i>Ne yapmam gerek?${RH?`<span class="mono">${nDone} / ${RH.adim.length} adım</span>`:''}</h3>${q3}</div>
+      </div></details>`;
+  const howto = `<details class="cz howto-d" ${started?'':'open'}><summary>Atölyede neye bakılır · ${b.adim.length} adım</summary><div class="howto" style="margin-top:6px">
       <p class="when">Takımın kontrol listesi, şartnamede bu haliyle yazmıyor. Yanında madde numarası olan adım o öncülü de kontrol eder; numaraya dokununca öncül açılır.</p>
       <ol>${b.adim.map((a,k)=>`<li>${esc(a)}${(ADIM_M[it.id]?.[k]||[]).map(i=>`<button type="button" class="mref" data-goreq="${i}" title="${esc(it.reqs[i][0])}">${esc(it.reqs[i][1])}</button>`).join('')}</li>`).join('')}</ol>
       <p><b>Yanına al:</b> ${esc(b.alet)}</p></div></details>`;
   const nOk = it.reqs.filter((_,i)=>reqState(it,i)===2).length; const nSon = it.reqs.filter((_,i)=>deferred(it,i)).length;
-  const ni = nextReq(it);
   const reqs = `<ul class="reqs">${it.reqs.map((q,i)=>{ const v=reqState(it,i); const open=openReq.has(it.id+':'+i); const dfr = deferred(it,i);
-      return `<li class="req ${i===ni?'is-next':''}"><button type="button" class="rbtn ${v===2?'ok':v===1?'bad':dfr?'later':''}" data-hint="${i}" aria-label="${esc(q[0])}: ${esc(reqStatus(it,i))}. Durumunu aç">${v===2?CHECK:v===1?CROSS:dfr?CLOCK:''}</button>
-        <button type="button" class="rtext" data-hint="${i}" aria-expanded="${open}">${esc(q[0])}<small>${esc(reqStatus(it,i))} · <span class="more">${open?'kapat':'aç'}</span></small></button><span class="kind k-${q[2]}">${q[2]==='A'?'Araç':'Rapor'}</span>${srcChip(q[1])}</li>
-        ${open?`<li class="rhint">${reqFlowHtml(it,i,ro)}<div class="rinfo"><b>Ne yapılacak</b>${esc(q[3]||'Açıklama eklenmedi.')}<br><span class="when">${q[2]==='A'?'Teknik kontrolde veya videolarda bakılır':'Teknik Tasarım Raporu\'nda anlatılır'} · kaynak ${esc(q[1])}</span><div class="quote">${quoteHtml(q[1], it)}</div></div></li>`:''}`; }).join('')}</ul>`;
+      return `<li class="req ${i===ni?'is-next':''} ${open?'is-open':''}"><button type="button" class="rbtn ${v===2?'ok':v===1?'bad':dfr?'later':''}" data-hint="${i}" aria-label="${esc(q[0])}: ${esc(reqStatus(it,i))}. Durumunu aç">${v===2?CHECK:v===1?CROSS:dfr?CLOCK:''}</button>
+        <button type="button" class="rtext" data-hint="${i}" aria-expanded="${open}" aria-controls="detail">${esc(q[0])}<small>${esc(reqStatus(it,i))} · <span class="more">${open?'açık, aracın altında':'aç'}</span></small></button><span class="kind k-${q[2]}">${q[2]==='A'?'Araç':'Rapor'}</span>${srcChip(q[1])}</li>
+`; }).join('')}</ul>`;
   const figs = itemFigs(it);
 
   $('card').innerHTML = `
@@ -1289,21 +1583,40 @@ async function renderCard(){
       <div class="prog"><span>${PHASES[pi].n} · %${Math.round(progress(it)*100)}</span><span class="bar"><span style="width:${Math.round(progress(it)*100)}%;background:var(--real)"></span></span></div>
       ${deps?`<div class="facts">${deps}</div>`:''}
     </div>
-    ${howto}
+    ${tani}
     ${ni>=0?`<div class="now"><span class="eyebrow">Sıradaki öncül · ${esc(it.reqs[ni][1])}</span><h3>${esc(it.reqs[ni][0])}</h3><p class="lead">Şimdi: ${esc(reqNextQ(it,ni))}</p>
       ${openReq.has(it.id+':'+ni)?'':`<button class="btn small primary" type="button" data-hint="${ni}" style="align-self:flex-start">Durum tespitini aç</button>`}</div>`
       :`<div class="now"><span class="eyebrow">Durum</span><h3>${esc(nextStep(it))}</h3></div>`}
-    <section class="sect"><h3>Öncüller (şartname maddeleri) <span class="mono">${nOk} / ${it.reqs.length} uygun${nSon?` · ${nSon} araç bitince`:''}</span></h3>
+    ${howto}
+    <section class="sect"><h3>Şartname maddeleri (öncüller) <span class="mono">${nOk} / ${it.reqs.length} uygun${nSon?` · ${nSon} araç bitince`:''}</span></h3>
       <p class="help">Durum tespiti her öncülün içinde yapılır: araçta karşılanıyor mu, evetse ölçüldü mü; değilse Database'e sor, bulunanları ekle ve aşamasını seç. Kalemin durumu öncüllerden hesaplanır. Saat işaretliler araç bitince bakılacak, kalemi bekletmez.</p>${reqs}${cezaBlock(it)}</section>
+`;
+  // The window under the car: the open madde (what and why, how to check, the şartname text, the status flow with its
+  // Database search, files and photos), then the item's own records. Same markup as before, only moved.
+  const oi = it.reqs.findIndex((_,i)=>openReq.has(it.id+':'+i));
+  let det;
+  if(oi>=0){ const q=it.reqs[oi], A=q[2]==='A'; const steps=b.adim.map((a,k)=>[a,k]).filter(([,k])=>(ADIM_M[it.id]?.[k]||[]).includes(oi));
+    det = `<div class="det-h"><div><span class="eyebrow">Madde ${oi+1} / ${it.reqs.length} · ${A?'Araçta bakılır':'Raporda anlatılır'}</span><h3>${esc(q[0])}</h3></div>${srcChip(q[1])}<button class="btn small" type="button" data-hint="${oi}">Kapat</button></div>
+      <section class="dsec"><h4>Ne yapılacak, neden</h4><p>${esc(q[3]||'Açıklama eklenmedi.')}</p><p class="when">${A?'Teknik kontrolde veya videolarda bakılır':'Teknik Tasarım Raporu\'nda anlatılır'} · kaynak ${esc(q[1])}</p></section>
+      ${steps.length?`<section class="dsec"><h4>Nasıl yapılır, nelere bakılır</h4><ol>${steps.map(([a])=>`<li>${esc(a)}</li>`).join('')}</ol><p class="when"><b>Yanına al:</b> ${esc(b.alet)}</p></section>`:''}
+      <section class="dsec"><h4>Şartname ne diyor</h4><div class="quote">${quoteHtml(q[1], it)}</div></section>
+      <section class="dsec"><h4>Durum tespiti, Database sorgusu ve bulgular</h4>${reqFlowHtml(it,oi,ro)}</section>`;
+  } else det = `<div class="det-h"><div><span class="eyebrow">Madde penceresi</span><h3>${esc(it.name)}</h3></div></div>
+      <p class="help">Sağdaki listeden bir şartname maddesine bas: ne yapılacağı ve nedeni, nasıl bakılacağı, şartnamenin asıl metni, Database sorgusu ve o maddeye eklenen dosyalarla fotoğraflar burada açılır.</p>`;
+  $('detail').innerHTML = det + `<div class="det-rec"><span class="eyebrow">Kalemin kayıtları</span>
     ${foundBlock(r, ro)}
     <section class="sect"><h3>Test kaydı ve fotoğraflar <span class="mono">${fotos(r).length}</span></h3>
       <input class="inp" id="testNot" maxlength="300" placeholder="Test kaydı: ne test edildi, sonuç, varsa dosya linki" value="${esc(r.testNot||'')}" ${ro?'disabled':''}>${photoBlock(it, ro)}</section>
     ${raporBlock(it, ro, ps)}
     ${figs.length?`<section class="sect"><h3>Şartnamedeki görseller <span class="mono">${figs.length}</span></h3><p class="help">Tasarlarken bunlara bak. Büyütmek için dokun.</p><div class="thumbs">${figs.map(thumbHtml).join('')}</div></section>`:''}
+    ${(()=>{ loadDg(); const L=dgList(it.id); return L.length?`<section class="sect"><h3>Takımın görselleri <span class="mono">${L.length}</span></h3><p class="help">Takımın Drive'ından, bu kaleme ait çizim, analiz ve fotoğraflar. Dokununca büyür; aslı Drive'da.</p><div class="thumbs">${L.map(dgHtml).join('')}</div></section>`:''; })()}
+    ${(ORNEK[it.id]||[]).length?`<section class="sect"><h3>Örnek görseller <span class="mono">${ORNEK[it.id].length}</span></h3><p class="help">İnternetten, Wikimedia Commons'tan seçilmiş örnekler; bizim araç değil, parçanın neye benzediğini görmek için. Dokununca büyür; yazarı ve lisansı altında.</p><div class="thumbs">${ORNEK[it.id].map(exHtml).join('')}</div></section>`:''}
+    ${(ODUL[it.id]||[]).length?`<section class="sect"><h3>TEKNOFEST'te tasarım ödülü almış araçlar <span class="mono">${ODUL[it.id].length}</span></h3><p class="help">Efficiency Challenge'da Görsel Tasarım Ödülü alan takımlar, yeniden eskiye. Fotoğraflarının kullanım izni bizde olmadığı için burada değil, bağlantıda. Kaynak her satırda; tek kaynağa dayananlar belirtildi.</p>
+      <ul class="odul">${ODUL[it.id].map(o=>`<li><span class="mono">${esc(o.yil)}</span><div><b>${esc(o.takim)}</b><small>${esc(o.uni)} · ${esc(o.odul)}${o.kat?` · ${esc(o.kat)}`:''}</small>${o.not?`<small class="odul-not">${esc(o.not)}</small>`:''}</div><span class="odul-a"><a href="${esc(o.kaynak)}" target="_blank" rel="noopener">Duyuru</a><a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(o.ara)}" target="_blank" rel="noopener">Fotoğraflarına bak</a></span></li>`).join('')}</ul></section>`:''}
     <section class="sect"><h3><label for="noteIn">Not</label></h3>
       <textarea class="inp" id="noteIn" maxlength="1500" placeholder="Bu kalemle ilgili not" ${ro?'disabled':''}>${esc(r.not||'')}</textarea>
       ${r.at?`<p class="when" style="margin:0">Son değişiklik: ${esc(nameOf(ps,r.by))}, ${ago(r.at)}</p>`:''}</section>
-    ${galleryBlock(it)}`;
+    ${galleryBlock(it)}</div>`;
 }
 
 // Only whoever filed a file or photo, or a founder, may take it off (firestore.rules). File entries name
@@ -1340,7 +1653,7 @@ function raporBlock(it, ro, ps){ const fs=itemFields(it); if(!fs.length) return 
       return `${head}<div class="rfl ${f.o.uzun?'wide':''} ${x.ok?.by?'is-ok':''}"><label for="rv-${f.key}">${esc(f.label)}<small>${esc(f.unit)}${f.o.son?' · araç bitince':''}</small></label>
         <div class="rfrow">${input}${f.o.uzun||!val?'':`<select class="inp rsrc" data-rsrc="${f.key}" aria-label="Kaynak" ${ro?'disabled':''}><option value="">Kaynak</option>${KAYNAK.map(k=>`<option ${k===x.src?'selected':''}>${k}</option>`).join('')}</select>`}</div>
         ${provHtml(it.id, f, ps, ro)}</div>`; }).join('')}</div></details>`; }
-const openRap = new Set();
+const openRap = new Set(), openTani = new Set();
 async function setRapor(id, key, patch, logText){
   const cur = rf(id,key); const at=new Date().toISOString(); let nf;
   if('v' in patch){ const h = cur.v ? [{v:cur.v, by:cur.by||null, at:cur.at||null}, ...(cur.h||[])].slice(0,5) : (cur.h||[]); nf = { ...cur, v:patch.v, by:myId||'yerel', at, ok:null, h, src: patch.src ?? cur.src ?? null }; }
@@ -1401,18 +1714,36 @@ function visibleItems(){
   if(filter==='mine') return myBirim ? ITEMS.filter(x=>x.birim===myBirim) : ITEMS;
   return ITEMS.filter(x=>x.birim===filter);
 }
-async function renderList(){
+// The prototype's list: items grouped by unit, each with its readiness; the picked one carries amber corners.
+const BCOL = { M:'var(--m)', E:'var(--e)', O:'var(--o)' };
+function renderList(){
   const rows = visibleItems();
-  const ps = await people(rows.map(x=>rec(x.id).owner));
   $('filters').querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed', b.dataset.f===filter));
-  $('tbl').innerHTML = `<thead><tr><th>Kalem</th><th>Durum</th><th>Aşama</th><th>Madde</th><th>Sorumlu</th></tr></thead><tbody>${rows.map(it=>{
-    const r=rec(it.id), ph=phaseOf(it), st=stateOf(it), nOk=it.reqs.filter((_,i)=>reqState(it,i)===2).length;
-    return `<tr class="${it.id===selected?'sel':''}" data-row="${it.id}"><td><button class="namebtn" type="button" data-pick="${it.id}">${esc(it.name)}</button><small><span class="btag b-${it.birim}">${BIRIM_TAG[it.birim]}</span> · ${esc(nextStep(it))}</small></td>
-      <td><span class="pill st-${st}"><i></i>${ST_LABEL[st]}</span></td>
-      <td>${PHASES[phaseIdx(ph)].n}</td>
-      <td><span class="mono">${nOk}/${it.reqs.length}</span></td>
-      <td>${r.owner?esc(nameOf(ps,r.owner)):'<span class="when">—</span>'}</td></tr>`; }).join('')}</tbody>`;
+  let h = '';
+  for(const k of ['M','E','O']){ const g=rows.filter(x=>x.birim===k); if(!g.length) continue;
+    h += `<div class="grp"><i style="background:${BCOL[k]}"></i><span class="eyebrow">${esc(BIRIM_TAG[k])}</span></div>`;
+    for(const it of g){ const p=Math.round(progress(it)*100), st=stateOf(it);
+      h += `<button type="button" class="it ${st}" data-pick="${it.id}" ${it.id===selected?'aria-current="true"':''} title="${esc(it.name)} · ${ST_LABEL[st]}"><span>${esc(it.name)}</span><em>%${p}</em><span class="mbar"><b style="width:${p}%"></b></span></button>`; } }
+  const L=$('itemList'); L.innerHTML = h || '<p class="empty">Bu filtrede kalem yok.</p>';
+  // keep the picked item in sight inside the list (a column on a wide screen, a strip on a narrow one) without moving the page
+  const c=L.querySelector('[aria-current]');
+  if(c){ if(L.scrollWidth>L.clientWidth+1){ const x=c.offsetLeft-(L.clientWidth-c.offsetWidth)/2; if(c.offsetLeft<L.scrollLeft||c.offsetLeft+c.offsetWidth>L.scrollLeft+L.clientWidth) L.scrollLeft=x; }
+    else if(c.offsetTop<L.scrollTop||c.offsetTop+c.offsetHeight>L.scrollTop+L.clientHeight) L.scrollTop=c.offsetTop-(L.clientHeight-c.offsetHeight)/2; }
+  $('listN').textContent = `${ITEMS.filter(isDone).length} / ${ITEMS.length} hazır`;
+  renderHud();
 }
+// The picked item over the car: its name, unit and state, and a ring for its readiness.
+function renderHud(){ const it=byId(selected), st=stateOf(it), p=progress(it);
+  $('hudName').textContent = it.name;
+  $('hudPills').innerHTML = `<span class="pill" style="color:${BCOL[it.birim]};background:rgba(255,255,255,.05)"><i></i>${esc(BIRIM_TAG[it.birim])}</span><span class="pill st-${st}"><i></i>${ST_LABEL[st]}</span>`;
+  $('ringFg').style.strokeDashoffset = (276.46*(1-p)).toFixed(2);
+  $('ringPct').textContent = '%'+Math.round(p*100); }
+// the list folds open and shut from its header; the choice is kept for the next visit
+function setListOpen(open){ $('aracZone').classList.toggle('list-off', !open); const b=$('listTg');
+  b.setAttribute('aria-expanded', open); b.setAttribute('aria-label', open?'Kalem listesini kapat':'Kalem listesini aç');
+  try{ localStorage.setItem('vh-list', open?'1':'0'); }catch(e){} }
+try{ if(localStorage.getItem('vh-list')==='0') setListOpen(false); }catch(e){}
+$('listTg').addEventListener('click', ()=>setListOpen($('aracZone').classList.contains('list-off')));
 
 /* ---------- render: technical control plate ---------- */
 const IC = {
@@ -1580,8 +1911,8 @@ function openSart(doc, n, marks, back){ sv={ ...sv, mode:'sec', doc, n, marks:ma
 let sqT; $('sartQ').addEventListener('input', e=>{ clearTimeout(sqT); sqT=setTimeout(()=>{ const q=e.target.value.trim(); sv.q=q; if(q.length>=2){ sv.mode='search'; } else if(sv.mode==='search'){ sv.mode='ozet'; } renderSart(); },220); });
 $('sartYil').addEventListener('change', e=>{ loadSart(+e.target.value); });
 document.addEventListener('click', e=>{
-  const a=e.target.closest('[data-sart]'); if(a){ const [doc,n,m]=a.dataset.sart.split('|'); openSart(doc, n, m?m.split(','):[], a.closest('#card')?selected:(a.closest('#plateSide')?null:undefined)); return; }
-  const c=e.target.closest('[data-ceza]'); if(c){ sv={...sv, mode:'ceza', cf: c.dataset.ceza==='risk'?'risk':sv.cf, back: c.closest('#card')?selected:sv.back}; setTab('sart'); return; }
+  const a=e.target.closest('[data-sart]'); if(a){ const [doc,n,m]=a.dataset.sart.split('|'); openSart(doc, n, m?m.split(','):[], a.closest('#card,#detail')?selected:(a.closest('#plateSide')?null:undefined)); return; }
+  const c=e.target.closest('[data-ceza]'); if(c){ sv={...sv, mode:'ceza', cf: c.dataset.ceza==='risk'?'risk':sv.cf, back: c.closest('#card,#detail')?selected:sv.back}; setTab('sart'); return; }
   const sc=e.target.closest('[data-sec]'); if(sc){ const [doc,n]=sc.dataset.sec.split('|'); const fromSearch = sc.classList.contains('res') && sv.mode==='search';
     sv={...sv, mode:'sec', doc, n, marks:[], pi: sc.dataset.pi!=null ? +sc.dataset.pi : null, q: fromSearch?sv.q:'', scroll:true}; if(!fromSearch) $('sartQ').value=''; renderSart(); if(window.innerWidth<861) $('reader').scrollIntoView({block:'start'}); return; }
   const sd=e.target.closest('[data-sdoc]'); if(sd){ const k=sd.dataset.sdoc; if(k==='_ozet'||k==='_ceza'||k==='_gal'){ sv={...sv,mode:k.slice(1),q:''}; $('sartQ').value=''; } else { const d=sdoc(k); sv={...sv,mode:'sec',doc:k,n:d.secs[0].n,marks:[],pi:null,q:''}; $('sartQ').value=''; } renderSart(); return; }
@@ -1691,20 +2022,22 @@ document.querySelector('.tabs').addEventListener('click', e=>{ const b=e.target.
 document.addEventListener('click', e=>{ const g=e.target.closest('[data-goto]'); if(g){ e.preventDefault(); select(g.dataset.goto, true); if(window.innerWidth<700 && chatOpen) toggleChat(false); } });
 
 $('filters').addEventListener('click', e=>{ const b=e.target.closest('.fchip'); if(!b) return; filter=b.dataset.f; try{ localStorage.setItem('vh-filter',filter); }catch(e){} renderList(); });
-$('tbl').addEventListener('click', e=>{
-  const p=e.target.closest('[data-pick]'); if(p){ select(p.dataset.pick, true); return; }
-  if(!e.target.closest('button')){ const tr=e.target.closest('tr[data-row]'); if(tr){ select(tr.dataset.row, true); return; } }
-  const b=e.target.closest('button[data-set]'); if(!b||b.disabled) return;
-  const [f,id]=b.dataset.set.split(':'); const v=JSON.parse(b.dataset.val); const r=rec(id);
-  const nv = r.v===v ? '?' : v;
-  patchItem(id, { v:nv, asama:null, karar:null }, `Yapılmış mı → ${{var:'yapılmış',kismen:'kısmen / revize',yok:'yapılmamış','?':'bilinmiyor'}[nv]}`);
+$('itemList').addEventListener('click', e=>{
+  const p=e.target.closest('[data-pick]'); if(p) select(p.dataset.pick, true);
 });
 
 const LABELS = { v:{var:'yapılmış',kismen:'kısmen / revize',yok:'yapılmamış'}, cal:{true:'çalışıyor',false:'çalışmıyor'}, test:{true:'test edildi',false:'test edilmedi'},
   tas:{var:'tasarım var',yok:'tasarım yok'}, dok:{var:'doküman var',yok:'doküman yok'}, har:{var:'daha önce başlanmış',yok:'başlanmamış'},
   uyg:{evet:'bulunanlar kullanılabilir',kismen:'bulunanlar kısmen uygun',hayir:'bulunanlar kullanılamaz'}, karar:{devam:'karar: mevcuttan devam',sifir:'karar: sıfırdan'} };
-$('card').addEventListener('click', async e=>{
+// One madde is open at a time; it opens in the window under the car.
+function openOnly(it, i){ [...openReq].forEach(k=>{ if(k.startsWith(it.id+':')) openReq.delete(k); }); if(i>=0) openReq.add(it.id+':'+i); }
+function showDetail(){ const d=$('detail'), r=d.getBoundingClientRect(); if(r.top<0 || r.top>window.innerHeight*.75) d.scrollIntoView({block:'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }
+$('aracZone').addEventListener('click', async e=>{
   const it=byId(selected); const r=rec(it.id);
+  const rhb=e.target.closest('button[data-rhb]');
+  if(rhb && !rhb.disabled){ const k=rhb.dataset.rhb, step=REHBER[it.id].adim[+k], m={...(r.rehber||{})};
+    m[k] = m[k] ? null : { by:myId||'yerel', at:new Date().toISOString() };
+    patchItem(it.id, { rehber:m }, `${m[k]?'Rehber adımı tamam':'Rehber adımı geri alındı'}: ${step.b}`); return; }
   const sb=e.target.closest('button[data-set]');
   if(sb && !sb.disabled){ const f=sb.dataset.set, v=JSON.parse(sb.dataset.val); const nv = r[f]===v ? null : v; const patch={[f]:nv};
     if(f==='v'){ patch.v = nv ?? '?'; patch.asama=null; patch.karar=null; if(nv!=='var'){ patch.cal=null; patch.test=null; } }
@@ -1719,10 +2052,9 @@ $('card').addEventListener('click', async e=>{
     if(s==='uretim' || s==='test' || s==='hazir'){ const miss=it.deps.filter(d=>!isDone(byId(d))); if(miss.length && s==='uretim') toast(`Not: ${esc(miss.map(d=>byId(d).name).join(', '))} henüz hazır değil.`); }
     patchItem(it.id, { asama:s }, `Aşama → ${PHASES[phaseIdx(s)].n}`); return; }
   const rok=e.target.closest('button[data-rok]'); if(rok){ const key=rok.dataset.rok; const f=itemFields(it).find(x=>x.key===key); setRapor(it.id, key, {ok:{by:myId||'yerel', at:new Date().toISOString()}}, `Rapor verisi doğrulandı: ${f?f.label:key} = ${rv(it.id,key).slice(0,80)}`); return; }
-  const gr=e.target.closest('button[data-goreq]'); if(gr){ const i=+gr.dataset.goreq; openReq.add(it.id+':'+i); await renderCard();
-    const el=document.querySelectorAll('#card .req')[i]; if(el) el.scrollIntoView({block:'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); return; }
+  const gr=e.target.closest('button[data-goreq]'); if(gr){ openOnly(it, +gr.dataset.goreq); await renderCard(); showDetail(); return; }
   const os=e.target.closest('button[data-open]'); if(os){ openStep[it.id] = +os.dataset.open || 0; renderCard(); return; }
-  const hn=e.target.closest('button[data-hint]'); if(hn){ const k=it.id+':'+hn.dataset.hint; openReq.has(k)?openReq.delete(k):openReq.add(k); renderCard(); return; }
+  const hn=e.target.closest('button[data-hint]'); if(hn){ const i=+hn.dataset.hint, k=it.id+':'+i; const was=openReq.has(k); openOnly(it, was?-1:i); await renderCard(); if(!was) showDetail(); return; }
   if(e.target.closest('#prevItem')||e.target.closest('#nextItem')){ const i=ITEMS.findIndex(x=>x.id===it.id); const n=e.target.closest('#nextItem')?1:-1; select(ITEMS[(i+n+ITEMS.length)%ITEMS.length].id); return; }
   const rf=e.target.closest('button[data-rf]'); if(rf && !rf.disabled){ const [i,field]=rf.dataset.rf.split('|'); const v=JSON.parse(rf.dataset.val); const f=flowOf(it,+i); const nv = f[field]===v ? null : v;
     const lab = {v:{evet:'karşılanıyor',kismen:'kısmen',hayir:'karşılanmıyor'},olc:{true:'ölçüldü',false:'ölçülmedi'},db:{var:'Database\'de çalışma bulundu',yok:'Database\'de çalışma yok'}}[field]?.[String(nv)] || (field==='asama' ? 'aşama: '+(RSTAGE(it.reqs[+i][2]==='A').find(x=>x[0]===nv)?.[1]||'-') : 'sıfırlandı');
@@ -1730,7 +2062,7 @@ $('card').addEventListener('click', async e=>{
   const rixa=e.target.closest('[data-rixadd]'); if(rixa){ const s0=rixa.dataset.rixadd; const k=s0.indexOf('|'); const i=+s0.slice(0,k), u=safeUrl(s0.slice(k+1)), t=(rixa.dataset.rixn||'').slice(0,140); if(!u) return;
     const prev=flowOf(it,i).found||[]; if(!yerVar(prev,'oncul')) return;
     setFlow(it.id, i, {found:[...prev, {t, u, by:myId}]}, `arşivden dosya eklendi: ${t}`); toast(`<b>Eklendi:</b> ${esc(t)}`); return; }
-  const rfa=e.target.closest('[data-rfadd]'); if(rfa){ const i=+rfa.dataset.rfadd; const t=document.querySelector(`#card [data-rft="${i}"]`).value.trim(), u=document.querySelector(`#card [data-rfu="${i}"]`).value.trim(); if(!t && !u) return;
+  const rfa=e.target.closest('[data-rfadd]'); if(rfa){ const i=+rfa.dataset.rfadd; const t=document.querySelector(`#aracZone [data-rft="${i}"]`).value.trim(), u=document.querySelector(`#aracZone [data-rfu="${i}"]`).value.trim(); if(!t && !u) return;
     if(u && !safeUrl(u)){ toast('Link http veya https ile başlamalı.'); return; }
     const prev=flowOf(it,i).found||[]; if(!yerVar(prev,'oncul')) return;
     const found=[...prev, {t:(t||u).slice(0,120), u:u.slice(0,500), by:myId}]; const key=it.id+':'+i; justAdded[key]=Date.now(); setTimeout(()=>{ if(selected===it.id) renderCard(); }, 4100);
@@ -1757,8 +2089,9 @@ $('card').addEventListener('click', async e=>{
     patchItem(it.id,{found:all.filter((_,i)=>i!==k)},'Bulunan dosya kaldırıldı'); return; }
   if(e.target.closest('#copyQ')){ copyQuery(it); return; }
 });
-$('card').addEventListener('toggle', e=>{ const d=e.target.closest?.('[data-rdet]'); if(d){ d.open?openRap.add(d.dataset.rdet):openRap.delete(d.dataset.rdet); } }, true);
-$('card').addEventListener('change', e=>{
+$('aracZone').addEventListener('toggle', e=>{ const d=e.target.closest?.('[data-rdet]'); if(d){ d.open?openRap.add(d.dataset.rdet):openRap.delete(d.dataset.rdet); }
+  const tn=e.target.matches?.('[data-tani]')&&e.target; if(tn){ tn.open?openTani.add(tn.dataset.tani):openTani.delete(tn.dataset.tani); } }, true);
+$('aracZone').addEventListener('change', e=>{
   if(e.target.id==='itemSel'){ select(e.target.value); return; }
   if(e.target.matches('[data-rv]')){ const it=byId(selected); const key=e.target.dataset.rv; const val=e.target.value.trim().slice(0,3000); if(val!==rv(it.id,key)){ const f=itemFields(it).find(x=>x.key===key); setRapor(it.id, key, {v:val}, `Rapor verisi: ${f?f.label:key} = ${val.slice(0,80)||'—'}`); } return; }
   if(e.target.matches('[data-rix]')){ const it=byId(selected); ixQ[it.id+':'+e.target.dataset.rix]=e.target.value.trim().slice(0,80); renderCard(); return; }
@@ -1868,90 +2201,178 @@ async function connect(oturum){
 }
 
 /* ---------- 3D ---------- */
-const canvas=$('gl');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping;
-const scene=new THREE.Scene(); const camera=new THREE.PerspectiveCamera(34,1,.05,60);
-const controls=new OrbitControls(camera,canvas); controls.enableDamping=true; controls.minDistance=2.4; controls.maxDistance=9; controls.maxPolarAngle=Math.PI*.49; controls.target.set(0,.55,0);
-controls.autoRotate=!matchMedia('(prefers-reduced-motion: reduce)').matches; controls.autoRotateSpeed=.55; controls.addEventListener('start',()=>{controls.autoRotate=false;});
-scene.add(new THREE.HemisphereLight(0xcfe6ff,0x1a1408,1.1));
-const key=new THREE.DirectionalLight(0xffffff,2.2); key.position.set(3,5,4); scene.add(key);
-const rim=new THREE.DirectionalLight(0x4fd8e8,1.4); rim.position.set(-4,2,-3); scene.add(rim);
-const grid=new THREE.GridHelper(9,36,0x1f4a66,0x13253d); grid.material.transparent=true; grid.material.opacity=.55; scene.add(grid);
-const disc=new THREE.Mesh(new THREE.CircleGeometry(2.3,64),new THREE.MeshBasicMaterial({color:0x4fd8e8,transparent:true,opacity:.05,depthWrite:false})); disc.rotation.x=-Math.PI/2; disc.position.y=.002; scene.add(disc);
-// Hologram after the team site's own shader (src/three/hologram.ts).
-const SCAN={value:0};
-const VERT=`varying vec3 vN; varying vec3 vE; varying vec3 vP;
-void main(){ vP=position; vec4 mv=modelViewMatrix*vec4(position,1.); vN=normalize(normalMatrix*normal); vE=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`;
-const FRAG=`uniform vec3 uColor; uniform float uBase; uniform float uRim; uniform float uFall; uniform float uGain; uniform float uTime; uniform float uGrid; uniform float uHi;
-varying vec3 vN; varying vec3 vE; varying vec3 vP;
-float contour(float v){ float f=v/0.045; float d=abs(fract(f-0.5)-0.5)/max(fwidth(f),1e-4); return 1.-min(d,1.); }
-void main(){ float facing=abs(dot(normalize(vN),normalize(vE))); float edge=pow(1.-facing,uFall);
-  float head=mod(uTime*0.55,5.2)-2.6; float band=exp(-pow((vP.x-head)/0.07,2.)); float wake=exp(-max(head-vP.x,0.)*2.4)*step(vP.x,head)*0.22;
-  float lines=0.86+0.14*sin(vP.y*260.); float g=uGrid>0.?max(max(contour(vP.x),contour(vP.y)),contour(vP.z)*0.6)*uGrid:0.;
-  float s=((uBase+uRim*edge)*lines+g+(band+wake)*0.9)*uGain*(1.+uHi); gl_FragColor=vec4(uColor*s,s); }`;
-const LOOK={Govde:{base:.10,rim:.95,fall:2.0,grid:.3},Cam:{base:.09,rim:.8,fall:2.0},Ayna:{base:.2,rim:.85,fall:1.9},Sasi:{base:.26,rim:.7,fall:1.9},RollCage:{base:.3,rim:.8,fall:1.9},Tekerlek:{base:.2,rim:.85,fall:2.0},Koltuk:{base:.26,rim:.85,fall:1.9},Direksiyon:{base:.3,rim:.8,fall:1.8},Kokpit:{base:.22,rim:.7,fall:2.0},Ekran:{base:.7,rim:.4,fall:1.5},Far:{base:.8,rim:.8,fall:1.7},Stop:{base:.8,rim:.8,fall:1.7},Batarya:{base:.45,rim:.7,fall:1.7},Motor:{base:.5,rim:.9,fall:1.6},V_:{base:.45,rim:.8,fall:1.7}};
+// The car as the prototype showed it, which is the site's /arac viewer (CarViewer.tsx + src/three/hologram.ts):
+// the studio, one hologram material per mesh, bloom. On top: the panel's stand, a turntable the buttons turn,
+// the picked or hovered item lit and the rest dimmed, and a finished item's parts turning real.
+const canvas=$('gl'), stage=$('stage'), callout=$('callout');
+const CALM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75)); renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping;
+
+// hologram.ts, the shader and the per-part looks
+const SCAN={value:0}, GRID_STEP=.045;
+const VERT=`varying vec3 vNormal; varying vec3 vToEye; varying float vAlong; varying float vHeight; varying float vAcross;
+void main(){ vAlong=position.x; vHeight=position.y; vAcross=position.z; vec4 mv=modelViewMatrix*vec4(position,1.0);
+  vNormal=normalize(normalMatrix*normal); vToEye=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`;
+const FRAG=`uniform vec3 uColor; uniform float uBase; uniform float uRim; uniform float uFalloff; uniform float uGain;
+uniform float uTime; uniform float uScan; uniform float uGrid; uniform float uGridStep;
+varying vec3 vNormal; varying vec3 vToEye; varying float vAlong; varying float vHeight; varying float vAcross;
+float contour(float v){ float f=v/uGridStep; float d=abs(fract(f-0.5)-0.5)/max(fwidth(f),1e-4); return 1.0-min(d,1.0); }
+void main(){ float facing=abs(dot(normalize(vNormal),normalize(vToEye))); float edge=pow(1.0-facing,uFalloff);
+  float head=mod(uTime*0.55,5.2)-2.6; float band=exp(-pow((vAlong-head)/0.07,2.0)); float wake=exp(-max(head-vAlong,0.0)*2.4)*step(vAlong,head)*0.22;
+  float lines=0.86+0.14*sin(vHeight*260.0); float grid=0.0;
+  if(uGrid>0.0){ grid=max(max(contour(vAlong),contour(vHeight)),contour(vAcross)*0.6)*uGrid; }
+  float strength=((uBase+uRim*edge)*lines+grid+(band+wake)*uScan)*uGain; gl_FragColor=vec4(uColor*strength,strength); }`;
+const LOOK={Govde:{base:.10,rim:.95,falloff:2.0,grid:.3},Cam:{base:.09,rim:.8,falloff:2.0},Ayna:{base:.20,rim:.85,falloff:1.9},Panel:{base:.5,rim:.5,falloff:1.6},
+  Sasi:{base:.26,rim:.7,falloff:1.9},RollCage:{base:.30,rim:.8,falloff:1.9},Tekerlek:{base:.20,rim:.85,falloff:2.0},Koltuk:{base:.26,rim:.85,falloff:1.9},
+  Direksiyon:{base:.30,rim:.8,falloff:1.8},Kokpit:{base:.22,rim:.7,falloff:2.0},Ekran:{base:1.0,rim:.4,falloff:1.5,tint:'#9beaff'},Far:{base:1.05,rim:.8,falloff:1.7,tint:'#d8f0ff'},
+  Stop:{base:1.00,rim:.8,falloff:1.7,tint:'#ff4436'},Batarya_Hucre:{base:.55,rim:.6,falloff:1.7,tint:'#ff9b2e'},Batarya_Kutu:{base:.38,rim:.8,falloff:1.8,tint:'#ff7d16'},
+  Batarya_Fan:{base:.85,rim:.5,falloff:1.6,tint:'#ffb44a'},Motor:{base:.60,rim:.9,falloff:1.6,tint:'#ffae3d'},V_:{base:.45,rim:.8,falloff:1.7,tint:'#ffae3d'}};
+// what a part becomes once its item is done
 const SOLID={Govde:{c:0xE8ECF1,m:.15,r:.32},Cam:{c:0x1B2A36,m:.1,r:.08,o:.62},Ayna:{c:0xC9CED6,m:.6,r:.25},Sasi:{c:0xB9C0CA,m:.75,r:.35},RollCage:{c:0xC4452D,m:.35,r:.45},Tekerlek:{c:0x1A1C21,m:.1,r:.85},Koltuk:{c:0x1E2128,m:.05,r:.7},Direksiyon:{c:0x24272E,m:.2,r:.6},Kokpit:{c:0x2A2F37,m:.2,r:.6},Ekran:{c:0x0B1C26,m:0,r:.3,e:0x46C9F0},Far:{c:0xF4F7FA,m:0,r:.2,e:0xDDF2FF},Stop:{c:0x8E1B12,m:0,r:.3,e:0xFF3B2E},Batarya_Kutu:{c:0x3A4352,m:.5,r:.45},Batarya_Hucre:{c:0x2F6FD0,m:.3,r:.4},Batarya_Fan:{c:0x1B1E24,m:.3,r:.5},Motor:{c:0x8C929C,m:.8,r:.3},V_Surucu:{c:0x4A5263,m:.6,r:.4},V_YSB:{c:0x5A6476,m:.5,r:.45},V_Izolasyon:{c:0x6A5D8A,m:.3,r:.5},V_AcilStop:{c:0xD8261B,m:.2,r:.4,e:0x5A0A05}};
+const EDGE_ON=['Koltuk','Kokpit','Direksiyon','RollCage','Batarya_Kutu','Motor','Ekran','Ayna'];
 const pick=(t,n)=>{ const k=Object.keys(t).sort((a,b)=>b.length-a.length).find(k=>n.startsWith(k)); return k?t[k]:null; };
-const COL={holo:new THREE.Color(0x4FD8E8),part:new THREE.Color(0xF5A524),done:new THREE.Color(0xF5A524),lock:new THREE.Color(0x7486B0)};
+
+// CarViewer.tsx: scheme colour, the hover rule (the lit item at 2.3×, the rest at 0.45×), camera and studio
+const SCHEME=new THREE.Color('#3fe0c4'), WIRE_GAIN=.34, ACTIVE_GAIN=2.3, REST_GAIN=.45;
+const VIEW_AT=new THREE.Vector3(2.5,1.95,5.15), TARGET=new THREE.Vector3(0,.72,0);
+const FLOOR_Y=-.1, COVE_R=9, COVE_H=8, COVE_FLARE=3.2, SCREEN_R=8.5, SCREEN_H=6, SCREEN_Y=3.2, SCREEN_ARC=180, SCREEN_FROM=206-SCREEN_ARC/2;
+const RIG=[{at:[0,3.35,0],tilt:0,size:[3.8,.75]},{at:[0,3.25,3.5],tilt:40,size:[3.8,.26]},{at:[0,3.25,-3.5],tilt:-40,size:[3.8,.26]}];
+const scene=new THREE.Scene(); scene.background=new THREE.Color('#06070a');
+const camera=new THREE.PerspectiveCamera(40,1,.1,100); camera.position.copy(VIEW_AT);
+// drei <Environment> with three <Lightformer>s: lit panels rendered into the environment map
+{ const env=new THREE.Scene(), pm=new THREE.PMREMGenerator(renderer);
+  const lf=(i,pos,rot,sc)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:new THREE.Color(1,1,1).multiplyScalar(i),side:THREE.DoubleSide,toneMapped:false}));
+    m.position.set(...pos); m.rotation.set(...rot); m.scale.set(...sc); env.add(m); };
+  lf(3,[0,3.35,0],[Math.PI/2,0,0],[3.8,.75,1]); lf(1.5,[0,3.25,-3.5],[-Math.PI/4,0,0],[3.8,.28,1]); lf(1.5,[0,3.25,3.5],[Math.PI/4,0,0],[3.8,.28,1]);
+  scene.environment=pm.fromScene(env,0,.1,100).texture; pm.dispose(); }
+const dl=(pos,i,c=0xffffff)=>{ const l=new THREE.DirectionalLight(c,i); l.position.set(...pos); scene.add(l); };
+dl([1.5,7,2.5],2.6); dl([-3,2.4,-4.5],1.35,0xbfe6ff); dl([-4,3,-3],.55); dl([6,2,1.5],.9,0xeef6ff);
+scene.add(new THREE.AmbientLight(0xffffff,.18));
+// studio: cove, floor, the curved back screen and the overhead light rig
+{ const std=o=>new THREE.MeshStandardMaterial(o);
+  const pts=[new THREE.Vector2(COVE_R,FLOOR_Y)];
+  for(let i=1;i<=20;i++){ const t=i/20; pts.push(new THREE.Vector2(COVE_R+COVE_FLARE*(1-Math.cos(t*Math.PI/2)),FLOOR_Y+COVE_H*t)); }
+  scene.add(new THREE.Mesh(new THREE.LatheGeometry(pts,96),std({color:'#0b0d11',roughness:.62,metalness:.05,side:THREE.BackSide})));
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(COVE_R+.05,72),std({color:'#0b0d11',roughness:.62,metalness:.05})); floor.rotation.x=-Math.PI/2; floor.position.y=FLOOR_Y; scene.add(floor);
+  const arc=(r,h,from,sweep)=>new THREE.CylinderGeometry(r,r,h,120,1,true,THREE.MathUtils.degToRad(from),THREE.MathUtils.degToRad(sweep));
+  const scr=new THREE.Group(); scr.position.y=SCREEN_Y; scene.add(scr);
+  scr.add(new THREE.Mesh(arc(SCREEN_R+.07,SCREEN_H+.18,SCREEN_FROM-.7,SCREEN_ARC+1.4),std({color:'#0a0c10',metalness:.8,roughness:.34,side:THREE.BackSide})));
+  scr.add(new THREE.Mesh(arc(SCREEN_R,SCREEN_H,SCREEN_FROM,SCREEN_ARC),std({color:'#0d1016',emissive:'#13323c',emissiveIntensity:.25,roughness:.66,side:THREE.BackSide})));
+  for(const {at,tilt,size:[along,across]} of RIG){ const g=new THREE.Group(); g.position.set(...at); g.rotation.x=THREE.MathUtils.degToRad(tilt); scene.add(g);
+    const h=new THREE.Mesh(new THREE.BoxGeometry(along,.05,across),std({color:'#0b0d10',metalness:.85,roughness:.26})); h.position.y=.026; g.add(h);
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(along-.05,.008,across-.05),std({color:'#fff',emissive:'#fff',emissiveIntensity:2.2,toneMapped:false})));
+    for(const x of [-along*.34,along*.34]){ const rod=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,2.4,8),std({color:'#14171c',metalness:.9,roughness:.3})); rod.position.set(x,1.2,0); g.add(rod); } } }
+// The stand: a faint grid, three cyan rings and slowly turning arcs under the car.
+const plat=new THREE.Group(); plat.position.y=.002; scene.add(plat);
+{ const grid=new THREE.GridHelper(9,36,0x1f4a66,0x13253d); grid.material.transparent=true; grid.material.opacity=.4; plat.add(grid);
+  const ringMat=o=>new THREE.MeshBasicMaterial({color:0x4FD8E8,transparent:true,opacity:o,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  for(const [r,w,o] of [[1.75,.012,.35],[2.1,.006,.22],[2.45,.02,.12]]){ const g=new THREE.Mesh(new THREE.RingGeometry(r,r+w,128),ringMat(o)); g.rotation.x=-Math.PI/2; plat.add(g); }
+  const glow=new THREE.Mesh(new THREE.CircleGeometry(1.7,64),new THREE.MeshBasicMaterial({color:0x4FD8E8,transparent:true,opacity:.05,depthWrite:false})); glow.rotation.x=-Math.PI/2; plat.add(glow); }
+const arcs=new THREE.Group(); plat.add(arcs);
+for(let i=0;i<3;i++){ const a=new THREE.Mesh(new THREE.RingGeometry(1.92,1.95,64,1,i*2.1,1.1),new THREE.MeshBasicMaterial({color:0x4FD8E8,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})); a.rotation.x=-Math.PI/2; arcs.add(a); }
+// <EffectComposer multisampling={0}><Bloom mipmapBlur intensity={0.8} luminanceThreshold={0.52} luminanceSmoothing={0.22} radius={0.55} />
+const composer=new EffectComposer(renderer,{multisampling:0,frameBufferType:THREE.HalfFloatType});
+composer.addPass(new RenderPass(scene,camera));
+composer.addPass(new EffectPass(camera,new BloomEffect({mipmapBlur:true,intensity:.8,luminanceThreshold:.52,luminanceSmoothing:.22,radius:.55})));
+
+// Dragging turns the view left and right only, at the site's height; a vertical swipe still scrolls the page.
+const controls=new OrbitControls(camera,canvas); Object.assign(controls,{enablePan:false,enableZoom:false,enableDamping:true});
+controls.target.copy(TARGET); controls.update(); canvas.style.touchAction='pan-y';
+const car=new THREE.Group(); scene.add(car);
+let spinning=!CALM, turnTo=null;
+stage.addEventListener('pointerdown', e=>{ if(!e.target.closest('.turn')){ spinning=false; turnTo=null; } });
+// the buttons turn the car on its stand by 45°
+for(const [id,dir] of [['turnL',-1],['turnR',1]]) $(id).addEventListener('click', ()=>{ spinning=false; turnTo=(turnTo??car.rotation.y)+dir*Math.PI/4; });
+$('xray').addEventListener('click', ()=>{ xray=!xray; $('xray').setAttribute('aria-pressed',xray); syncScene(); });
+
 const units=[];
 function itemFor(name){ const n=name.replace(/^Tel_/,''); return ITEMS.find(x=>x.parts.some(p=>n.startsWith(p)||name.startsWith(p))); }
+// Each mesh is added to the turntable with its world matrix: a hologram, outlines on EDGE_ON parts, and a solid
+// copy that fades in when the item is done. Tel_ copies are the wiring, drawn as wireframe.
 function addUnit(name,geometry,matrix){
-  const item=itemFor(name); if(!item) return; const isWire=name.startsWith('Tel_'); const look=pick(LOOK,name.replace(/^Tel_/,''))||{base:.2,rim:.6,fall:2};
-  const hm = isWire ? new THREE.MeshBasicMaterial({color:0x4FD8E8,wireframe:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})
-    : new THREE.ShaderMaterial({uniforms:{uColor:{value:new THREE.Color(0x4FD8E8)},uBase:{value:look.base},uRim:{value:look.rim},uFall:{value:look.fall},uGain:{value:1},uTime:SCAN,uGrid:{value:look.grid||0},uHi:{value:0}},vertexShader:VERT,fragmentShader:FRAG,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
-  const holo=new THREE.Mesh(geometry,hm); holo.matrixAutoUpdate=false; holo.matrix.copy(matrix); holo.renderOrder=2; holo.name=name; scene.add(holo);
+  const item=itemFor(name); if(!item) return; const isWire=name.startsWith('Tel_'), look=pick(LOOK,name.replace(/^Tel_/,''))||{base:.2,rim:.6,falloff:2};
+  const put=o=>{ o.matrixAutoUpdate=false; o.matrix.copy(matrix); o.name=name; car.add(o); return o; };
+  const hm = isWire ? new THREE.MeshBasicMaterial({color:SCHEME.clone().multiplyScalar(WIRE_GAIN),wireframe:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})
+    : new THREE.ShaderMaterial({uniforms:{uColor:{value:look.tint?new THREE.Color(look.tint):SCHEME.clone()},uBase:{value:look.base},uRim:{value:look.rim},uFalloff:{value:look.falloff},
+        uGain:{value:1},uTime:SCAN,uScan:{value:.9},uGrid:{value:look.grid||0},uGridStep:{value:GRID_STEP}},vertexShader:VERT,fragmentShader:FRAG,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  const holo=put(new THREE.Mesh(geometry,hm)); holo.renderOrder=2;
+  let edge=null;
+  if(!isWire && EDGE_ON.some(k=>name.startsWith(k))){ edge=put(new THREE.LineSegments(new THREE.EdgesGeometry(geometry,28),new THREE.LineBasicMaterial({color:SCHEME.clone().multiplyScalar(.55),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}))); edge.renderOrder=3; }
   let solid=null;
   if(!isWire){ const sp=pick(SOLID,name)||{c:0x9aa3b0,m:.3,r:.5};
     const sm=new THREE.MeshStandardMaterial({color:sp.c,metalness:sp.m,roughness:sp.r,transparent:true,opacity:0,depthWrite:false,emissive:sp.e?new THREE.Color(sp.e):new THREE.Color(0),emissiveIntensity:sp.e?1.4:0,side:THREE.DoubleSide});
-    sm.userData.maxO=sp.o??1; solid=new THREE.Mesh(geometry,sm); solid.matrixAutoUpdate=false; solid.matrix.copy(matrix); solid.renderOrder=1; solid.name=name; scene.add(solid); }
-  units.push({name,item,isWire,holo,solid,cur:{s:0,g:1,col:new THREE.Color(0x4FD8E8),hi:0},tgt:{s:0,g:1,col:new THREE.Color(0x4FD8E8),hi:0}});
+    sm.userData.maxO=sp.o??1; solid=put(new THREE.Mesh(geometry,sm)); solid.renderOrder=1; solid.visible=false; }
+  units.push({name,item,isWire,holo,edge,solid,virt:name.startsWith('V_'),cur:{s:0,g:1},tgt:{s:0,g:1}});
 }
-function syncScene(){
-  for(const u of units){ const s_=stateOf(u.item), p=progress(u.item); const shell=/^(Tel_)?Govde|^Cam/.test(u.name);
-    let s = s_==='done'?1 : s_==='part'? .12+.55*p : 0;
-    let g = s_==='done'? .16 : s_==='part'? 1-.45*p : s_==='lock'? .6 : 1;
-    if(xray&&shell){ s=0; g=Math.max(g,.55); }
-    if(u.isWire){ s=0; g = s_==='done'&&!xray ? 0 : (s_==='lock'?.25:.5); }
-    u.tgt.s=s; u.tgt.g=g; u.tgt.col.copy(COL[s_]); u.tgt.hi = u.item.id===selected ? .9 : 0; }
+// What the mouse points at wins over the picked item while it is pointed at, as on the site.
+let hovered=null;
+function syncScene(){ const active=hovered??selected;
+  for(const u of units){ const shell=/^(Tel_)?Govde|^Cam/.test(u.name), done=isDone(u.item);
+    let g = u.item.id===active ? ACTIVE_GAIN : REST_GAIN, s = done ? 1 : 0;
+    if(xray && shell){ s=0; g*=.3; }
+    u.tgt.s=s; u.tgt.g=g;
+    // the stand-ins for electronics without a mesh of their own show only while picked, or once done
+    if(u.virt){ const on=u.item.id===active || done; u.holo.visible=on; if(u.solid) u.solid.visible=on&&u.cur.s>.005; } }
 }
 const pulses={}; function pulse(id){ pulses[id]=performance.now(); }
-const VIEWS={on:[3.4,2.0,4.4],yan:[0.05,1.25,5.6],arka:[-3.9,1.9,3.8],ust:[1.2,5.4,1.6]};
-function setView(v,instant){ const to=new THREE.Vector3(...VIEWS[v]);
-  if(instant||matchMedia('(prefers-reduced-motion: reduce)').matches){ camera.position.copy(to); controls.update(); return; }
-  const from=camera.position.clone(), t0=performance.now(); (function step(){ const k=Math.min((performance.now()-t0)/700,1); camera.position.lerpVectors(from,to,1-Math.pow(1-k,3)); if(k<1) requestAnimationFrame(step); })(); }
-$('views').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
-  if(b.id==='xray'){ xray=!xray; b.setAttribute('aria-pressed',xray); syncScene(); return; }
-  controls.autoRotate=false; $('views').querySelectorAll('button[data-v]').forEach(x=>x.setAttribute('aria-pressed',x===b)); setView(b.dataset.v); });
-setView('on',true);
 const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
 function hitAt(ev){ const r=canvas.getBoundingClientRect(); ndc.set(((ev.clientX-r.left)/r.width)*2-1,-((ev.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,camera);
-  const hits=ray.intersectObjects(units.filter(u=>!u.isWire).map(u=>u.holo),false); if(!hits.length) return null;
+  const hits=ray.intersectObjects(units.filter(u=>!u.isWire&&u.holo.visible).map(u=>u.holo),false); if(!hits.length) return null;
   const unitOf=o=>units.find(u=>u.holo===o); const first=unitOf(hits[0].object);
   if(/^Govde/.test(first.name) && isDone(first.item) && !xray) return first;
   const inner=hits.find(h=>!/^(Govde|Cam)/.test(h.object.name)); return unitOf((inner||hits[0]).object); }
-let downAt=null;
+const nOkOf=it=>it.reqs.filter((_,i)=>reqState(it,i)===2).length;
+let downAt=null, hoverQ=null;
 canvas.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
 canvas.addEventListener('pointerup',e=>{ if(!downAt) return; const mv=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]); downAt=null; if(mv>6) return; const u=hitAt(e); if(u) select(u.item.id); });
-canvas.addEventListener('pointermove',e=>{ const tip=$('tip'); if(e.pointerType!=='mouse'||downAt){tip.hidden=true;return;} const u=hitAt(e); canvas.classList.toggle('pointing',!!u); if(!u){tip.hidden=true;return;}
-  const r=canvas.getBoundingClientRect(); tip.hidden=false; tip.style.left=(e.clientX-r.left)+'px'; tip.style.top=(e.clientY-r.top)+'px'; tip.textContent=`${u.item.name} · ${PHASES[phaseIdx(phaseOf(u.item))].n}`; });
-canvas.addEventListener('pointerleave',()=>{$('tip').hidden=true;});
-function resize(){ const w=canvas.clientWidth,h=canvas.clientHeight,pr=renderer.getPixelRatio(); if(!w||!h) return; if(canvas.width!==Math.floor(w*pr)||canvas.height!==Math.floor(h*pr)){ renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); } }
-let last=performance.now();
+canvas.addEventListener('pointermove',e=>{ const tip=$('tip'); if(e.pointerType!=='mouse'||e.buttons){ tip.hidden=true; return; }
+  if(hoverQ){ hoverQ=e; return; } hoverQ=e;
+  requestAnimationFrame(()=>{ const ev=hoverQ; hoverQ=null; const u=hitAt(ev), id=u?.item.id??null; canvas.classList.toggle('pointing',!!u);
+    if(id!==hovered){ hovered=id; syncScene(); }
+    if(!u){ tip.hidden=true; return; }
+    const r=stage.getBoundingClientRect(), x=ev.clientX-r.left, y=ev.clientY-r.top, it=u.item, st=stateOf(it);
+    tip.hidden=false; tip.style.left=x+'px'; tip.style.top=y+'px'; tip.style.transform = x>r.width-230 ? 'translate(calc(-100% - 14px),14px)' : '';
+    tip.innerHTML=`<b>${esc(it.name)}</b><span>%${Math.round(progress(it)*100)} · ${ST_LABEL[st]} · ${nOkOf(it)}/${it.reqs.length} uygun</span>`; }); });
+canvas.addEventListener('pointerleave',()=>{ $('tip').hidden=true; canvas.classList.remove('pointing'); if(hovered){ hovered=null; syncScene(); } });
+let lastW=0, lastH=0;
+function resize(){ const w=canvas.clientWidth,h=canvas.clientHeight; if(!w||!h||(w===lastW&&h===lastH)) return; lastW=w; lastH=h;
+  renderer.setSize(w,h,false); composer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
+  // the site's stage is wide; on a narrow one pull back along the same line so the whole car stays in frame
+  const k=Math.max(1,1.45/camera.aspect); camera.position.copy(TARGET).add(VIEW_AT.clone().sub(TARGET).multiplyScalar(k));
+  controls.minPolarAngle=controls.maxPolarAngle=Math.acos((VIEW_AT.y-TARGET.y)/VIEW_AT.distanceTo(TARGET)); controls.update(); }
+// A line from the picked item's parts to its name and readiness, as in the prototype.
+const cv=new THREE.Vector3(), cbox=new THREE.Box3();
+function drawCallout(){ const ms=units.filter(u=>u.item.id===selected&&!u.isWire&&u.holo.visible); if(!ms.length){ callout.innerHTML=''; return; }
+  cbox.makeEmpty(); ms.forEach(u=>cbox.expandByObject(u.holo)); cbox.getCenter(cv); cv.y=cbox.max.y; cv.project(camera);
+  const w=canvas.clientWidth, h=canvas.clientHeight, x=(cv.x*.5+.5)*w, y=(-cv.y*.5+.5)*h;
+  if(cv.z>1||x<0||x>w||y<0||y>h){ callout.innerHTML=''; return; }
+  const right=x<w*.62, lx=right?x+44:x-44, ly=Math.max(96,y-46), ex=right?lx+120:lx-120, it=byId(selected), tx=right?lx+4:ex+4;
+  callout.innerHTML=`<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="#F5A524" stroke-opacity=".35"/><circle cx="${x}" cy="${y}" r="3.5" fill="#F5A524"/>
+    <polyline points="${x},${y} ${lx},${ly} ${ex},${ly}" fill="none" stroke="#F5A524" stroke-opacity=".75" stroke-width="1"/>
+    <text x="${tx}" y="${ly-8}">${esc(it.parts[0]?.replace(/^V_/,'').replace(/_/g,' ')||it.name)}</text>
+    <text class="sub" x="${tx}" y="${ly+16}">%${Math.round(progress(it)*100)} · ${nOkOf(it)}/${it.reqs.length} uygun</text>`; }
+let last=performance.now(), ready=false;
 function frame(){ const t=performance.now(), dt=Math.min((t-last)/1000,.05); last=t; requestAnimationFrame(frame);
   if(tab!=='arac') return;
-  SCAN.value+=dt; resize(); controls.update(); const k=1-Math.exp(-dt*4.5);
-  for(const u of units){ u.cur.s+=(u.tgt.s-u.cur.s)*k; u.cur.g+=(u.tgt.g-u.cur.g)*k; u.cur.col.lerp(u.tgt.col,k); u.cur.hi+=(u.tgt.hi-u.cur.hi)*k;
-    let flash=0; const pt=pulses[u.item.id]; if(pt){ const a=(t-pt)/1400; flash=a<1?Math.sin(a*Math.PI)*1.6:0; }
-    const hw=u.cur.hi*(.55+.45*Math.sin(t*.005));
-    if(u.isWire){ u.holo.material.color.copy(u.cur.col).multiplyScalar(.2*u.cur.g); u.holo.visible=u.cur.g>.01; }
-    else { const m=u.holo.material.uniforms; m.uColor.value.copy(u.cur.col); m.uGain.value=u.cur.g+flash*.6; m.uHi.value=hw+flash; u.holo.visible=(u.cur.g+flash)>.01; }
-    if(u.solid){ const o=Math.min(1,u.cur.s)*u.solid.material.userData.maxO; u.solid.material.opacity=o; u.solid.visible=o>.005; const op=o>.985&&u.solid.material.userData.maxO===1; u.solid.material.transparent=!op; u.solid.material.depthWrite=op; } }
-  renderer.render(scene,camera); }
+  if(!CALM){ SCAN.value+=dt; arcs.rotation.y+=dt*.25; }
+  if(spinning) car.rotation.y+=dt*.2;
+  if(turnTo!=null){ car.rotation.y+=(turnTo-car.rotation.y)*(CALM?1:1-Math.exp(-dt*7)); if(Math.abs(turnTo-car.rotation.y)<1e-3){ car.rotation.y=turnTo; turnTo=null; } }
+  resize(); controls.update(); const k=1-Math.exp(-dt*6), ks=CALM?1:1-Math.exp(-dt*2.2);   // turning real is slower than a highlight, so it reads as materialising
+  for(const u of units){ u.cur.g+=(u.tgt.g-u.cur.g)*k; u.cur.s+=(u.tgt.s-u.cur.s)*ks;
+    const pt=pulses[u.item.id]; const flash=pt&&t-pt<1400?Math.sin((t-pt)/1400*Math.PI)*1.4:0;
+    const g=u.cur.g*(1-(u.isWire?1:.84)*u.cur.s)+flash;
+    if(u.isWire) u.holo.material.color.copy(SCHEME).multiplyScalar(WIRE_GAIN*g);
+    else u.holo.material.uniforms.uGain.value=g;
+    if(u.edge) u.edge.material.color.copy(SCHEME).multiplyScalar(.55*g);
+    if(u.solid && (!u.virt || u.holo.visible)){ const o=u.cur.s*u.solid.material.userData.maxO, op=o>.985&&u.solid.material.userData.maxO===1;
+      u.solid.material.opacity=o; u.solid.visible=o>.005; u.solid.material.transparent=!op; u.solid.material.depthWrite=op; } }
+  composer.render(dt); if(ready) drawCallout(); }
 function addVirtual(name,size,pos){ addUnit(name,new THREE.BoxGeometry(...size),new THREE.Matrix4().makeTranslation(...pos)); }
-function onModel(gltf){ gltf.scene.updateMatrixWorld(true); gltf.scene.traverse(o=>{ if(o.isMesh) addUnit(o.name,o.geometry,o.matrixWorld.clone()); });
+function onModel(gltf){ gltf.scene.updateMatrixWorld(true); const meshes=[]; gltf.scene.traverse(o=>{ if(o.isMesh) meshes.push(o); });
+  meshes.forEach(o=>addUnit(o.name,o.geometry,o.matrixWorld.clone()));
   addVirtual('V_Surucu',[.17,.08,.15],[-0.98,.36,.33]); addVirtual('V_YSB',[.17,.08,.13],[-1.24,.36,-.33]); addVirtual('V_Izolasyon',[.09,.05,.09],[-0.74,.34,0]); addVirtual('V_AcilStop',[.07,.07,.07],[0.62,.86,-.2]);
-  syncScene(); for(const u of units){ u.cur.s=u.tgt.s; u.cur.g=u.tgt.g; u.cur.col.copy(u.tgt.col); } $('loading').hidden=true; }
+  syncScene(); for(const u of units){ u.cur.s=u.tgt.s; u.cur.g=u.tgt.g; } ready=true; $('loading').hidden=true; }
 function modelFailed(err){ $('loading').textContent='Model yüklenemedi. Sayfayı yenile.'; console.error(err); }
 // The same model the site's /arac page shows.
 function loadModel(){ new GLTFLoader().load('/models/voltaris-arac.glb', onModel, undefined, modelFailed); }
@@ -2052,7 +2473,7 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('dbPop').hid
 
 // The bubble sticks to the left or right edge. Dragging moves it freely; letting go (or flicking)
 // sends it to the nearer edge, or the edge it was thrown towards. A tap without movement opens it.
-const DBB = 56, DBB_M = 16;
+const DBB = 72, DBB_M = 16;
 let dbbSide='r', dbbY=.72;
 try{ const v=JSON.parse(localStorage.getItem('vh-dbb')||'null'); if(v && (v.side==='l'||v.side==='r') && v.y>=0 && v.y<=1){ dbbSide=v.side; dbbY=v.y; } }catch(e){}
 function dbbPlace(){ const b=$('dbBtn'), maxY=innerHeight-DBB-DBB_M; b.style.left=(dbbSide==='l'?DBB_M:innerWidth-DBB-DBB_M)+'px'; b.style.top=Math.round(Math.min(maxY, Math.max(72, dbbY*innerHeight)))+'px'; dbpPlace(); }
@@ -2213,6 +2634,52 @@ $('yonetimBtn').addEventListener('click', ()=>yonetimiAc({ esc, toast, myId:()=>
 const oturum = await kapi();
 renderAll(); loadModel(); requestAnimationFrame(frame); connect(oturum); loadSart(sartYil);
 $('dbBtn').hidden=false; dbbPlace();
+</script>
+
+<script>
+/* Liquid glass, the technique the liquid-glass libraries use: a displacement map per element whose rim pushes the
+   backdrop inward like a thick lens, split per colour channel for a touch of chromatic aberration. Only the look:
+   it never touches the panel's state. backdrop-filter:url() renders in Chromium only; elsewhere the CSS fallback stays. */
+(function(){
+  const NS = 'http://www.w3.org/2000/svg';
+  const chromium = !!navigator.userAgentData?.brands?.some(b => /Chromium/.test(b.brand));
+  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  // static glass; the next-öncül box is redrawn with the card, so new ones are picked up as they appear
+  document.querySelectorAll('.tabs,.dbb').forEach(el => el.classList.add('lg'));
+  let svg = null, n = 0;
+  if (chromium){ svg = document.createElementNS(NS, 'svg'); svg.setAttribute('aria-hidden', 'true');
+    svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'; document.body.appendChild(svg); }
+  // R/G = x/y offset (128 = none): flat in the middle, rising smoothly to full strength at the rim
+  function mapFor(w, h, r, bez){ const k = .5, W = Math.max(2, Math.round(w * k)), H = Math.max(2, Math.round(h * k));
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const x2 = c.getContext('2d'), img = x2.createImageData(W, H), d = img.data;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+      const px = (x + .5) / k - w / 2, py = (y + .5) / k - h / 2, qx = Math.abs(px) - (w / 2 - r), qy = Math.abs(py) - (h / 2 - r);
+      const ox = Math.max(qx, 0), oy = Math.max(qy, 0), out = Math.hypot(ox, oy), inset = -(out + Math.min(Math.max(qx, qy), 0) - r);
+      let dx = 0, dy = 0;
+      if (inset > 0 && inset < bez){ let nx, ny; if (qx > 0 && qy > 0){ nx = ox / out; ny = oy / out; } else if (qx > qy){ nx = 1; ny = 0; } else { nx = 0; ny = 1; }
+        nx *= Math.sign(px) || 1; ny *= Math.sign(py) || 1; const t = 1 - inset / bez, m = t * t; dx = -nx * m; dy = -ny * m; }
+      const i = (y * W + x) * 4; d[i] = 128 + dx * 127; d[i + 1] = 128 + dy * 127; d[i + 2] = 128; d[i + 3] = 255; }
+    x2.putImageData(img, 0, 0); return c.toDataURL(); }
+  function apply(el){ if (!svg || !el.isConnected) return; const w = el.offsetWidth, h = el.offsetHeight; if (!w || !h) return;
+    const key = w + 'x' + h; if (el.dataset.lgk === key) return; el.dataset.lgk = key;
+    const r = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, w / 2, h / 2);
+    const bez = Math.min(26, Math.min(w, h) * .32), sc = Math.min(70, bez * 2.6);
+    const id = el.dataset.lgid || (el.dataset.lgid = 'lg' + (n++)); svg.querySelector('#' + id)?.remove();
+    const f = document.createElementNS(NS, 'filter'); f.id = id;
+    for (const [a, v] of [['x', 0], ['y', 0], ['width', w], ['height', h], ['filterUnits', 'userSpaceOnUse'], ['color-interpolation-filters', 'sRGB']]) f.setAttribute(a, v);
+    const ch = (sc2, m, res) => `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sc2}" xChannelSelector="R" yChannelSelector="G" result="d${res}"/><feColorMatrix in="d${res}" type="matrix" values="${m}" result="${res}"/>`;
+    f.innerHTML = `<feImage href="${mapFor(w, h, r, bez)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>`
+      + ch(sc, '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0', 'r') + ch(sc * 1.06, '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0', 'g')
+      + ch(sc * 1.12, '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0', 'b') + '<feBlend in="r" in2="g" mode="screen" result="rg"/><feBlend in="rg" in2="b" mode="screen"/>';
+    svg.appendChild(f); const bf = `url(#${id}) blur(1.2px) saturate(1.7) brightness(1.06)`; el.style.backdropFilter = bf; el.style.webkitBackdropFilter = bf; }
+  const ro = new ResizeObserver(es => requestAnimationFrame(() => es.forEach(e => apply(e.target))));
+  function adopt(el){ if (el.dataset.lgOn) return; el.dataset.lgOn = '1'; ro.observe(el); apply(el);
+    if (fine) el.addEventListener('pointermove', e => { const b = el.getBoundingClientRect(); el.style.setProperty('--mx', (e.clientX - b.left) + 'px'); el.style.setProperty('--my', (e.clientY - b.top) + 'px'); }); }
+  function scan(){ document.querySelectorAll('.lg,.now').forEach(el => { el.classList.add('lg'); adopt(el); });
+    // drop the filters of glass that has been redrawn away
+    if (svg) svg.querySelectorAll('filter').forEach(f => { if (!document.querySelector(`[data-lgid="${f.id}"]`)) f.remove(); }); }
+  scan(); new MutationObserver(() => requestAnimationFrame(scan)).observe(document.getElementById('card'), { childList:true, subtree:true });
+})();
 </script>
 </body>
 </html>
